@@ -1,0 +1,1132 @@
+Build a modern, secure, responsive Primary School Management System for managing the daily academic and administrative operations of a primary school.
+
+The system should have a clean, professional, easy-to-use interface suitable for school administrators, teachers, students, parents/guardians, accountants, and other authorized staff.
+
+1. User Roles
+Implement role-based access control with the following users:
+
+Super Administrator
+
+Full access to the entire system
+Manage users, roles, permissions, school settings, and system configuration
+Head Teacher / School Administrator
+
+Manage school operations
+View academic, student, staff, attendance, finance, and reporting information
+Teacher
+
+Manage assigned classes and subjects
+Record attendance, marks, assessments, comments, and student performance
+Accountant
+
+Manage fees, payments, invoices, receipts, balances, expenses, and financial reports
+Parent/Guardian
+
+View their children's academic performance, attendance, fees, announcements, timetable, and school communication
+Student
+
+View personal information, timetable, results, attendance, assignments, and announcements
+Non-teaching Staff
+
+Access only the modules relevant to their assigned responsibilities
+Use permissions so that each role can only access information and actions authorized for that role.
+
+2. Dashboard
+Create a dashboard that changes according to the user's role.
+
+Administrator Dashboard
+Display:
+
+Total students
+Total teachers
+Total staff
+Number of classes
+Today's attendance
+Students absent today
+Fees collected
+Outstanding fees
+Recent admissions
+Upcoming events
+Recent announcements
+Academic performance overview
+Quick actions
+Use attractive cards, charts, tables, and notification panels.
+
+Teacher Dashboard
+Display:
+
+Assigned classes
+Assigned subjects
+Today's timetable
+Attendance shortcuts
+Pending assessments
+Recent announcements
+Student performance summary
+Parent Dashboard
+Display:
+
+Children linked to the account
+Attendance
+Latest results
+Fee balance
+Upcoming events
+Announcements
+School messages
+3. School Setup
+Create a school configuration module where administrators can manage:
+
+School name
+School logo
+Address
+Telephone numbers
+Email
+Website
+School motto
+Academic year
+Term/semester
+School calendar
+Grading system
+Classes
+Streams/sections
+Subjects
+Departments
+Houses
+School policies
+Allow administrators to configure the academic year and terms.
+
+4. Student Management
+Create a complete student management module.
+
+Student Registration
+Capture:
+
+Student ID/admission number
+First name
+Middle name
+Last name
+Date of birth
+Gender
+Nationality
+Address
+Religion (optional/configurable)
+Previous school
+Admission date
+Class
+Stream
+House
+Student photo
+Medical/emergency information
+Parent/guardian information
+Student Profile
+The student profile should contain:
+
+Personal information
+Parent/guardian details
+Academic history
+Attendance history
+Assessment results
+Fee/payment history
+Discipline records
+Medical records
+Documents
+Teacher comments
+Provide search, filtering, sorting, printing, and export functionality.
+
+5. Parent/Guardian Management
+Allow administrators to register and manage parents/guardians.
+
+Capture:
+
+Full name
+Relationship to student
+Telephone
+Email
+Address
+Occupation
+Emergency contact
+Login credentials
+Allow one parent/guardian account to be linked to multiple students.
+
+Allow parents to view information for all linked children.
+
+6. Staff Management
+Create a staff management module for teaching and non-teaching staff.
+
+Capture:
+
+Staff ID
+Full name
+Gender
+Date of birth
+Phone
+Email
+Address
+Position
+Department
+Subjects taught
+Classes assigned
+Date employed
+Employment status
+Qualifications
+Profile photo
+Documents
+Include staff attendance and leave management.
+
+7. Class Management
+Allow administrators to:
+
+Create classes
+Create streams/sections
+Assign class teachers
+Assign students
+Assign subjects
+Assign teachers
+Set classroom capacity
+Example:
+
+Primary 1
+P1 East
+P1 West
+Primary 2
+P2 East
+P2 West
+Provide a class overview showing students, teachers, subjects, attendance, and academic performance.
+
+8. Subject Management
+Allow administrators to:
+
+Create subjects
+Assign subjects to classes
+Assign teachers to subjects
+Set subject codes
+Configure compulsory/elective subjects
+Support different subjects for different classes.
+
+9. Attendance Management
+Create a complete attendance system.
+
+Teachers should be able to record:
+
+Present
+Absent
+Late
+Excused
+Allow attendance to be recorded daily by class.
+
+Features:
+
+Daily attendance
+Monthly attendance
+Student attendance history
+Class attendance summary
+Attendance percentage
+Absentee reports
+Late-coming reports
+Allow administrators and parents to view attendance where appropriate.
+
+10. Academic Management
+Create a complete academic management module.
+
+Allow teachers to record:
+
+Tests
+Assignments
+Homework
+Mid-term assessments
+End-of-term examinations
+Continuous assessment
+Subject scores
+Teacher comments
+Automatically calculate:
+
+Total marks
+Average
+Percentage
+Grade
+Position/rank where enabled
+Subject performance
+Overall performance
+Make the grading system configurable by the administrator.
+
+Example:
+
+80–100 = A
+70–79 = B
+60–69 = C
+50–59 = D
+Below 50 = E
+Do not hard-code these grades; allow the school to customize them.
+
+11. Report Cards
+Generate professional student report cards.
+
+A report card should contain:
+
+School logo
+School details
+Student details
+Class
+Academic year
+Term
+Subjects
+Marks
+Grades
+Teacher comments
+Head teacher comments
+Attendance
+Overall performance
+Position/rank if enabled
+Promotion status
+Next term opening date
+Allow report cards to be:
+
+Viewed online
+Downloaded as PDF
+Printed
+Provide configurable report-card templates.
+
+12. Timetable Management
+Create a timetable module.
+
+Allow administrators to create:
+
+Class timetables
+Teacher timetables
+Subject schedules
+Room/classroom schedules
+Include:
+
+Day
+Time
+Subject
+Teacher
+Class
+Room
+Prevent scheduling conflicts where possible.
+
+13. Fees and Finance
+Create a school fees management system.
+
+Fee Structure
+Allow administrators to define:
+
+Academic year
+Term
+Class
+Fee type
+Amount
+Due date
+Examples:
+
+Tuition
+Meals
+Transport
+Boarding
+Uniform
+Examination
+Activities
+Other charges
+Payments
+Record:
+
+Student
+Invoice
+Amount
+Payment method
+Transaction/reference number
+Date
+Received by
+Support payment methods such as:
+
+Cash
+Bank
+Mobile money
+Card
+Other configurable methods
+Generate:
+
+Invoices
+Receipts
+Student statements
+Fee balances
+Outstanding fee reports
+Collection reports
+Daily/monthly financial reports
+14. Expenses
+Create an expense management module.
+
+Record:
+
+Expense category
+Description
+Amount
+Date
+Supplier/payee
+Payment method
+Receipt/document
+Authorized by
+Provide expense reports and financial summaries.
+
+15. Communication
+Create a communication module for:
+
+School announcements
+Notices
+Parent messages
+Teacher messages
+SMS/email notifications where configured
+Internal staff communication
+Allow administrators to send announcements to:
+
+Entire school
+Specific class
+Specific group
+Teachers
+Parents
+Individual users
+Maintain a communication history.
+
+16. Assignments and Homework
+Teachers should be able to:
+
+Create assignments
+Select class/subject
+Add instructions
+Set deadline
+Attach files
+View submissions
+Grade submissions
+Provide comments
+Students/parents should be able to view assignments based on their permissions.
+
+17. Discipline Management
+Create a student discipline module.
+
+Record:
+
+Student
+Date
+Incident type
+Description
+Action taken
+Teacher/staff involved
+Parent notification
+Follow-up
+Resolution
+Keep discipline information restricted to authorized users.
+
+18. Medical Records
+Create a secure medical information module.
+
+Record:
+
+Allergies
+Medical conditions
+Emergency contacts
+Blood group where appropriate
+Medication information
+Medical incidents
+Nurse/medical staff notes
+Restrict access to authorized personnel.
+
+19. Library Management
+Include a basic library module.
+
+Features:
+
+Book catalog
+ISBN
+Author
+Publisher
+Category
+Number of copies
+Available copies
+Student borrowing
+Staff borrowing
+Issue date
+Return date
+Overdue tracking
+Fines where applicable
+20. School Transport
+If enabled, provide transport management.
+
+Features:
+
+Vehicles
+Drivers
+Routes
+Stops
+Assigned students
+Transport fees
+Driver information
+Vehicle details
+Route schedules
+Make the entire module optional so schools that do not use transport can disable it.
+
+21. Inventory
+Create an inventory module for school assets and supplies.
+
+Manage:
+
+Stationery
+Books
+Uniforms
+Furniture
+Computers
+Laboratory equipment
+Sports equipment
+Other assets
+Track:
+
+Item
+Category
+Quantity
+Location
+Supplier
+Purchase date
+Cost
+Condition
+Assigned person
+Stock movement
+22. Events and School Calendar
+Create a school calendar containing:
+
+Term dates
+Exams
+Parent meetings
+Sports days
+Holidays
+Staff meetings
+School events
+Trips
+Important deadlines
+Allow authorized users to create and edit events.
+
+23. Documents
+Provide document management for:
+
+Student documents
+Staff documents
+Admission documents
+Certificates
+Receipts
+Reports
+School policies
+Allow secure file upload, download, preview, and deletion according to permissions.
+
+24. Reports
+Create a comprehensive reporting section.
+
+Reports should include:
+
+Student Reports
+Student list
+New admissions
+Withdrawals
+Student demographics
+Class lists
+Student academic history
+Attendance Reports
+Daily attendance
+Monthly attendance
+Class attendance
+Individual student attendance
+Absenteeism report
+Late-coming report
+Academic Reports
+Class performance
+Subject performance
+Student performance
+Term results
+Examination results
+Grade distribution
+Performance trends
+Finance Reports
+Fees collected
+Outstanding fees
+Student balances
+Payment history
+Daily collections
+Monthly collections
+Expenses
+Income vs expenses
+Staff Reports
+Staff list
+Staff attendance
+Leave
+Teacher workload
+Reports should support:
+
+Filtering
+Date ranges
+Class filtering
+Term filtering
+Academic year filtering
+PDF export
+Excel/CSV export
+Printing
+25. Notifications
+Implement a notification system.
+
+Notify users about relevant events such as:
+
+New announcements
+Fee payment confirmation
+Outstanding fees
+New assignments
+Examination results
+Attendance concerns
+Upcoming events
+Important school notices
+Notifications should respect user permissions and communication preferences.
+
+26. Search
+Implement a global search feature.
+
+Users with permission should be able to quickly search for:
+
+Students
+Parents
+Teachers
+Staff
+Classes
+Subjects
+Payments
+Invoices
+Documents
+Provide filters and autocomplete where appropriate.
+
+27. Security
+Implement strong security throughout the system.
+
+Include:
+
+Secure authentication
+Role-based access control
+Permission management
+Password hashing
+Session management
+Login/logout
+Password reset
+Account activation/deactivation
+Audit logs
+Data validation
+Protection against SQL injection
+Protection against XSS
+CSRF protection
+Secure file uploads
+Rate limiting
+Automatic session timeout
+Keep sensitive information accessible only to authorized users.
+
+28. Audit Logs
+Create an audit log system that records important actions.
+
+Record:
+
+User
+Action
+Module
+Date/time
+IP address where appropriate
+Affected record
+Previous value where appropriate
+New value where appropriate
+Examples:
+
+Student created
+Student edited
+Fee payment recorded
+Result modified
+User created
+Permission changed
+Administrators should be able to search and filter audit logs.
+
+29. User Interface
+Design the system with a modern, clean interface.
+
+Requirements:
+
+Responsive design
+Mobile-friendly
+Tablet-friendly
+Desktop-friendly
+Sidebar navigation
+Top navigation bar
+Dashboard cards
+Data tables
+Search and filtering
+Modal dialogs where appropriate
+Form validation
+Confirmation dialogs for destructive actions
+Toast notifications
+Loading states
+Empty states
+Error states
+Use a professional school-oriented color scheme.
+
+The interface should be simple enough for non-technical school staff to use.
+
+30. Database Design
+Create a properly normalized relational database.
+
+The database should include appropriate tables for:
+
+Users
+Roles
+Permissions
+Students
+Parents/guardians
+Staff
+Teachers
+Classes
+Streams
+Subjects
+Academic years
+Terms
+Enrollments
+Attendance
+Assessments
+Results
+Report cards
+Timetables
+Fees
+Invoices
+Payments
+Expenses
+Assignments
+Announcements
+Notifications
+Discipline records
+Medical records
+Library books
+Library transactions
+Transport
+Inventory
+Events
+Documents
+Audit logs
+Use foreign keys, indexes, constraints, timestamps, and appropriate relationships.
+
+Avoid duplicate data and design the database for future scalability.
+
+31. API and Architecture
+Build the application using a clean, maintainable architecture.
+
+Use:
+
+RESTful APIs or an equivalent well-structured API architecture
+Clear separation between frontend and backend where applicable
+Service/business logic layer
+Data access layer
+Validation layer
+Authentication middleware
+Authorization middleware
+Error handling
+Logging
+Use reusable components and avoid duplicated code.
+
+32. Data Validation
+Every form must have proper validation.
+
+Validate:
+
+Required fields
+Email addresses
+Phone numbers
+Dates
+Numeric values
+Fee amounts
+Examination scores
+File types
+File sizes
+Duplicate student IDs
+Duplicate staff IDs
+Display clear and user-friendly validation messages.
+
+33. Backup and Recovery
+Provide database backup functionality.
+
+Administrators should be able to:
+
+Create backups
+Download backups where appropriate
+Schedule automatic backups
+Restore backups
+View backup history
+Ensure backups are protected from unauthorized access.
+
+34. System Settings
+Create an administration settings area for:
+
+School information
+Academic years
+Terms
+Grading system
+User roles
+Permissions
+Notification settings
+Payment methods
+Currency
+Report-card configuration
+Numbering formats
+Backup settings
+General system preferences
+Avoid hard-coding school-specific values.
+
+35. Multi-School Readiness
+Design the architecture so that it can optionally support multiple schools in the future.
+
+A school should be able to have its own:
+
+Students
+Staff
+Classes
+Academic years
+Fees
+Reports
+Settings
+Users
+Ensure data belonging to one school cannot be accessed by another school.
+
+36. Performance
+The system should remain responsive even with thousands of students and many years of academic records.
+
+Implement:
+
+Database indexing
+Pagination
+Efficient queries
+Lazy loading where appropriate
+Caching where useful
+Optimized API requests
+Background processing for heavy operations such as report generation
+37. Mobile Responsiveness
+The application must work properly on:
+
+Desktop computers
+Laptops
+Tablets
+Android phones
+iPhones
+Teachers should be able to conveniently record attendance and marks from a phone or tablet.
+
+Parents should be able to access their children's information easily from mobile devices.
+
+38. Demo Data
+Include realistic seed/demo data for development and testing.
+
+Create:
+
+One demo school
+Academic year
+Multiple terms
+Several classes
+Multiple subjects
+Teachers
+Students
+Parents
+Attendance records
+Assessment records
+Fee invoices
+Payments
+Announcements
+Create demo accounts for each major role.
+
+Clearly document the demo login credentials in the development documentation.
+
+39. Testing
+Implement appropriate testing.
+
+Include:
+
+Unit tests
+API tests
+Authentication tests
+Authorization tests
+Database tests
+Form validation tests
+Critical workflow tests
+Test important workflows such as:
+
+Student registration
+Parent account creation
+Student enrollment
+Teacher attendance entry
+Teacher marks entry
+Report-card generation
+Fee invoice creation
+Fee payment
+Receipt generation
+Parent viewing student results
+Permission enforcement
+40. Deployment
+Prepare the system for production deployment.
+
+Provide:
+
+Environment configuration
+Database migration scripts
+Seed scripts
+Production build configuration
+Error logging
+Security configuration
+Backup configuration
+Deployment documentation
+Do not expose secrets, passwords, API keys, or database credentials in source code.
+
+41. Important Business Rules
+Implement the following rules:
+
+A student must belong to an academic enrollment/class before academic results can be recorded.
+Teachers can only enter results for classes and subjects assigned to them unless they have elevated permissions.
+Parents can only see students linked to their accounts.
+Students can only see their own records.
+Financial records must maintain an audit trail.
+Deleted financial transactions should preferably be voided/reversed rather than permanently deleted.
+Examination scores must respect the configured maximum marks.
+Attendance records should not be duplicated for the same student, class, and date.
+A student can change classes between terms/academic years while retaining historical records.
+Historical academic records must remain associated with the correct academic year and term.
+Sensitive medical and disciplinary information must have restricted access.
+Users must not be able to bypass role-based permissions through direct API requests.
+42. Final Deliverables
+Deliver a fully functional school management system rather than only a UI mockup.
+
+The final application should include:
+
+Complete frontend
+Complete backend
+Database schema
+Database migrations
+Authentication
+Role-based permissions
+REST/API layer where applicable
+Dashboard
+Student management
+Parent management
+Staff management
+Class and subject management
+Attendance
+Academic assessments
+Report cards
+Timetable
+Fees and payments
+Expenses
+Communication
+Assignments
+Discipline
+Medical records
+Library
+Transport
+Inventory
+Events
+Documents
+Reports
+Notifications
+Audit logs
+Settings
+Backup functionality
+Demo/seed data
+Testing
+Deployment documentation
+Development Instructions
+Before writing code:
+
+Analyze the requirements.
+Design the system architecture.
+Design the database schema and relationships.
+Define the user roles and permissions.
+Plan the API endpoints.
+Plan the frontend navigation and page structure.
+Identify dependencies and third-party integrations.
+Then implement the system module by module.
+Build the application using clean, maintainable, production-ready code.
+
+Do not create fake buttons or non-functional pages. Every major button, form, table, filter, report, and workflow should perform its intended function.
+
+Use reusable components and follow established software engineering best practices.
+
+Where a requirement is ambiguous, choose a sensible, configurable implementation rather than hard-coding assumptions.
+
+The final result should feel like a real production-ready primary school management platform, not a simple demo or prototype.
+
+If you're using this with an AI builder such as Cursor, Lovable, Bolt, Replit, or Claude Code, I can also turn it into a much more technical build prompt specifying the exact tech stack (e.g. React/Next.js + Node/Laravel + PostgreSQL), database schema, API endpoints, page-by-page UI, and development phases.
+
+
+
+You said:
+
+teachers should login with their username and password, pupils/ gurdian should login with their registration number (automatically created by the system on the day they register him/her, so that students get different numbers)  and password
+
+ChatGPT said:
+Yes. That login structure is better for a primary school system. I would add it as a specific authentication requirement so the developer/AI does not accidentally give every user the same login method.
+
+Here is the revised section you can insert into the main prompt:
+
+Writing
+
+
+Authentication and Login Requirements
+Implement secure authentication with different login methods depending on the user type.
+
+1. Teacher and Staff Login
+Teachers and authorized staff must log in using:
+
+Username
+Password
+The username must be unique within the school.
+
+Administrators should be able to:
+
+Create teacher/staff accounts
+Assign usernames
+Reset passwords
+Disable/enable accounts
+Change user roles
+Force a password change when necessary
+Passwords must be securely hashed in the database and must never be stored as plain text.
+
+2. Pupil/Guardian Login
+Pupils and their guardians must log in using:
+
+Registration Number
+Password
+The registration number must be automatically generated by the system when a pupil is first registered.
+
+Registration Number Generation
+When a new pupil is registered, the system must automatically generate a unique registration number.
+
+Requirements:
+
+Every pupil must receive a different registration number.
+Registration numbers must never be duplicated.
+The system, not the user, should generate the registration number.
+The registration number should be generated immediately after successful registration.
+The registration number should remain associated with that pupil throughout their time at the school.
+The registration number should not change when the pupil moves from one class to another or from one academic year to another.
+The registration number should be searchable by administrators and authorized staff.
+The registration number should appear on the pupil's profile, admission documents, invoices, receipts, report cards, and other relevant school documents.
+The registration number should be shown to the guardian after registration.
+The system should allow the school administrator to configure the registration-number format.
+Example Registration Numbers
+The system could generate numbers such as:
+
+STU-2026-0001
+STU-2026-0002
+STU-2026-0003
+STU-2026-0004
+The exact format should be configurable.
+
+For example, the school could configure:
+
+SCH-YYYY-####
+
+where:
+
+SCH = school prefix
+YYYY = year of registration
+#### = automatically incremented unique number
+The system must guarantee uniqueness even when multiple pupils are registered at the same time.
+
+Do not rely only on checking whether a number exists before creating it. Use a database-level unique constraint and a safe transaction/sequence mechanism to prevent duplicate registration numbers.
+
+3. Initial Password
+When a pupil is registered, the system should create the pupil/guardian login account automatically.
+
+The administrator should be able to choose whether:
+
+The system generates a temporary password automatically, or
+The administrator sets an initial password.
+For security, temporary passwords should require the user to change the password after their first successful login.
+
+Never store the password in plain text.
+
+4. Guardian and Pupil Account Relationship
+A guardian account should be able to access the pupil's information using the pupil's registration number and password, according to the school's chosen account policy.
+
+The system should support a guardian having more than one child in the school.
+
+For example:
+
+Guardian account:
+
+Child 1 → STU-2026-0001
+Child 2 → STU-2026-0017
+Child 3 → STU-2026-0042
+The guardian should be able to switch between linked children after logging in, without needing separate accounts for every child, if this account model is enabled by the school.
+
+5. Login Page
+Create a clean login page with a user-type selector or separate login options:
+
+Teacher/Staff
+Username
+Password
+Login
+
+Pupil/Guardian
+Registration Number
+Password
+Login
+
+Include:
+
+Remember me
+Forgot password
+Password visibility toggle
+Clear validation messages
+Account locked/disabled message where appropriate
+Secure logout
+6. Password Recovery
+Provide a secure password-reset process.
+
+Depending on the school's configured communication system, password recovery may use:
+
+Registered phone number
+Registered email address
+Administrator-assisted reset
+Never reveal whether a particular registration number or username exists during password-reset requests.
+
+7. Authentication Security
+Implement:
+
+Secure password hashing
+Session management
+Account lockout/rate limiting after repeated failed attempts
+Secure password-reset tokens
+Session expiration
+Logout from all devices where appropriate
+Role-based authorization
+Server-side permission checks
+Audit logs for login attempts and important authentication events
+A user must never gain access to another pupil's information simply by changing a registration number in the URL or API request.
+
+8. Registration Workflow
+The pupil registration process should work as follows:
+
+Administrator opens Register New Pupil.
+Administrator enters the pupil's personal and guardian information.
+Administrator selects the academic year, class, and other required information.
+Administrator submits the registration form.
+The system validates the information.
+The system generates a unique registration number automatically.
+The system creates the pupil's login account.
+The system creates/links the guardian account according to the school's account configuration.
+The system displays the newly generated registration number.
+The system provides the administrator with a printable/downloadable admission/login information document.
+The pupil is now available throughout the system using the generated registration number.
+The registration event is recorded in the audit log.
+9. Important Rule
+The registration number is the pupil's permanent school identifier, not merely a username.
+
+It must remain unchanged when:
+
+The pupil changes class.
+The pupil changes stream.
+A new academic year begins.
+The pupil moves to another class.
+The pupil receives new report cards.
+New fee records are created.
+If a pupil leaves and later returns to the school, the system should allow the administrator to decide whether to reactivate the existing student record rather than automatically creating a duplicate pupil.
+
+One important design choice: I recommend using the registration number as the pupil's permanent ID, but not necessarily making it the database primary key. The database should have an internal unique student ID, while the registration number is the human-facing identifier. This makes future changes and data integrity much safer

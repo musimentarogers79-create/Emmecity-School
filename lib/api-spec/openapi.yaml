@@ -2,14 +2,28 @@ openapi: 3.1.0
 info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
-  version: 0.1.0
-  description: API specification
+  version: 0.2.0
+  description: SchoolOps API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication and current user
+  - name: dashboard
+    description: Role-aware overview data
+  - name: students
+    description: Student records
+  - name: attendance
+    description: Attendance records and summaries
+  - name: finance
+    description: Fees and payments
+  - name: communication
+    description: Announcements
+  - name: academics
+    description: Timetable and report cards
 paths:
   /healthz:
     get:
@@ -24,7 +38,275 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /auth/login:
+    post:
+      operationId: login
+      tags: [auth]
+      summary: Sign in with a role-specific identifier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+        "401":
+          description: Invalid credentials
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Sign out the current session
+      responses:
+        "200":
+          description: Signed out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags: [auth]
+      summary: Get the current session
+      responses:
+        "200":
+          description: Current session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+        "401":
+          description: Not signed in
+  /dashboard:
+    get:
+      operationId: getDashboard
+      tags: [dashboard]
+      summary: Get role-aware dashboard data
+      responses:
+        "200":
+          description: Dashboard data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Dashboard"
+  /students:
+    get:
+      operationId: listStudents
+      tags: [students]
+      summary: Search and filter students
+      parameters:
+        - name: search
+          in: query
+          schema:
+            type: string
+        - name: className
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive]
+      responses:
+        "200":
+          description: Student list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Student"
+    post:
+      operationId: createStudent
+      tags: [students]
+      summary: Register a pupil and generate a permanent registration number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentInput"
+      responses:
+        "201":
+          description: Registered student
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Student"
+  /students/{studentId}:
+    get:
+      operationId: getStudent
+      tags: [students]
+      summary: Get a student profile
+      parameters:
+        - $ref: "#/components/parameters/StudentId"
+      responses:
+        "200":
+          description: Student profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentProfile"
+        "404":
+          description: Student not found
+  /attendance:
+    get:
+      operationId: getAttendance
+      tags: [attendance]
+      summary: Get attendance for a class and date
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+        - name: className
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Attendance rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttendanceRecord"
+    post:
+      operationId: saveAttendance
+      tags: [attendance]
+      summary: Save daily attendance for one student
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttendanceInput"
+      responses:
+        "200":
+          description: Saved attendance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttendanceRecord"
+  /finance/summary:
+    get:
+      operationId: getFinanceSummary
+      tags: [finance]
+      summary: Get fee collection summary
+      responses:
+        "200":
+          description: Finance summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceSummary"
+  /finance/payments:
+    get:
+      operationId: listPayments
+      tags: [finance]
+      summary: List recent fee payments
+      responses:
+        "200":
+          description: Payment list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Payment"
+    post:
+      operationId: recordPayment
+      tags: [finance]
+      summary: Record a fee payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentInput"
+      responses:
+        "201":
+          description: Recorded payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
+  /announcements:
+    get:
+      operationId: listAnnouncements
+      tags: [communication]
+      summary: List announcements visible to the current role
+      responses:
+        "200":
+          description: Announcement list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Announcement"
+    post:
+      operationId: createAnnouncement
+      tags: [communication]
+      summary: Create a school announcement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnnouncementInput"
+      responses:
+        "201":
+          description: Created announcement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+  /academics/timetable:
+    get:
+      operationId: getTimetable
+      tags: [academics]
+      summary: Get the current user's timetable
+      responses:
+        "200":
+          description: Timetable entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TimetableEntry"
+  /academics/report-cards/{studentId}:
+    get:
+      operationId: getReportCard
+      tags: [academics]
+      summary: Get a student's current term report card
+      parameters:
+        - $ref: "#/components/parameters/StudentId"
+      responses:
+        "200":
+          description: Report card
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportCard"
 components:
+  parameters:
+    StudentId:
+      name: studentId
+      in: path
+      required: true
+      schema:
+        type: string
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +315,392 @@ components:
           type: string
       required:
         - status
+    Message:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+    Role:
+      type: string
+      enum: [super_admin, administrator, teacher, accountant, guardian, student, staff]
+    LoginInput:
+      type: object
+      properties:
+        userType:
+          type: string
+          enum: [staff, learner]
+        identifier:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 1
+      required: [userType, identifier, password]
+    AuthUser:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        identifier:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        initials:
+          type: string
+        schoolName:
+          type: string
+      required: [id, name, identifier, role, initials, schoolName]
+    AuthSession:
+      type: object
+      properties:
+        user:
+          $ref: "#/components/schemas/AuthUser"
+        expiresAt:
+          type: string
+      required: [user, expiresAt]
+    Student:
+      type: object
+      properties:
+        id:
+          type: string
+        registrationNumber:
+          type: string
+        name:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        className:
+          type: string
+        stream:
+          type: string
+        gender:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        attendancePercentage:
+          type: number
+        feeBalance:
+          type: number
+        avatarTone:
+          type: string
+      required: [id, registrationNumber, name, firstName, lastName, className, stream, gender, status, attendancePercentage, feeBalance, avatarTone]
+    StudentInput:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+        middleName:
+          type: string
+        lastName:
+          type: string
+          minLength: 1
+        dateOfBirth:
+          type: string
+        gender:
+          type: string
+        className:
+          type: string
+        stream:
+          type: string
+        guardianName:
+          type: string
+        guardianPhone:
+          type: string
+      required: [firstName, lastName, dateOfBirth, gender, className, stream, guardianName, guardianPhone]
+    StudentProfile:
+      allOf:
+        - $ref: "#/components/schemas/Student"
+        - type: object
+          properties:
+            dateOfBirth:
+              type: string
+            guardianName:
+              type: string
+            guardianPhone:
+              type: string
+            guardianEmail:
+              type: string
+            admissionDate:
+              type: string
+            academicHistory:
+              type: array
+              items:
+                type: object
+                properties:
+                  term:
+                    type: string
+                  average:
+                    type: number
+                  grade:
+                    type: string
+                required: [term, average, grade]
+          required: [dateOfBirth, guardianName, guardianPhone, guardianEmail, admissionDate, academicHistory]
+    AttendanceStatus:
+      type: string
+      enum: [present, absent, late, excused]
+    AttendanceRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        studentId:
+          type: string
+        studentName:
+          type: string
+        registrationNumber:
+          type: string
+        className:
+          type: string
+        date:
+          type: string
+        status:
+          $ref: "#/components/schemas/AttendanceStatus"
+      required: [id, studentId, studentName, registrationNumber, className, date, status]
+    AttendanceInput:
+      type: object
+      properties:
+        studentId:
+          type: string
+        date:
+          type: string
+        status:
+          $ref: "#/components/schemas/AttendanceStatus"
+      required: [studentId, date, status]
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+        receiptNumber:
+          type: string
+        studentName:
+          type: string
+        registrationNumber:
+          type: string
+        amount:
+          type: number
+        method:
+          type: string
+        date:
+          type: string
+        status:
+          type: string
+          enum: [completed, pending, reversed]
+      required: [id, receiptNumber, studentName, registrationNumber, amount, method, date, status]
+    PaymentInput:
+      type: object
+      properties:
+        studentId:
+          type: string
+        amount:
+          type: number
+          minimum: 1
+        method:
+          type: string
+        reference:
+          type: string
+      required: [studentId, amount, method, reference]
+    FinanceSummary:
+      type: object
+      properties:
+        collected:
+          type: number
+        outstanding:
+          type: number
+        collectionRate:
+          type: number
+        trend:
+          type: number
+        monthly:
+          type: array
+          items:
+            type: object
+            properties:
+              month:
+                type: string
+              amount:
+                type: number
+            required: [month, amount]
+      required: [collected, outstanding, collectionRate, trend, monthly]
+    Announcement:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        audience:
+          type: string
+        publishedAt:
+          type: string
+        author:
+          type: string
+        priority:
+          type: string
+          enum: [normal, important]
+      required: [id, title, body, audience, publishedAt, author, priority]
+    AnnouncementInput:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+        body:
+          type: string
+          minLength: 1
+        audience:
+          type: string
+        priority:
+          type: string
+          enum: [normal, important]
+      required: [title, body, audience, priority]
+    TimetableEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        day:
+          type: string
+        time:
+          type: string
+        subject:
+          type: string
+        teacher:
+          type: string
+        className:
+          type: string
+        room:
+          type: string
+        accent:
+          type: string
+      required: [id, day, time, subject, teacher, className, room, accent]
+    ReportCard:
+      type: object
+      properties:
+        student:
+          $ref: "#/components/schemas/Student"
+        term:
+          type: string
+        academicYear:
+          type: string
+        overallAverage:
+          type: number
+        overallGrade:
+          type: string
+        position:
+            type: number
+        teacherComment:
+          type: string
+        subjects:
+          type: array
+          items:
+            type: object
+            properties:
+              subject:
+                type: string
+              score:
+                type: number
+              max:
+                type: number
+              grade:
+                type: string
+              comment:
+                type: string
+            required: [subject, score, max, grade, comment]
+      required: [student, term, academicYear, overallAverage, overallGrade, position, teacherComment, subjects]
+    Dashboard:
+      type: object
+      properties:
+        role:
+          $ref: "#/components/schemas/Role"
+        greeting:
+          type: string
+        summary:
+          type: object
+          properties:
+            students:
+              type: number
+            teachers:
+              type: number
+            staff:
+              type: number
+            classes:
+              type: number
+            attendance:
+              type: number
+            absent:
+              type: number
+            feesCollected:
+              type: number
+            outstandingFees:
+              type: number
+          required: [students, teachers, staff, classes, attendance, absent, feesCollected, outstandingFees]
+        attendanceTrend:
+          type: array
+          items:
+            type: object
+            properties:
+              day:
+                type: string
+              present:
+                type: number
+              absent:
+                type: number
+            required: [day, present, absent]
+        performance:
+          type: array
+          items:
+            type: object
+            properties:
+              subject:
+                type: string
+              average:
+                type: number
+            required: [subject, average]
+        recentAdmissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Student"
+        upcomingEvents:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              date:
+                type: string
+              type:
+                type: string
+            required: [title, date, type]
+        quickActions:
+          type: array
+          items:
+            type: string
+        assignedClasses:
+          type: array
+          items:
+            type: string
+        assignedSubjects:
+          type: array
+          items:
+            type: string
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/Student"
+        feeBalance:
+          type: number
+        latestResult:
+          type: number
+      required: [role, greeting, summary, attendanceTrend, performance, recentAdmissions, upcomingEvents, quickActions]
 

@@ -1,0 +1,1 @@
+- [OpenAPI integer compatibility](openapi-integer-compatibility.md) — this workspace’s generated Zod target may require numeric counts instead of OpenAPI integer schemas.
