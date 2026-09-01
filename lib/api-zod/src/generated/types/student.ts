@@ -5,6 +5,7 @@
  * SchoolOps API
  * OpenAPI spec version: 0.2.0
  */
+import type { StudentEnrollmentType } from './studentEnrollmentType';
 import type { StudentStatus } from './studentStatus';
 
 export interface Student {
@@ -20,4 +21,7 @@ export interface Student {
   attendancePercentage: number;
   feeBalance: number;
   avatarTone: string;
+  enrollmentType: StudentEnrollmentType;
+  termFee: number;
+  amountPaid: number;
 }

@@ -14,4 +14,6 @@ export interface AuthUser {
   role: Role;
   initials: string;
   schoolName: string;
+  /** @nullable */
+  studentId?: string | null;
 }

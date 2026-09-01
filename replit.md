@@ -11,17 +11,14 @@ SchoolOps is a role-aware primary school operations platform for administrators,
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
 
-### Demo accounts
+### Bootstrap account
 
-Use the SchoolOps sign-in page with these development accounts:
+The development workspace starts with only the bootstrap administrator account. No staff,
+pupil, guardian, finance, attendance, or operational records are seeded. The administrator
+creates all other accounts from Operations → People & accounts.
 
-- Administrator: `admin` / `admin123`
-- Teacher: `teacher` / `teach123`
-- Accountant: `accountant` / `account123`
-- Pupil: `STU-2026-0001` / `pupil123`
-- Guardian: `GUARDIAN-001` / `parent123`
-
-The first build uses seeded server-side demo data for the core flows. Persistent PostgreSQL storage, the remaining school modules, and production-grade account hardening are planned follow-ups.
+Pupil and guardian accounts must be linked to a pupil record. Pupil identifiers are permanent
+registration numbers; staff accounts use usernames. Passwords are hashed before storage.
 
 ## Stack
 
@@ -36,7 +33,7 @@ The first build uses seeded server-side demo data for the core flows. Persistent
 
 - `artifacts/school-ops` — responsive SchoolOps web app
 - `artifacts/api-server/src/routes/school.ts` — core school API routes
-- `artifacts/api-server/src/lib/school-data.ts` — demo users, students, attendance, finance, announcements, and timetable data
+- `artifacts/api-server/src/lib/school-data.ts` — bootstrap account, school settings, and runtime school records
 - `lib/api-spec/openapi.yaml` — source-of-truth API contract
 - `artifacts/school-ops/src/pages/school-pages.tsx` — app pages and core workflows
 - `artifacts/school-ops/src/index.css` — SchoolOps visual theme
@@ -46,7 +43,7 @@ The first build uses seeded server-side demo data for the core flows. Persistent
 - The permanent pupil-facing identifier is a generated registration number such as `STU-2026-0001`; it is separate from the internal student record id.
 - Login accepts staff usernames and pupil/guardian registration identifiers through the same role-aware entry point.
 - API contracts are defined in OpenAPI first and generated into the shared React client and Zod validation package.
-- Core first-build workflows use server-side seeded demo data so the UI can be exercised before the persistence layer is expanded.
+- The current runtime starts clean apart from the bootstrap administrator and default UGX school settings; records are created through role-authorized API actions.
 
 ## Product
 

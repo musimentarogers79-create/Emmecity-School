@@ -5,6 +5,7 @@
  * SchoolOps API
  * OpenAPI spec version: 0.2.0
  */
+import type { StudentInputEnrollmentType } from './studentInputEnrollmentType';
 
 export interface StudentInput {
   /** @minLength 1 */
@@ -18,4 +19,11 @@ export interface StudentInput {
   stream: string;
   guardianName: string;
   guardianPhone: string;
+  enrollmentType: StudentInputEnrollmentType;
+  /** @minimum 0 */
+  termFee: number;
+  /** @minimum 0 */
+  initialPayment: number;
+  paymentMethod?: string;
+  paymentReference?: string;
 }

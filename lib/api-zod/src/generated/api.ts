@@ -37,7 +37,8 @@ export const LoginResponse = zod.object({
   "identifier": zod.string(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
-  "schoolName": zod.string()
+  "schoolName": zod.string(),
+  "studentId": zod.string().nullish()
 }),
   "expiresAt": zod.string()
 })
@@ -61,9 +62,39 @@ export const GetCurrentUserResponse = zod.object({
   "identifier": zod.string(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
-  "schoolName": zod.string()
+  "schoolName": zod.string(),
+  "studentId": zod.string().nullish()
 }),
   "expiresAt": zod.string()
+})
+
+
+/**
+ * @summary Create a staff, teacher, accountant, guardian, or pupil account
+ */
+
+
+export const createUserBodyPasswordMin = 8;
+
+
+
+export const CreateUserBody = zod.object({
+  "name": zod.string().min(1),
+  "identifier": zod.string().min(1),
+  "password": zod.string().min(createUserBodyPasswordMin),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
+  "userType": zod.enum(['staff', 'learner']),
+  "studentId": zod.string().nullish()
+})
+
+export const CreateUserResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "identifier": zod.string(),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
+  "initials": zod.string(),
+  "schoolName": zod.string(),
+  "studentId": zod.string().nullish()
 })
 
 
@@ -104,7 +135,10 @@ export const GetDashboardResponse = zod.object({
   "status": zod.enum(['active', 'inactive']),
   "attendancePercentage": zod.number(),
   "feeBalance": zod.number(),
-  "avatarTone": zod.string()
+  "avatarTone": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number()
 })),
   "upcomingEvents": zod.array(zod.object({
   "title": zod.string(),
@@ -126,10 +160,20 @@ export const GetDashboardResponse = zod.object({
   "status": zod.enum(['active', 'inactive']),
   "attendancePercentage": zod.number(),
   "feeBalance": zod.number(),
-  "avatarTone": zod.string()
+  "avatarTone": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number()
 })).optional(),
   "feeBalance": zod.number().optional(),
-  "latestResult": zod.number().optional()
+  "latestResult": zod.number().optional(),
+  "roleActions": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "description": zod.string(),
+  "href": zod.string(),
+  "tone": zod.string()
+}))
 })
 
 
@@ -154,7 +198,10 @@ export const ListStudentsResponseItem = zod.object({
   "status": zod.enum(['active', 'inactive']),
   "attendancePercentage": zod.number(),
   "feeBalance": zod.number(),
-  "avatarTone": zod.string()
+  "avatarTone": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number()
 })
 export const ListStudentsResponse = zod.array(ListStudentsResponseItem)
 
@@ -163,6 +210,10 @@ export const ListStudentsResponse = zod.array(ListStudentsResponseItem)
  * @summary Register a pupil and generate a permanent registration number
  */
 
+
+export const createStudentBodyTermFeeMin = 0;
+
+export const createStudentBodyInitialPaymentMin = 0;
 
 
 
@@ -175,7 +226,12 @@ export const CreateStudentBody = zod.object({
   "className": zod.string(),
   "stream": zod.string(),
   "guardianName": zod.string(),
-  "guardianPhone": zod.string()
+  "guardianPhone": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number().min(createStudentBodyTermFeeMin),
+  "initialPayment": zod.number().min(createStudentBodyInitialPaymentMin),
+  "paymentMethod": zod.string().optional(),
+  "paymentReference": zod.string().optional()
 })
 
 export const CreateStudentResponse = zod.object({
@@ -190,7 +246,10 @@ export const CreateStudentResponse = zod.object({
   "status": zod.enum(['active', 'inactive']),
   "attendancePercentage": zod.number(),
   "feeBalance": zod.number(),
-  "avatarTone": zod.string()
+  "avatarTone": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number()
 })
 
 
@@ -213,7 +272,10 @@ export const GetStudentResponse = zod.object({
   "status": zod.enum(['active', 'inactive']),
   "attendancePercentage": zod.number(),
   "feeBalance": zod.number(),
-  "avatarTone": zod.string()
+  "avatarTone": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number()
 }).and(zod.object({
   "dateOfBirth": zod.string(),
   "guardianName": zod.string(),
@@ -325,6 +387,86 @@ export const RecordPaymentResponse = zod.object({
 
 
 /**
+ * @summary List school expenses
+ */
+export const ListExpensesResponseItem = zod.object({
+  "id": zod.string(),
+  "category": zod.string(),
+  "description": zod.string(),
+  "amount": zod.number(),
+  "date": zod.string(),
+  "status": zod.string()
+})
+export const ListExpensesResponse = zod.array(ListExpensesResponseItem)
+
+
+/**
+ * @summary Add a school expense
+ */
+
+
+
+
+
+export const CreateExpenseBody = zod.object({
+  "category": zod.string().min(1),
+  "description": zod.string().min(1),
+  "amount": zod.number().min(1),
+  "date": zod.string(),
+  "reference": zod.string()
+})
+
+export const CreateExpenseResponse = zod.object({
+  "id": zod.string(),
+  "category": zod.string(),
+  "description": zod.string(),
+  "amount": zod.number(),
+  "date": zod.string(),
+  "status": zod.string()
+})
+
+
+/**
+ * @summary List salary payments
+ */
+export const ListSalariesResponseItem = zod.object({
+  "id": zod.string(),
+  "staffName": zod.string(),
+  "period": zod.string(),
+  "amount": zod.number(),
+  "paymentDate": zod.string(),
+  "method": zod.string(),
+  "status": zod.string()
+})
+export const ListSalariesResponse = zod.array(ListSalariesResponseItem)
+
+
+/**
+ * @summary Record a salary payment
+ */
+
+
+
+export const CreateSalaryPaymentBody = zod.object({
+  "staffId": zod.string(),
+  "period": zod.string(),
+  "amount": zod.number().min(1),
+  "method": zod.string(),
+  "reference": zod.string()
+})
+
+export const CreateSalaryPaymentResponse = zod.object({
+  "id": zod.string(),
+  "staffName": zod.string(),
+  "period": zod.string(),
+  "amount": zod.number(),
+  "paymentDate": zod.string(),
+  "method": zod.string(),
+  "status": zod.string()
+})
+
+
+/**
  * @summary List announcements visible to the current role
  */
 export const ListAnnouncementsResponseItem = zod.object({
@@ -400,7 +542,10 @@ export const GetReportCardResponse = zod.object({
   "status": zod.enum(['active', 'inactive']),
   "attendancePercentage": zod.number(),
   "feeBalance": zod.number(),
-  "avatarTone": zod.string()
+  "avatarTone": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number()
 }),
   "term": zod.string(),
   "academicYear": zod.string(),
@@ -414,6 +559,185 @@ export const GetReportCardResponse = zod.object({
   "max": zod.number(),
   "grade": zod.string(),
   "comment": zod.string()
+}))
+})
+
+
+/**
+ * @summary Get role-filtered school operations
+ */
+export const GetOperationsResponse = zod.object({
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
+  "currencyCode": zod.string(),
+  "currencyName": zod.string(),
+  "currencySymbol": zod.string(),
+  "actions": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "description": zod.string(),
+  "href": zod.string(),
+  "tone": zod.string()
+})),
+  "modules": zod.object({
+  "classes": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "grade": zod.string(),
+  "stream": zod.string(),
+  "teacherName": zod.string(),
+  "pupilCount": zod.number(),
+  "room": zod.string(),
+  "subjectCount": zod.number()
+})),
+  "assignments": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "subject": zod.string(),
+  "className": zod.string(),
+  "dueDate": zod.string(),
+  "status": zod.string(),
+  "teacherName": zod.string()
+})),
+  "staff": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "role": zod.string(),
+  "username": zod.string(),
+  "phone": zod.string(),
+  "status": zod.string()
+})),
+  "parents": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "phone": zod.string(),
+  "children": zod.number()
+})),
+  "expenses": zod.array(zod.object({
+  "id": zod.string(),
+  "category": zod.string(),
+  "description": zod.string(),
+  "amount": zod.number(),
+  "date": zod.string(),
+  "status": zod.string()
+})),
+  "salaries": zod.array(zod.object({
+  "id": zod.string(),
+  "staffName": zod.string(),
+  "period": zod.string(),
+  "amount": zod.number(),
+  "paymentDate": zod.string(),
+  "method": zod.string(),
+  "status": zod.string()
+})),
+  "discipline": zod.array(zod.object({
+  "id": zod.string(),
+  "studentName": zod.string(),
+  "className": zod.string(),
+  "incident": zod.string(),
+  "level": zod.string(),
+  "date": zod.string(),
+  "status": zod.string()
+})),
+  "medical": zod.array(zod.object({
+  "id": zod.string(),
+  "studentName": zod.string(),
+  "className": zod.string(),
+  "condition": zod.string(),
+  "notes": zod.string(),
+  "lastUpdated": zod.string()
+})),
+  "library": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "author": zod.string(),
+  "copiesAvailable": zod.number(),
+  "status": zod.string()
+})),
+  "transport": zod.array(zod.object({
+  "id": zod.string(),
+  "route": zod.string(),
+  "driver": zod.string(),
+  "vehicle": zod.string(),
+  "students": zod.number(),
+  "status": zod.string()
+})),
+  "inventory": zod.array(zod.object({
+  "id": zod.string(),
+  "item": zod.string(),
+  "category": zod.string(),
+  "quantity": zod.number(),
+  "reorderLevel": zod.number(),
+  "status": zod.string()
+})),
+  "events": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "date": zod.string(),
+  "type": zod.string(),
+  "location": zod.string(),
+  "status": zod.string()
+})),
+  "documents": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "type": zod.string(),
+  "updatedAt": zod.string(),
+  "visibility": zod.string()
+})),
+  "reports": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "period": zod.string(),
+  "status": zod.string()
+})),
+  "notifications": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "read": zod.boolean(),
+  "date": zod.string()
+}))
+})
+})
+
+
+/**
+ * @summary Get school settings
+ */
+export const GetSettingsResponse = zod.object({
+  "schoolName": zod.string(),
+  "academicYear": zod.string(),
+  "currencyCode": zod.string(),
+  "currencyName": zod.string(),
+  "currencySymbol": zod.string(),
+  "availableCurrencies": zod.array(zod.object({
+  "code": zod.string(),
+  "name": zod.string(),
+  "symbol": zod.string()
+}))
+})
+
+
+/**
+ * @summary Update school settings
+ */
+export const UpdateSettingsBody = zod.object({
+  "schoolName": zod.string().optional(),
+  "academicYear": zod.string().optional(),
+  "currencyCode": zod.string().optional()
+})
+
+export const UpdateSettingsResponse = zod.object({
+  "schoolName": zod.string(),
+  "academicYear": zod.string(),
+  "currencyCode": zod.string(),
+  "currencyName": zod.string(),
+  "currencySymbol": zod.string(),
+  "availableCurrencies": zod.array(zod.object({
+  "code": zod.string(),
+  "name": zod.string(),
+  "symbol": zod.string()
 }))
 })
 

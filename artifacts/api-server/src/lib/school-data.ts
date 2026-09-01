@@ -16,14 +16,14 @@ export type SchoolUser = {
   name: string;
   identifier: string;
   password: string;
-  userType: "staff" | "learner";
+  userType: "staff" | "guardian" | "learner";
   role: SchoolRole;
   initials: string;
   schoolName: string;
   studentId?: string;
 };
 
-function hashPassword(password: string) {
+export function hashPassword(password: string) {
   const salt = randomBytes(16).toString("hex");
   const hash = scryptSync(password, salt, 64).toString("hex");
   return `${salt}:${hash}`;
@@ -56,6 +56,9 @@ export type SchoolStudent = {
   guardianPhone: string;
   guardianEmail: string;
   admissionDate: string;
+  enrollmentType?: "day" | "boarding";
+  termFee?: number;
+  amountPaid?: number;
 };
 
 export type AttendanceRecord = {
@@ -89,6 +92,144 @@ export type Announcement = {
   priority: "normal" | "important";
 };
 
+export type SchoolClass = {
+  id: string;
+  name: string;
+  grade: string;
+  stream: string;
+  teacherName: string;
+  teacherId: string;
+  pupilCount: number;
+  room: string;
+  subjectCount: number;
+};
+
+export type Assignment = {
+  id: string;
+  title: string;
+  subject: string;
+  className: string;
+  dueDate: string;
+  status: string;
+  teacherName: string;
+};
+
+export type StaffRecord = {
+  id: string;
+  name: string;
+  role: string;
+  username: string;
+  phone: string;
+  status: string;
+};
+
+export type ParentRecord = {
+  id: string;
+  name: string;
+  phone: string;
+  children: number;
+  studentId: string;
+};
+
+export type Expense = {
+  id: string;
+  category: string;
+  description: string;
+  amount: number;
+  date: string;
+  status: string;
+};
+
+export type DisciplineCase = {
+  id: string;
+  studentName: string;
+  className: string;
+  incident: string;
+  level: string;
+  date: string;
+  status: string;
+  studentId: string;
+};
+
+export type MedicalRecord = {
+  id: string;
+  studentName: string;
+  className: string;
+  condition: string;
+  notes: string;
+  lastUpdated: string;
+  studentId: string;
+};
+
+export type LibraryItem = {
+  id: string;
+  title: string;
+  author: string;
+  copiesAvailable: number;
+  status: string;
+};
+
+export type TransportRoute = {
+  id: string;
+  route: string;
+  driver: string;
+  vehicle: string;
+  students: number;
+  status: string;
+};
+
+export type InventoryItem = {
+  id: string;
+  item: string;
+  category: string;
+  quantity: number;
+  reorderLevel: number;
+  status: string;
+};
+
+export type SchoolEvent = {
+  id: string;
+  title: string;
+  date: string;
+  type: string;
+  location: string;
+  status: string;
+};
+
+export type DocumentRecord = {
+  id: string;
+  name: string;
+  type: string;
+  updatedAt: string;
+  visibility: string;
+};
+
+export type ReportRecord = {
+  id: string;
+  title: string;
+  description: string;
+  period: string;
+  status: string;
+};
+
+export type NotificationRecord = {
+  id: string;
+  title: string;
+  body: string;
+  read: boolean;
+  date: string;
+};
+
+export type SalaryPayment = {
+  id: string;
+  staffName: string;
+  period: string;
+  amount: number;
+  paymentDate: string;
+  method: string;
+  status: string;
+};
+
 const now = new Date();
 const today = now.toISOString().slice(0, 10);
 const todayLabel = now.toLocaleDateString("en-GB", {
@@ -100,13 +241,13 @@ const todayLabel = now.toLocaleDateString("en-GB", {
 export const users: SchoolUser[] = [
   {
     id: "usr-admin",
-    name: "Amara Njeri",
+    name: "School administrator",
     identifier: "admin",
     password: hashPassword("admin123"),
     userType: "staff",
     role: "administrator",
-    initials: "AN",
-    schoolName: "Greenfield Primary School",
+    initials: "SA",
+    schoolName: "School name",
   },
   {
     id: "usr-teacher",
@@ -361,6 +502,138 @@ export const timetable = [
   { id: "tt-6", day: "Friday", time: "09:00–09:40", subject: "Physical Education", teacher: "David Otieno", className: "Primary 4 East", room: "Field", accent: "rose" },
 ];
 
+export const classes: SchoolClass[] = [
+  { id: "class-4-east", name: "Primary 4 East", grade: "Primary 4", stream: "East", teacherId: "usr-teacher", teacherName: "David Otieno", pupilCount: 28, room: "Room 4", subjectCount: 8 },
+  { id: "class-5-west", name: "Primary 5 West", grade: "Primary 5", stream: "West", teacherId: "usr-teacher", teacherName: "David Otieno", pupilCount: 31, room: "Room 5", subjectCount: 8 },
+  { id: "class-3-north", name: "Primary 3 North", grade: "Primary 3", stream: "North", teacherId: "usr-other-teacher", teacherName: "Lucy Wanjala", pupilCount: 26, room: "Room 3", subjectCount: 8 },
+  { id: "class-6-east", name: "Primary 6 East", grade: "Primary 6", stream: "East", teacherId: "usr-other-teacher", teacherName: "Mercy Achieng", pupilCount: 24, room: "Room 6", subjectCount: 8 },
+];
+
+export const assignments: Assignment[] = [
+  { id: "assignment-1", title: "Fractions practice", subject: "Mathematics", className: "Primary 4 East", dueDate: "04 Sep 2026", status: "Open", teacherName: "David Otieno" },
+  { id: "assignment-2", title: "The water cycle poster", subject: "Science", className: "Primary 5 West", dueDate: "08 Sep 2026", status: "Open", teacherName: "David Otieno" },
+  { id: "assignment-3", title: "Reading journal", subject: "English", className: "Primary 4 East", dueDate: "10 Sep 2026", status: "Draft", teacherName: "Lucy Wanjala" },
+];
+
+export const subjects = [
+  { id: "subject-math", name: "Mathematics", teacherId: "usr-teacher" },
+  { id: "subject-science", name: "Science", teacherId: "usr-teacher" },
+  { id: "subject-english", name: "English", teacherId: "usr-other-teacher" },
+  { id: "subject-social", name: "Social Studies", teacherId: "usr-other-teacher" },
+];
+
+export const staffRecords: StaffRecord[] = [
+  { id: "usr-admin", name: "School administrator", role: "Administrator", username: "admin", phone: "Not provided", status: "Active" },
+  { id: "usr-teacher", name: "David Otieno", role: "Teacher", username: "teacher", phone: "+256 700 111 002", status: "Active" },
+  { id: "usr-accountant", name: "Grace Wambui", role: "Accountant", username: "accountant", phone: "+256 700 111 003", status: "Active" },
+  { id: "staff-transport", name: "Joseph Kato", role: "Driver", username: "j.kato", phone: "+256 700 111 004", status: "Active" },
+];
+
+export const parents: ParentRecord[] = [
+  { id: "parent-001", name: "Wanjiku Kamau", phone: "+256 701 234 001", children: 1, studentId: "stu-001" },
+  { id: "parent-002", name: "Peter Mwangi", phone: "+256 701 234 002", children: 1, studentId: "stu-002" },
+  { id: "parent-003", name: "Esther Wambui", phone: "+256 701 234 003", children: 1, studentId: "stu-003" },
+];
+
+export const expenses: Expense[] = [
+  { id: "expense-001", category: "Utilities", description: "August electricity bill", amount: 480000, date: "28 Aug 2026", status: "Approved" },
+  { id: "expense-002", category: "Learning materials", description: "Exercise books and art supplies", amount: 735000, date: "25 Aug 2026", status: "Approved" },
+  { id: "expense-003", category: "Maintenance", description: "Classroom window repairs", amount: 210000, date: "21 Aug 2026", status: "Pending approval" },
+];
+
+export const disciplineCases: DisciplineCase[] = [
+  { id: "discipline-001", studentId: "stu-004", studentName: "Daniel Ochieng", className: "Primary 3 North", incident: "Repeated late arrival", level: "Low", date: "29 Aug 2026", status: "Open" },
+  { id: "discipline-002", studentId: "stu-002", studentName: "Brian Mwangi", className: "Primary 4 East", incident: "Excellent peer leadership", level: "Positive", date: "27 Aug 2026", status: "Recorded" },
+];
+
+export const medicalRecords: MedicalRecord[] = [
+  { id: "medical-001", studentId: "stu-001", studentName: "Amani Kamau", className: "Primary 4 East", condition: "Asthma", notes: "Inhaler stored with the school office.", lastUpdated: "18 Aug 2026" },
+  { id: "medical-002", studentId: "stu-005", studentName: "Ethan Kariuki", className: "Primary 6 East", condition: "Food allergy", notes: "Avoid peanuts at school events.", lastUpdated: "12 Aug 2026" },
+];
+
+export const libraryItems: LibraryItem[] = [
+  { id: "book-001", title: "The River Between", author: "Ngũgĩ wa Thiong'o", copiesAvailable: 6, status: "Available" },
+  { id: "book-002", title: "Oxford Primary Atlas", author: "Oxford", copiesAvailable: 2, status: "Low stock" },
+  { id: "book-003", title: "A Child's Garden of Verses", author: "Robert Louis Stevenson", copiesAvailable: 9, status: "Available" },
+];
+
+export const transportRoutes: TransportRoute[] = [
+  { id: "route-001", route: "Kira – Ntinda", driver: "Joseph Kato", vehicle: "UAX 204K · Bus 01", students: 18, status: "On route" },
+  { id: "route-002", route: "Bukoto – Kololo", driver: "Sarah Namusoke", vehicle: "UBF 918L · Bus 02", students: 14, status: "At school" },
+];
+
+export const inventoryItems: InventoryItem[] = [
+  { id: "inventory-001", item: "Exercise books", category: "Learning materials", quantity: 480, reorderLevel: 150, status: "Healthy" },
+  { id: "inventory-002", item: "Whiteboard markers", category: "Classroom", quantity: 42, reorderLevel: 50, status: "Reorder soon" },
+  { id: "inventory-003", item: "First aid kits", category: "Health & safety", quantity: 8, reorderLevel: 4, status: "Healthy" },
+];
+
+export const schoolEvents: SchoolEvent[] = [
+  { id: "event-001", title: "Term 3 begins", date: "07 Sep 2026", type: "Academic", location: "All classrooms", status: "Upcoming" },
+  { id: "event-002", title: "Parents' forum", date: "12 Sep 2026", type: "Community", location: "Main hall", status: "Upcoming" },
+  { id: "event-003", title: "Inter-house sports", date: "19 Sep 2026", type: "Activities", location: "School field", status: "Planning" },
+];
+
+export const documents: DocumentRecord[] = [
+  { id: "document-001", name: "Term 3 academic calendar", type: "PDF", updatedAt: "30 Aug 2026", visibility: "Entire school" },
+  { id: "document-002", name: "Safeguarding policy", type: "PDF", updatedAt: "14 Aug 2026", visibility: "Staff only" },
+  { id: "document-003", name: "Transport routes and pickup points", type: "Spreadsheet", updatedAt: "10 Aug 2026", visibility: "Guardians & staff" },
+];
+
+export const reports: ReportRecord[] = [
+  { id: "report-001", title: "Term 2 academic performance", description: "Class and subject performance overview", period: "Term 2 2026", status: "Ready" },
+  { id: "report-002", title: "August fee collection", description: "Collected, outstanding, and payment method breakdown", period: "August 2026", status: "Ready" },
+  { id: "report-003", title: "Attendance exceptions", description: "Learners below the 90% attendance threshold", period: "Term 3 2026", status: "Draft" },
+];
+
+export const notifications: NotificationRecord[] = [
+  { id: "notification-001", title: "Term 3 timetable published", body: "Your timetable and room assignments are ready to review.", read: false, date: "30 Aug 2026" },
+  { id: "notification-002", title: "Parents' forum reminder", body: "The next forum is scheduled for 12 September in the main hall.", read: false, date: "29 Aug 2026" },
+  { id: "notification-003", title: "Fee statement available", body: "A new statement is available for your linked learner.", read: true, date: "26 Aug 2026" },
+];
+
+export const currencyOptions = [
+  { code: "UGX", name: "Ugandan Shilling", symbol: "UGX" },
+  { code: "KES", name: "Kenyan Shilling", symbol: "KES" },
+  { code: "TZS", name: "Tanzanian Shilling", symbol: "TZS" },
+  { code: "USD", name: "US Dollar", symbol: "$" },
+  { code: "GBP", name: "British Pound", symbol: "£" },
+];
+
+export const schoolSettings = {
+  schoolName: "School name",
+  academicYear: "2026",
+  currencyCode: "UGX",
+  currencyName: "Ugandan Shilling",
+  currencySymbol: "UGX",
+};
+
+export const salaryPayments: SalaryPayment[] = [];
+
+// The workspace starts with only the bootstrap administrator. All other
+// records are created by authorized users from the application.
+users.splice(1);
+students.splice(0);
+attendance.splice(0);
+payments.splice(0);
+announcements.splice(0);
+timetable.splice(0);
+classes.splice(0);
+assignments.splice(0);
+subjects.splice(0);
+staffRecords.splice(1);
+parents.splice(0);
+expenses.splice(0);
+disciplineCases.splice(0);
+medicalRecords.splice(0);
+libraryItems.splice(0);
+transportRoutes.splice(0);
+inventoryItems.splice(0);
+schoolEvents.splice(0);
+documents.splice(0);
+reports.splice(0);
+notifications.splice(0);
+
 export const sessionStore = new Map<string, string>();
 
 export function publicUser(user: SchoolUser) {
@@ -371,6 +644,7 @@ export function publicUser(user: SchoolUser) {
     role: user.role,
     initials: user.initials,
     schoolName: user.schoolName,
+    studentId: user.studentId ?? null,
   };
 }
 

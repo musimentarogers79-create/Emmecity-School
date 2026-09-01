@@ -5,6 +5,7 @@
  * SchoolOps API
  * OpenAPI spec version: 0.2.0
  */
+import type { DashboardAction } from './dashboardAction';
 import type { DashboardAttendanceTrendItem } from './dashboardAttendanceTrendItem';
 import type { DashboardPerformanceItem } from './dashboardPerformanceItem';
 import type { DashboardSummary } from './dashboardSummary';
@@ -26,4 +27,5 @@ export interface Dashboard {
   children?: Student[];
   feeBalance?: number;
   latestResult?: number;
+  roleActions: DashboardAction[];
 }

@@ -24,6 +24,10 @@ tags:
     description: Announcements
   - name: academics
     description: Timetable and report cards
+  - name: operations
+    description: Role-filtered school operations
+  - name: settings
+    description: School configuration
 paths:
   /healthz:
     get:
@@ -84,6 +88,26 @@ paths:
                 $ref: "#/components/schemas/AuthSession"
         "401":
           description: Not signed in
+  /users:
+    post:
+      operationId: createUser
+      tags: [auth]
+      summary: Create a staff, teacher, accountant, guardian, or pupil account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserAccountInput"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "403":
+          description: Administrator access required
   /dashboard:
     get:
       operationId: getDashboard
@@ -240,6 +264,68 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Payment"
+  /finance/expenses:
+    get:
+      operationId: listExpenses
+      tags: [finance]
+      summary: List school expenses
+      responses:
+        "200":
+          description: Expense list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OperationExpense"
+    post:
+      operationId: createExpense
+      tags: [finance]
+      summary: Add a school expense
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExpenseInput"
+      responses:
+        "201":
+          description: Expense created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationExpense"
+  /finance/salaries:
+    get:
+      operationId: listSalaries
+      tags: [finance]
+      summary: List salary payments
+      responses:
+        "200":
+          description: Salary payments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SalaryPayment"
+    post:
+      operationId: createSalaryPayment
+      tags: [finance]
+      summary: Record a salary payment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SalaryPaymentInput"
+      responses:
+        "201":
+          description: Salary payment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SalaryPayment"
   /announcements:
     get:
       operationId: listAnnouncements
@@ -299,6 +385,51 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReportCard"
+  /operations:
+    get:
+      operationId: getOperations
+      tags: [operations]
+      summary: Get role-filtered school operations
+      responses:
+        "200":
+          description: Operations visible to the current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationsOverview"
+        "401":
+          description: Not signed in
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get school settings
+      responses:
+        "200":
+          description: Current school settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchoolSettings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      summary: Update school settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SchoolSettingsUpdate"
+      responses:
+        "200":
+          description: Updated school settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SchoolSettings"
+        "403":
+          description: Administrator access required
 components:
   parameters:
     StudentId:
@@ -352,7 +483,29 @@ components:
           type: string
         schoolName:
           type: string
+        studentId:
+          type: ["string", "null"]
       required: [id, name, identifier, role, initials, schoolName]
+    UserAccountInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        identifier:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 8
+        role:
+          $ref: "#/components/schemas/Role"
+        userType:
+          type: string
+          enum: [staff, learner]
+        studentId:
+          type: ["string", "null"]
+      required: [name, identifier, password, role, userType]
     AuthSession:
       type: object
       properties:
@@ -389,7 +542,14 @@ components:
           type: number
         avatarTone:
           type: string
-      required: [id, registrationNumber, name, firstName, lastName, className, stream, gender, status, attendancePercentage, feeBalance, avatarTone]
+        enrollmentType:
+          type: string
+          enum: [day, boarding]
+        termFee:
+          type: number
+        amountPaid:
+          type: number
+      required: [id, registrationNumber, name, firstName, lastName, className, stream, gender, status, attendancePercentage, feeBalance, avatarTone, enrollmentType, termFee, amountPaid]
     StudentInput:
       type: object
       properties:
@@ -413,7 +573,20 @@ components:
           type: string
         guardianPhone:
           type: string
-      required: [firstName, lastName, dateOfBirth, gender, className, stream, guardianName, guardianPhone]
+        enrollmentType:
+          type: string
+          enum: [day, boarding]
+        termFee:
+          type: number
+          minimum: 0
+        initialPayment:
+          type: number
+          minimum: 0
+        paymentMethod:
+          type: string
+        paymentReference:
+          type: string
+      required: [firstName, lastName, dateOfBirth, gender, className, stream, guardianName, guardianPhone, enrollmentType, termFee, initialPayment]
     StudentProfile:
       allOf:
         - $ref: "#/components/schemas/Student"
@@ -507,6 +680,56 @@ components:
         reference:
           type: string
       required: [studentId, amount, method, reference]
+    ExpenseInput:
+      type: object
+      properties:
+        category:
+          type: string
+          minLength: 1
+        description:
+          type: string
+          minLength: 1
+        amount:
+          type: number
+          minimum: 1
+        date:
+          type: string
+        reference:
+          type: string
+      required: [category, description, amount, date, reference]
+    SalaryPayment:
+      type: object
+      properties:
+        id:
+          type: string
+        staffName:
+          type: string
+        period:
+          type: string
+        amount:
+          type: number
+        paymentDate:
+          type: string
+        method:
+          type: string
+        status:
+          type: string
+      required: [id, staffName, period, amount, paymentDate, method, status]
+    SalaryPaymentInput:
+      type: object
+      properties:
+        staffId:
+          type: string
+        period:
+          type: string
+        amount:
+          type: number
+          minimum: 1
+        method:
+          type: string
+        reference:
+          type: string
+      required: [staffId, period, amount, method, reference]
     FinanceSummary:
       type: object
       properties:
@@ -702,5 +925,380 @@ components:
           type: number
         latestResult:
           type: number
-      required: [role, greeting, summary, attendanceTrend, performance, recentAdmissions, upcomingEvents, quickActions]
+        roleActions:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardAction"
+      required: [role, greeting, summary, attendanceTrend, performance, recentAdmissions, upcomingEvents, quickActions, roleActions]
+    DashboardAction:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        href:
+          type: string
+        tone:
+          type: string
+      required: [id, label, description, href, tone]
+    OperationClass:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        grade:
+          type: string
+        stream:
+          type: string
+        teacherName:
+          type: string
+        pupilCount:
+          type: number
+        room:
+          type: string
+        subjectCount:
+          type: number
+      required: [id, name, grade, stream, teacherName, pupilCount, room, subjectCount]
+    OperationAssignment:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        subject:
+          type: string
+        className:
+          type: string
+        dueDate:
+          type: string
+        status:
+          type: string
+        teacherName:
+          type: string
+      required: [id, title, subject, className, dueDate, status, teacherName]
+    OperationStaff:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        username:
+          type: string
+        phone:
+          type: string
+        status:
+          type: string
+      required: [id, name, role, username, phone, status]
+    OperationParent:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        phone:
+          type: string
+        children:
+          type: number
+      required: [id, name, phone, children]
+    OperationExpense:
+      type: object
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+        description:
+          type: string
+        amount:
+          type: number
+        date:
+          type: string
+        status:
+          type: string
+      required: [id, category, description, amount, date, status]
+    OperationSalary:
+      type: object
+      properties:
+        id:
+          type: string
+        staffName:
+          type: string
+        period:
+          type: string
+        amount:
+          type: number
+        paymentDate:
+          type: string
+        method:
+          type: string
+        status:
+          type: string
+      required: [id, staffName, period, amount, paymentDate, method, status]
+    OperationDiscipline:
+      type: object
+      properties:
+        id:
+          type: string
+        studentName:
+          type: string
+        className:
+          type: string
+        incident:
+          type: string
+        level:
+          type: string
+        date:
+          type: string
+        status:
+          type: string
+      required: [id, studentName, className, incident, level, date, status]
+    OperationMedical:
+      type: object
+      properties:
+        id:
+          type: string
+        studentName:
+          type: string
+        className:
+          type: string
+        condition:
+          type: string
+        notes:
+          type: string
+        lastUpdated:
+          type: string
+      required: [id, studentName, className, condition, notes, lastUpdated]
+    OperationLibrary:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        author:
+          type: string
+        copiesAvailable:
+          type: number
+        status:
+          type: string
+      required: [id, title, author, copiesAvailable, status]
+    OperationTransport:
+      type: object
+      properties:
+        id:
+          type: string
+        route:
+          type: string
+        driver:
+          type: string
+        vehicle:
+          type: string
+        students:
+          type: number
+        status:
+          type: string
+      required: [id, route, driver, vehicle, students, status]
+    OperationInventory:
+      type: object
+      properties:
+        id:
+          type: string
+        item:
+          type: string
+        category:
+          type: string
+        quantity:
+          type: number
+        reorderLevel:
+          type: number
+        status:
+          type: string
+      required: [id, item, category, quantity, reorderLevel, status]
+    OperationEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        date:
+          type: string
+        type:
+          type: string
+        location:
+          type: string
+        status:
+          type: string
+      required: [id, title, date, type, location, status]
+    OperationDocument:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        updatedAt:
+          type: string
+        visibility:
+          type: string
+      required: [id, name, type, updatedAt, visibility]
+    OperationReport:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        period:
+          type: string
+        status:
+          type: string
+      required: [id, title, description, period, status]
+    OperationNotification:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        read:
+          type: boolean
+        date:
+          type: string
+      required: [id, title, body, read, date]
+    OperationModules:
+      type: object
+      properties:
+        classes:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationClass"
+        assignments:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationAssignment"
+        staff:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationStaff"
+        parents:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationParent"
+        expenses:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationExpense"
+        salaries:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationSalary"
+        discipline:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationDiscipline"
+        medical:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationMedical"
+        library:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationLibrary"
+        transport:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationTransport"
+        inventory:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationInventory"
+        events:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationEvent"
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationDocument"
+        reports:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationReport"
+        notifications:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationNotification"
+      required: [classes, assignments, staff, parents, expenses, salaries, discipline, medical, library, transport, inventory, events, documents, reports, notifications]
+    OperationsOverview:
+      type: object
+      properties:
+        role:
+          $ref: "#/components/schemas/Role"
+        currencyCode:
+          type: string
+        currencyName:
+          type: string
+        currencySymbol:
+          type: string
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardAction"
+        modules:
+          $ref: "#/components/schemas/OperationModules"
+      required: [role, currencyCode, currencyName, currencySymbol, actions, modules]
+    CurrencyOption:
+      type: object
+      properties:
+        code:
+          type: string
+        name:
+          type: string
+        symbol:
+          type: string
+      required: [code, name, symbol]
+    SchoolSettings:
+      type: object
+      properties:
+        schoolName:
+          type: string
+        academicYear:
+          type: string
+        currencyCode:
+          type: string
+        currencyName:
+          type: string
+        currencySymbol:
+          type: string
+        availableCurrencies:
+          type: array
+          items:
+            $ref: "#/components/schemas/CurrencyOption"
+      required: [schoolName, academicYear, currencyCode, currencyName, currencySymbol, availableCurrencies]
+    SchoolSettingsUpdate:
+      type: object
+      properties:
+        schoolName:
+          type: string
+        academicYear:
+          type: string
+        currencyCode:
+          type: string
 

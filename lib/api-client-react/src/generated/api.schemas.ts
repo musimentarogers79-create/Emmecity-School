@@ -49,6 +49,29 @@ export interface AuthUser {
   role: Role;
   initials: string;
   schoolName: string;
+  /** @nullable */
+  studentId?: string | null;
+}
+
+export type UserAccountInputUserType = typeof UserAccountInputUserType[keyof typeof UserAccountInputUserType];
+
+
+export const UserAccountInputUserType = {
+  staff: 'staff',
+  learner: 'learner',
+} as const;
+
+export interface UserAccountInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  identifier: string;
+  /** @minLength 8 */
+  password: string;
+  role: Role;
+  userType: UserAccountInputUserType;
+  /** @nullable */
+  studentId?: string | null;
 }
 
 export interface AuthSession {
@@ -64,6 +87,14 @@ export const StudentStatus = {
   inactive: 'inactive',
 } as const;
 
+export type StudentEnrollmentType = typeof StudentEnrollmentType[keyof typeof StudentEnrollmentType];
+
+
+export const StudentEnrollmentType = {
+  day: 'day',
+  boarding: 'boarding',
+} as const;
+
 export interface Student {
   id: string;
   registrationNumber: string;
@@ -77,7 +108,18 @@ export interface Student {
   attendancePercentage: number;
   feeBalance: number;
   avatarTone: string;
+  enrollmentType: StudentEnrollmentType;
+  termFee: number;
+  amountPaid: number;
 }
+
+export type StudentInputEnrollmentType = typeof StudentInputEnrollmentType[keyof typeof StudentInputEnrollmentType];
+
+
+export const StudentInputEnrollmentType = {
+  day: 'day',
+  boarding: 'boarding',
+} as const;
 
 export interface StudentInput {
   /** @minLength 1 */
@@ -91,6 +133,13 @@ export interface StudentInput {
   stream: string;
   guardianName: string;
   guardianPhone: string;
+  enrollmentType: StudentInputEnrollmentType;
+  /** @minimum 0 */
+  termFee: number;
+  /** @minimum 0 */
+  initialPayment: number;
+  paymentMethod?: string;
+  paymentReference?: string;
 }
 
 export type StudentProfileAcademicHistoryItem = {
@@ -156,6 +205,36 @@ export interface Payment {
 
 export interface PaymentInput {
   studentId: string;
+  /** @minimum 1 */
+  amount: number;
+  method: string;
+  reference: string;
+}
+
+export interface ExpenseInput {
+  /** @minLength 1 */
+  category: string;
+  /** @minLength 1 */
+  description: string;
+  /** @minimum 1 */
+  amount: number;
+  date: string;
+  reference: string;
+}
+
+export interface SalaryPayment {
+  id: string;
+  staffName: string;
+  period: string;
+  amount: number;
+  paymentDate: string;
+  method: string;
+  status: string;
+}
+
+export interface SalaryPaymentInput {
+  staffId: string;
+  period: string;
   /** @minimum 1 */
   amount: number;
   method: string;
@@ -268,6 +347,14 @@ export type DashboardUpcomingEventsItem = {
   type: string;
 };
 
+export interface DashboardAction {
+  id: string;
+  label: string;
+  description: string;
+  href: string;
+  tone: string;
+}
+
 export interface Dashboard {
   role: Role;
   greeting: string;
@@ -282,6 +369,189 @@ export interface Dashboard {
   children?: Student[];
   feeBalance?: number;
   latestResult?: number;
+  roleActions: DashboardAction[];
+}
+
+export interface OperationClass {
+  id: string;
+  name: string;
+  grade: string;
+  stream: string;
+  teacherName: string;
+  pupilCount: number;
+  room: string;
+  subjectCount: number;
+}
+
+export interface OperationAssignment {
+  id: string;
+  title: string;
+  subject: string;
+  className: string;
+  dueDate: string;
+  status: string;
+  teacherName: string;
+}
+
+export interface OperationStaff {
+  id: string;
+  name: string;
+  role: string;
+  username: string;
+  phone: string;
+  status: string;
+}
+
+export interface OperationParent {
+  id: string;
+  name: string;
+  phone: string;
+  children: number;
+}
+
+export interface OperationExpense {
+  id: string;
+  category: string;
+  description: string;
+  amount: number;
+  date: string;
+  status: string;
+}
+
+export interface OperationSalary {
+  id: string;
+  staffName: string;
+  period: string;
+  amount: number;
+  paymentDate: string;
+  method: string;
+  status: string;
+}
+
+export interface OperationDiscipline {
+  id: string;
+  studentName: string;
+  className: string;
+  incident: string;
+  level: string;
+  date: string;
+  status: string;
+}
+
+export interface OperationMedical {
+  id: string;
+  studentName: string;
+  className: string;
+  condition: string;
+  notes: string;
+  lastUpdated: string;
+}
+
+export interface OperationLibrary {
+  id: string;
+  title: string;
+  author: string;
+  copiesAvailable: number;
+  status: string;
+}
+
+export interface OperationTransport {
+  id: string;
+  route: string;
+  driver: string;
+  vehicle: string;
+  students: number;
+  status: string;
+}
+
+export interface OperationInventory {
+  id: string;
+  item: string;
+  category: string;
+  quantity: number;
+  reorderLevel: number;
+  status: string;
+}
+
+export interface OperationEvent {
+  id: string;
+  title: string;
+  date: string;
+  type: string;
+  location: string;
+  status: string;
+}
+
+export interface OperationDocument {
+  id: string;
+  name: string;
+  type: string;
+  updatedAt: string;
+  visibility: string;
+}
+
+export interface OperationReport {
+  id: string;
+  title: string;
+  description: string;
+  period: string;
+  status: string;
+}
+
+export interface OperationNotification {
+  id: string;
+  title: string;
+  body: string;
+  read: boolean;
+  date: string;
+}
+
+export interface OperationModules {
+  classes: OperationClass[];
+  assignments: OperationAssignment[];
+  staff: OperationStaff[];
+  parents: OperationParent[];
+  expenses: OperationExpense[];
+  salaries: OperationSalary[];
+  discipline: OperationDiscipline[];
+  medical: OperationMedical[];
+  library: OperationLibrary[];
+  transport: OperationTransport[];
+  inventory: OperationInventory[];
+  events: OperationEvent[];
+  documents: OperationDocument[];
+  reports: OperationReport[];
+  notifications: OperationNotification[];
+}
+
+export interface OperationsOverview {
+  role: Role;
+  currencyCode: string;
+  currencyName: string;
+  currencySymbol: string;
+  actions: DashboardAction[];
+  modules: OperationModules;
+}
+
+export interface CurrencyOption {
+  code: string;
+  name: string;
+  symbol: string;
+}
+
+export interface SchoolSettings {
+  schoolName: string;
+  academicYear: string;
+  currencyCode: string;
+  currencyName: string;
+  currencySymbol: string;
+  availableCurrencies: CurrencyOption[];
+}
+
+export interface SchoolSettingsUpdate {
+  schoolName?: string;
+  academicYear?: string;
+  currencyCode?: string;
 }
 
 export type ListStudentsParams = {

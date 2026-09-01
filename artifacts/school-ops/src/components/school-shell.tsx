@@ -2,16 +2,73 @@ import { type ReactNode, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetCurrentUserQueryKey, useGetCurrentUser, useLogout } from '@workspace/api-client-react';
-import { BookOpen, CalendarDays, ChevronDown, CircleDollarSign, GraduationCap, LayoutDashboard, LogOut, Menu, Megaphone, PanelLeftClose, PanelLeftOpen, Search, Settings, ShieldCheck, UserRound, Users, X } from 'lucide-react';
+import { BookOpen, CalendarDays, ChevronDown, CircleDollarSign, ClipboardList, FileBarChart, GraduationCap, LayoutDashboard, LogOut, Menu, Megaphone, PanelLeftClose, PanelLeftOpen, ReceiptText, Search, Settings, ShieldCheck, UserRound, Users, X } from 'lucide-react';
 
-const navItems = [
-  { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-  { href: '/students', label: 'Students', icon: Users },
-  { href: '/attendance', label: 'Attendance', icon: CalendarDays },
-  { href: '/finance', label: 'Finance', icon: CircleDollarSign },
-  { href: '/announcements', label: 'Announcements', icon: Megaphone },
-  { href: '/timetable', label: 'My timetable', icon: BookOpen },
-];
+type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
+const roleNavigation: Record<string, NavItem[]> = {
+  administrator: [
+    { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/students', label: 'Students', icon: Users },
+    { href: '/attendance', label: 'Attendance', icon: CalendarDays },
+    { href: '/finance', label: 'Finance', icon: CircleDollarSign },
+    { href: '/operations?view=classes', label: 'Operations', icon: ClipboardList },
+    { href: '/announcements', label: 'Announcements', icon: Megaphone },
+    { href: '/timetable', label: 'Timetable', icon: BookOpen },
+  ],
+  super_admin: [
+    { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/students', label: 'Students', icon: Users },
+    { href: '/attendance', label: 'Attendance', icon: CalendarDays },
+    { href: '/finance', label: 'Finance', icon: CircleDollarSign },
+    { href: '/operations?view=classes', label: 'Operations', icon: ClipboardList },
+    { href: '/announcements', label: 'Announcements', icon: Megaphone },
+    { href: '/timetable', label: 'Timetable', icon: BookOpen },
+  ],
+  teacher: [
+    { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/operations?view=classes', label: 'My classes', icon: Users },
+    { href: '/attendance', label: 'Attendance', icon: CalendarDays },
+    { href: '/operations?view=assignments', label: 'Assignments', icon: ClipboardList },
+    { href: '/announcements', label: 'Announcements', icon: Megaphone },
+    { href: '/timetable', label: 'Timetable', icon: BookOpen },
+  ],
+  accountant: [
+    { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/finance', label: 'Finance', icon: CircleDollarSign },
+    { href: '/operations?view=expenses', label: 'Expenses', icon: ReceiptText },
+    { href: '/operations?view=reports', label: 'Reports', icon: FileBarChart },
+    { href: '/announcements', label: 'Announcements', icon: Megaphone },
+  ],
+  guardian: [
+    { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/students/stu-001', label: 'My child', icon: UserRound },
+    { href: '/operations?view=assignments', label: 'Assignments', icon: ClipboardList },
+    { href: '/timetable', label: 'Timetable', icon: BookOpen },
+    { href: '/students/stu-001', label: 'Report card', icon: FileBarChart },
+    { href: '/announcements', label: 'Announcements', icon: Megaphone },
+    { href: '/operations?view=library', label: 'Library', icon: BookOpen },
+    { href: '/operations?view=transport', label: 'Transport', icon: ReceiptText },
+    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
+  ],
+  student: [
+    { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/students/stu-001', label: 'My learning', icon: UserRound },
+    { href: '/operations?view=assignments', label: 'Assignments', icon: ClipboardList },
+    { href: '/timetable', label: 'Timetable', icon: BookOpen },
+    { href: '/students/stu-001', label: 'Report card', icon: FileBarChart },
+    { href: '/announcements', label: 'Announcements', icon: Megaphone },
+    { href: '/operations?view=library', label: 'Library', icon: BookOpen },
+    { href: '/operations?view=transport', label: 'Transport', icon: ReceiptText },
+    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
+  ],
+  staff: [
+    { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
+    { href: '/operations?view=documents', label: 'Documents', icon: FileBarChart },
+    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
+    { href: '/timetable', label: 'Timetable', icon: BookOpen },
+  ],
+};
 
 function Initials({ name, className = '' }: { name: string; className?: string }) {
   const initials = name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'SO';
@@ -40,6 +97,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   const user = session?.user;
   const displayName = user?.name || 'School administrator';
   const roleLabel = (user?.role || 'administrator').replace('_', ' ');
+  const navItems = (roleNavigation[user?.role || 'staff'] || roleNavigation.staff).map((item) => {
+    if ((user?.role === 'guardian' || user?.role === 'student') && user.studentId && item.href.includes('/students/stu-001')) {
+      return { ...item, href: item.href.replace('/students/stu-001', `/students/${user.studentId}`) };
+    }
+    return item;
+  });
 
   const handleLogout = () => {
     logout.mutate(undefined, { onSettled: () => { client.removeQueries({ queryKey: getGetCurrentUserQueryKey() }); setLocation('/'); } });
@@ -72,7 +135,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>;
           })}
           <p className={`mb-3 mt-8 px-3 text-[10px] font-semibold uppercase tracking-[.18em] text-[hsl(var(--sidebar-foreground)/.42)] ${collapsed ? 'md:hidden' : ''}`}>School</p>
-          <Link href="/settings" onClick={() => setMobileOpen(false)} data-testid="link-nav-settings" className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[hsl(var(--sidebar-foreground)/.68)] transition-colors hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-foreground))] ${location === '/settings' ? 'bg-[hsl(var(--sidebar-primary))] font-semibold text-[hsl(var(--sidebar-primary-foreground))]' : ''} ${collapsed ? 'md:justify-center md:px-2' : ''}`}><Settings className="size-[18px] shrink-0" /><span className={collapsed ? 'md:hidden' : ''}>Settings</span></Link>
+          {(user?.role === 'administrator' || user?.role === 'super_admin') && <Link href="/settings" onClick={() => setMobileOpen(false)} data-testid="link-nav-settings" className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[hsl(var(--sidebar-foreground)/.68)] transition-colors hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-foreground))] ${location === '/settings' ? 'bg-[hsl(var(--sidebar-primary))] font-semibold text-[hsl(var(--sidebar-primary-foreground))]' : ''} ${collapsed ? 'md:justify-center md:px-2' : ''}`}><Settings className="size-[18px] shrink-0" /><span className={collapsed ? 'md:hidden' : ''}>Settings</span></Link>}
         </nav>
         <div className={`border-t border-[hsl(var(--sidebar-border))] p-3 ${collapsed ? 'md:px-2' : ''}`}>
           <div className={`mb-2 flex items-center gap-2 px-3 py-2 text-[11px] text-[hsl(var(--sidebar-foreground)/.48)] ${collapsed ? 'md:hidden' : ''}`}><ShieldCheck className="size-3.5 text-[hsl(var(--accent))]" /> Secure school workspace</div>
