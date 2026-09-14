@@ -134,10 +134,20 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const visibleStudents = user.studentId ? allStudents.filter((item) => item.id === user.studentId) : user.role === "teacher" ? allStudents.filter((item) => teacherClasses.includes(`${item.className} ${item.stream}`)) : allStudents;
   const visibleAttendance = user.studentId ? allAttendance.filter((item) => item.studentId === user.studentId) : user.role === "teacher" ? allAttendance.filter((item) => teacherClasses.includes(item.className)) : allAttendance;
   const present = visibleAttendance.filter((item) => item.status === "present").length;
+  const trendDates = [...new Set(visibleAttendance.map((item) => item.date))].sort().slice(-7);
+  const attendanceTrend = trendDates.map((date) => {
+    const dayRecords = visibleAttendance.filter((item) => item.date === date);
+    const total = dayRecords.length || 1;
+    return {
+      day: new Date(`${date}T00:00:00`).toLocaleDateString("en-GB", { weekday: "short" }),
+      present: Math.round((dayRecords.filter((item) => item.status === "present").length / total) * 100),
+      absent: Math.round((dayRecords.filter((item) => item.status === "absent").length / total) * 100),
+    };
+  });
   const payload = {
     role: user.role, greeting: roleGreeting(user.name),
     summary: { students: visibleStudents.length, teachers: classesRows.length, staff: 0, classes: classesRows.length, attendance: visibleAttendance.length ? Math.round((present / visibleAttendance.length) * 100) : 0, absent: visibleAttendance.filter((item) => item.status === "absent").length, feesCollected: isAdministrator(user) || user.role === "accountant" ? allPayments.reduce((sum, item) => sum + item.amount, 0) : 0, outstandingFees: visibleStudents.reduce((sum, item) => sum + item.feeBalance, 0) },
-    attendanceTrend: [], performance: [], recentAdmissions: visibleStudents.slice(0, 4), upcomingEvents: [], quickActions: ["Register pupil", "Take attendance", "Send announcement", "View reports"],
+    attendanceTrend, performance: [], recentAdmissions: visibleStudents.slice(0, 4), upcomingEvents: [], quickActions: ["Register pupil", "Take attendance", "Send announcement", "View reports"],
     assignedClasses: user.role === "teacher" ? teacherClasses : undefined, assignedSubjects: user.role === "teacher" ? subjectsRows.filter((item) => item.teacherId === user.id).map((item) => String(item.name)) : undefined,
     children: user.role === "guardian" ? visibleStudents : undefined, feeBalance: user.role === "guardian" || user.role === "student" ? visibleStudents[0]?.feeBalance ?? 0 : undefined, latestResult: user.role === "guardian" || user.role === "student" ? 0 : undefined,
     roleActions: roleActions(user.role, user.studentId), currencyCode: settings.currencyCode, currencySymbol: settings.currencySymbol,
