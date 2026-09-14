@@ -24,6 +24,11 @@ export type SchoolStudent = {
 export type AttendanceRecord = { id: string; studentId: string; studentName: string; registrationNumber: string; className: string; date: string; status: AttendanceStatus; arrivalTime?: string | null };
 export type Payment = { id: string; studentId: string; receiptNumber: string; studentName: string; registrationNumber: string; amount: number; method: string; date: string; status: "completed" | "pending" | "reversed"; balance: number };
 export type OperationRecord = Record<string, unknown> & { id: string };
+export const classAssignmentKey = (name: string, stream?: string | null) => {
+  const normalizedName = name.trim();
+  const normalizedStream = String(stream ?? "").trim();
+  return normalizedStream ? `${normalizedName} ${normalizedStream}` : normalizedName;
+};
 
 const SCHOOL_NAME = "EMMECTY NURSERY & PRIMARY SCHOOL";
 const CURRENCIES = [
@@ -108,7 +113,7 @@ export async function listUsers() {
   const classRows = await listOperation("classes");
   return rows.filter((row) => row.schoolId === setting.id).map((row) => {
     const user = publicRow(row, setting);
-    return user.role === "teacher" ? { ...user, assignedClasses: classRows.filter((item) => item.teacherId === user.id).map((item) => String(item.name)) } : user;
+    return user.role === "teacher" ? { ...user, assignedClasses: classRows.filter((item) => item.teacherId === user.id).map((item) => classAssignmentKey(String(item.name), String(item.stream ?? ""))) } : user;
   });
 }
 export async function findUser(identifier: string, userType: string) {
@@ -146,7 +151,7 @@ export async function createUser(data: {
   if (data.role === "teacher" && data.assignedClasses?.length) {
     const classRows = await listOperation("classes");
     await Promise.all(classRows
-      .filter((item) => data.assignedClasses?.includes(String(item.name)))
+      .filter((item) => data.assignedClasses?.includes(classAssignmentKey(String(item.name), String(item.stream ?? ""))))
       .map((item) => updateOperation("classes", item.id, { ...item, teacherId: row.id, teacherName: data.name })));
   }
   return publicRow(row, await getSchoolSettings());
@@ -175,7 +180,7 @@ export async function updateUserPermissions(userId: string, permissions: Permiss
   if (row.role === "teacher" && assignedClasses !== undefined) {
     const classRows = await listOperation("classes");
     await Promise.all(classRows.map((item) => {
-      const isAssigned = assignedClasses.includes(String(item.name));
+      const isAssigned = assignedClasses.includes(classAssignmentKey(String(item.name), String(item.stream ?? "")));
       if (item.teacherId === row.id && !isAssigned) return updateOperation("classes", item.id, { ...item, teacherId: null, teacherName: "Unassigned" });
       if (isAssigned) return updateOperation("classes", item.id, { ...item, teacherId: row.id, teacherName: row.name });
       return undefined;
@@ -183,7 +188,7 @@ export async function updateUserPermissions(userId: string, permissions: Permiss
   }
   const setting = await getSchoolSettings();
   const user = publicRow(row, setting);
-  return row.role === "teacher" ? { ...user, assignedClasses: (await listOperation("classes")).filter((item) => item.teacherId === row.id).map((item) => String(item.name)) } : user;
+  return row.role === "teacher" ? { ...user, assignedClasses: (await listOperation("classes")).filter((item) => item.teacherId === row.id).map((item) => classAssignmentKey(String(item.name), String(item.stream ?? ""))) } : user;
 }
 
 const tokenDigest = (token: string) => createHash("sha256").update(token).digest("hex");
@@ -400,8 +405,8 @@ export async function createClass(data: { name: string; grade: string; stream: s
   const room = data.room.trim();
   if (!name || !grade || !stream || !room) throw new Error("Complete the class name, grade, stream, and room.");
   const existing = await listOperation("classes");
-  if (existing.some((item) => String(item.name).trim().toLowerCase() === name.toLowerCase())) {
-    throw new Error("A class with that name already exists.");
+  if (existing.some((item) => classAssignmentKey(String(item.name), String(item.stream ?? "")).toLowerCase() === classAssignmentKey(name, stream).toLowerCase())) {
+    throw new Error("A class with that name and stream already exists.");
   }
   const teacher = data.teacherId ? await findUserById(data.teacherId) : undefined;
   if (data.teacherId && (!teacher || teacher.role !== "teacher")) throw new Error("Choose a registered teacher to assign to this class.");
@@ -452,7 +457,14 @@ export async function listAttendance() {
 
 export async function createAttendanceRegister(className: string, date: string) {
   const schoolId = await getSchoolId();
-  const classStudents = (await db.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.className, className), eq(students.status, "active")))).map(studentRow);
+  const classRow = (await listOperation("classes")).find((item) => classAssignmentKey(String(item.name), String(item.stream ?? "")) === className);
+  const classFilter = classRow ? [String(classRow.name), String(classRow.stream ?? "")] : [className, ""];
+  const classStudents = (await db.select().from(students).where(and(
+    eq(students.schoolId, schoolId),
+    eq(students.className, classFilter[0]),
+    ...(classFilter[1] ? [eq(students.stream, classFilter[1])] : []),
+    eq(students.status, "active"),
+  ))).map(studentRow);
   const created = await Promise.all(classStudents.map(async (student) => {
     const row = (await db.insert(attendance).values({
       schoolId, studentId: student.id, date, status: "present", arrivalTime: null,

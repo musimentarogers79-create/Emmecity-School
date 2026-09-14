@@ -10,7 +10,7 @@ import {
   UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse, UpdateUserPermissionsBody, UpdateUserPermissionsResponse,
 } from "@workspace/api-zod";
 import {
-  AttendanceStatus, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, createUser, currentUserFromToken,
+  AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, createUser, currentUserFromToken,
   clearLoginFailures, deleteSession, findUser, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
   listAttendance, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance,
   deleteOperation, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserPermissions, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
@@ -114,7 +114,7 @@ router.post("/users", async (req, res): Promise<void> => {
     const assignedClasses = parsed.data.assignedClasses ?? [];
     if (!assignedClasses.length) { errorResponse(res, 400, "Assign at least one class before registering a teacher."); return; }
     const classRows = await listOperation("classes");
-    const availableClasses = new Set(classRows.map((item) => String(item.name)));
+    const availableClasses = new Set(classRows.map((item) => classAssignmentKey(String(item.name), String(item.stream ?? ""))));
     if (assignedClasses.some((className) => !availableClasses.has(className))) { errorResponse(res, 400, "Choose only existing classes when registering a teacher."); return; }
   }
   try {
@@ -391,7 +391,7 @@ router.get("/operations", async (req, res): Promise<void> => {
       : isAdministrator(user)
         ? students
         : [];
-  const visibleClasses = user.role === "teacher" ? data.classes.filter((item) => matchesAssignedClass(assigned, String(item.name))) : data.classes;
+  const visibleClasses = user.role === "teacher" ? data.classes.filter((item) => matchesAssignedClass(assigned, String(item.name), String(item.stream ?? ""))) : data.classes;
   const studentIds = new Set(linked.map((item) => item.id));
   const linkedClasses = new Set(linked.map((item) => `${item.className} ${item.stream}`));
   const documentRows = data.documents.map((item) => {
