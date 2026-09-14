@@ -1,4 +1,4 @@
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetCurrentUserQueryKey, useGetCurrentUser, useLogout } from '@workspace/api-client-react';
@@ -6,11 +6,6 @@ import { BookOpen, CalendarDays, ChevronDown, CircleDollarSign, ClipboardList, F
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
 export const SCHOOL_NAME = 'EMMECTY NURSERY & PRIMARY SCHOOL';
-const pupilizeVisibleText = (value: string) => value
-  .replace(/\bStudents\b/g, 'Pupils')
-  .replace(/\bstudents\b/g, 'pupils')
-  .replace(/\bStudent\b/g, 'Pupil')
-  .replace(/\bstudent\b/g, 'pupil');
 const roleNavigation: Record<string, NavItem[]> = {
   administrator: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -105,33 +100,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
     return item;
   });
-
-  useEffect(() => {
-    const translate = (node: Node) => {
-      if (node.nodeType === Node.TEXT_NODE && node.nodeValue) {
-        const translated = pupilizeVisibleText(node.nodeValue);
-        if (translated !== node.nodeValue) node.nodeValue = translated;
-        return;
-      }
-      if (node.nodeType !== Node.ELEMENT_NODE) return;
-      const element = node as HTMLElement;
-      for (const attribute of ['placeholder', 'aria-label', 'title']) {
-        const value = element.getAttribute(attribute);
-        if (value) {
-          const translated = pupilizeVisibleText(value);
-          if (translated !== value) element.setAttribute(attribute, translated);
-        }
-      }
-      node.childNodes.forEach(translate);
-    };
-    translate(document.body);
-    const observer = new MutationObserver((mutations) => mutations.forEach((mutation) => {
-      if (mutation.type === 'characterData') translate(mutation.target);
-      mutation.addedNodes.forEach(translate);
-    }));
-    observer.observe(document.body, { childList: true, characterData: true, subtree: true });
-    return () => observer.disconnect();
-  }, []);
 
   const handleLogout = () => {
     logout.mutate(undefined, { onSettled: () => { client.removeQueries({ queryKey: getGetCurrentUserQueryKey() }); setLocation('/'); } });
