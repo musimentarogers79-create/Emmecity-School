@@ -1,6 +1,6 @@
-# SchoolOps
+# EMMECTY School Management System
 
-SchoolOps is a role-aware primary school operations platform for administrators, teachers, accountants, guardians, and pupils.
+This is a role-aware school management platform for EMMECTY NURSERY & PRIMARY SCHOOL.
 
 ## Run & Operate
 
@@ -31,13 +31,13 @@ registration numbers; staff accounts use usernames. Passwords are hashed before 
 
 ## Where things live
 
-- `artifacts/school-ops` — responsive SchoolOps web app
+- `artifacts/school-ops` — responsive school management web app
 - `artifacts/api-server/src/routes/school.ts` — core school API routes
 - `artifacts/api-server/src/lib/school-data.ts` — PostgreSQL/Drizzle repositories, bootstrap account, and school settings
-- `lib/db/src/schema/index.ts` — PostgreSQL schema for all SchoolOps domains and hashed sessions
+- `lib/db/src/schema/index.ts` — PostgreSQL schema for all school domains and hashed sessions
 - `lib/api-spec/openapi.yaml` — source-of-truth API contract
 - `artifacts/school-ops/src/pages/school-pages.tsx` — app pages and core workflows
-- `artifacts/school-ops/src/index.css` — SchoolOps visual theme
+- `artifacts/school-ops/src/index.css` — school visual theme
 
 ## Architecture decisions
 

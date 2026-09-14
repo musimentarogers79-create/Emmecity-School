@@ -77,15 +77,14 @@ const roleNavigation: Record<string, NavItem[]> = {
 };
 
 function Initials({ name, className = '' }: { name: string; className?: string }) {
-  const initials = name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'SO';
+  const initials = name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'EN';
   return <span className={`inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--accent))] text-xs font-bold text-[hsl(var(--accent-foreground))] ${className}`} data-testid="avatar-user">{initials}</span>;
 }
 
 export function SchoolMark({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="flex items-center gap-3" data-testid="brand-schoolops">
-      <img src="/corenexa-systems-logo.png" alt="Corenexa Systems company logo" className={`shrink-0 object-contain ${compact ? 'h-10 w-12' : 'h-12 w-32 sm:w-36'}`} />
-      {!compact && <span className="font-display text-xl tracking-tight">School<span className="text-[hsl(var(--accent))]">Ops</span></span>}
+    <div className="flex items-center gap-3 opacity-95" data-testid="brand-corenexa">
+      <img src="/corenexa-systems-logo-transparent.png" alt="Corenexa Systems" className={`shrink-0 object-contain ${compact ? 'h-7' : 'h-9 sm:h-10'}`} />
     </div>
   );
 }
@@ -110,14 +109,18 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     const translate = (node: Node) => {
       if (node.nodeType === Node.TEXT_NODE && node.nodeValue) {
-        node.nodeValue = pupilizeVisibleText(node.nodeValue);
+        const translated = pupilizeVisibleText(node.nodeValue);
+        if (translated !== node.nodeValue) node.nodeValue = translated;
         return;
       }
       if (node.nodeType !== Node.ELEMENT_NODE) return;
       const element = node as HTMLElement;
       for (const attribute of ['placeholder', 'aria-label', 'title']) {
         const value = element.getAttribute(attribute);
-        if (value) element.setAttribute(attribute, pupilizeVisibleText(value));
+        if (value) {
+          const translated = pupilizeVisibleText(value);
+          if (translated !== value) element.setAttribute(attribute, translated);
+        }
       }
       node.childNodes.forEach(translate);
     };
@@ -176,7 +179,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           <div className="flex items-center gap-3">
             <button onClick={() => setMobileOpen(true)} className="rounded-lg p-2 hover:bg-[hsl(var(--muted))] md:hidden" data-testid="button-open-mobile-nav"><Menu className="size-5" /></button>
             <button onClick={() => setCollapsed(!collapsed)} className="hidden rounded-lg p-2 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] md:block" data-testid="button-toggle-sidebar">{collapsed ? <PanelLeftOpen className="size-5" /> : <PanelLeftClose className="size-5" />}</button>
-            <div className="hidden items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2 text-xs text-[hsl(var(--muted-foreground))] lg:flex"><Search className="size-3.5" /><span>Search SchoolOps</span><kbd className="ml-5 rounded bg-[hsl(var(--muted))] px-1.5 py-0.5 font-mono text-[10px]">⌘ K</kbd></div>
+            <div className="hidden items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2 text-xs text-[hsl(var(--muted-foreground))] lg:flex"><Search className="size-3.5" /><span>Search Emmecty</span><kbd className="ml-5 rounded bg-[hsl(var(--muted))] px-1.5 py-0.5 font-mono text-[10px]">⌘ K</kbd></div>
           </div>
           <div className="flex items-center gap-3">
             <Link href="/settings" data-testid="link-header-profile" className="group flex items-center gap-2.5 rounded-xl p-1.5 pr-2 transition-colors hover:bg-[hsl(var(--muted))]"><Initials name={displayName} className="size-8" /><span className="hidden text-left sm:block"><span className="block max-w-[140px] truncate text-xs font-semibold">{displayName}</span><span className="block text-[10px] capitalize text-[hsl(var(--muted-foreground))]">{roleLabel}</span></span></Link>
@@ -189,7 +192,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 }
 
 export function PageHeader({ eyebrow, title, description, action }: { eyebrow?: string; title: string; description?: string; action?: ReactNode }) {
-  return <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end animate-rise-in"><div><p className="mb-2 font-mono-ui text-[10px] font-semibold uppercase tracking-[.2em] text-[hsl(var(--primary))]">{eyebrow || 'SchoolOps'}</p><h1 className="font-display text-4xl leading-none tracking-[-.035em] text-[hsl(var(--foreground))] md:text-5xl" data-testid="text-page-title">{title}</h1>{description && <p className="mt-3 max-w-2xl text-sm leading-6 text-[hsl(var(--muted-foreground))]" data-testid="text-page-description">{description}</p>}</div>{action && <div className="shrink-0">{action}</div>}</div>;
+  return <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end animate-rise-in"><div><p className="mb-2 font-mono-ui text-[10px] font-semibold uppercase tracking-[.2em] text-[hsl(var(--primary))]">{eyebrow || SCHOOL_NAME}</p><h1 className="font-display text-4xl leading-none tracking-[-.035em] text-[hsl(var(--foreground))] md:text-5xl" data-testid="text-page-title">{title}</h1>{description && <p className="mt-3 max-w-2xl text-sm leading-6 text-[hsl(var(--muted-foreground))]" data-testid="text-page-description">{description}</p>}</div>{action && <div className="shrink-0">{action}</div>}</div>;
 }
 
 export function Button({ children, onClick, variant = 'primary', type = 'button', disabled = false, className = '', testId = 'button-action' }: { children: ReactNode; onClick?: () => void; variant?: 'primary' | 'secondary' | 'quiet' | 'danger'; type?: 'button' | 'submit'; disabled?: boolean; className?: string; testId?: string }) {

@@ -85,12 +85,12 @@
   --card: 40 42% 99%;
   --card-foreground: 222 31% 18%;
   --card-border: 38 22% 86%;
-  --sidebar: 219 36% 19%;
+  --sidebar: 161 40% 16%;
   --sidebar-foreground: 40 42% 96%;
-  --sidebar-border: 219 28% 29%;
+  --sidebar-border: 161 30% 24%;
   --sidebar-primary: 43 88% 68%;
-  --sidebar-primary-foreground: 222 31% 18%;
-  --sidebar-accent: 219 29% 27%;
+  --sidebar-primary-foreground: 161 40% 16%;
+  --sidebar-accent: 161 30% 22%;
   --sidebar-accent-foreground: 40 42% 98%;
   --sidebar-ring: 43 88% 68%;
   --popover: 40 42% 99%;
@@ -206,12 +206,12 @@
   --card: 222 28% 17%;
   --card-foreground: 40 42% 96%;
   --card-border: 219 21% 28%;
-  --sidebar: 222 32% 10%;
+  --sidebar: 161 40% 10%;
   --sidebar-foreground: 40 42% 96%;
-  --sidebar-border: 219 21% 22%;
+  --sidebar-border: 161 30% 18%;
   --sidebar-primary: 43 88% 68%;
-  --sidebar-primary-foreground: 222 31% 18%;
-  --sidebar-accent: 219 29% 21%;
+  --sidebar-primary-foreground: 161 40% 10%;
+  --sidebar-accent: 161 30% 15%;
   --sidebar-accent-foreground: 40 42% 98%;
   --sidebar-ring: 43 88% 68%;
   --popover: 222 28% 17%;
@@ -392,8 +392,8 @@
 .animate-soft-pulse { animation: soft-pulse 1.8s ease-in-out infinite; }
 .delay-1 { animation-delay: 70ms; } .delay-2 { animation-delay: 140ms; } .delay-3 { animation-delay: 210ms; } .delay-4 { animation-delay: 280ms; }
 .app-grid { background-image: linear-gradient(to right, hsl(var(--border) / .28) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border) / .28) 1px, transparent 1px); background-size: 26px 26px; }
-.soft-shadow { box-shadow: 0 14px 34px hsl(219 36% 19% / .07), 0 2px 5px hsl(219 36% 19% / .04); }
-.sidebar-shadow { box-shadow: 16px 0 38px hsl(219 36% 19% / .06); }
+.soft-shadow { box-shadow: 0 14px 34px hsl(161 40% 16% / .07), 0 2px 5px hsl(161 40% 16% / .04); }
+.sidebar-shadow { box-shadow: 16px 0 38px hsl(161 40% 16% / .06); }
 .font-display { font-family: var(--app-font-serif); }
 .font-mono-ui { font-family: var(--app-font-mono); }
 .focus-ring:focus-visible { outline: 3px solid hsl(var(--accent) / .7); outline-offset: 3px; }

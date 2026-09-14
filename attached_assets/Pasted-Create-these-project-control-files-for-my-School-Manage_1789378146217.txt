@@ -1,0 +1,117 @@
+Create these project-control files for my School Management System. Keep them short, clear, and updated. Do not create unnecessary files.
+
+1. PRD.md
+Contains WHAT the system is:
+- System purpose and goals
+- Target users/roles
+- Main features/modules
+- User requirements
+- Functional requirements
+- Security and performance requirements
+- Important school business rules
+
+2. Architecture-essential.md
+Contains HOW the system is built:
+- Technology stack
+- Frontend/backend/database architecture
+- Folder structure
+- Database structure and relationships
+- Authentication and role permissions
+- API structure
+- Security rules
+- Coding patterns
+- Mobile/responsive rules
+- Technologies/patterns to use or avoid
+- Rules for safe database changes
+
+3. Agents.md
+Contains HOW AI AGENTS must work:
+- Inspect existing code before editing
+- Read project documentation first
+- Never randomly rewrite working code
+- Never delete features/data without permission
+- Search before creating duplicate files/functions
+- Modify only necessary files
+- Test every change
+- Fix errors before continuing
+- Protect database and secrets
+- Do not modify unrelated modules
+- Document important changes
+
+Required workflow:
+INSPECT → PLAN → MODIFY → TEST → VERIFY → DOCUMENT
+
+4. Claude.md
+Contains PROJECT-SPECIFIC CODING INSTRUCTIONS:
+- Project overview
+- Technology stack
+- Important commands
+- Coding conventions
+- Naming conventions
+- UI/UX rules
+- API rules
+- Database rules
+- Authentication/security rules
+- Testing rules
+- Deployment rules
+- Important warnings
+
+5. docs/DATABASE.md
+Contains the DATABASE BLUEPRINT:
+- Database technology
+- Tables and their purpose
+- Important fields
+- Primary/foreign keys
+- Table relationships
+- Unique fields
+- Indexes
+- Student, teacher, parent, class, subject, attendance, exams, results, fees, payments and other important data structures
+- Database migration rules
+- Backup/data-safety rules
+- Rules against deleting or breaking existing data
+
+6. README.md
+Contains BASIC PROJECT INFORMATION:
+- What the system does
+- Technology used
+- How to install/run it
+- Environment variables required
+- How to test
+- How to deploy
+- Basic project structure
+
+7. .env.example
+Contains ONLY the names of required environment variables, such as:
+DATABASE_URL=
+JWT_SECRET=
+SESSION_SECRET=
+EMAIL_USER=
+EMAIL_PASSWORD=
+PAYMENT_SECRET_KEY=
+
+Never put real passwords or API keys here.
+
+8. .gitignore
+Must protect:
+.env
+node_modules/
+logs
+build/dist files
+private uploads
+database backups
+other sensitive/generated files
+
+IMPORTANT RULE:
+Before making major changes, AI must read:
+PRD.md
+Architecture-essential.md
+Agents.md
+Claude.md
+docs/DATABASE.md
+
+For an existing project, inspect the current code/database first. Do NOT recreate, replace, or delete the existing database or working features.
+
+Priority:
+DATA SAFETY → SECURITY → STABILITY → MAINTAINABILITY → NEW FEATURES.
+
+Create these files first, then report what was created and what each file contains.
