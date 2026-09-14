@@ -46,11 +46,25 @@ export interface AuthUser {
   id: string;
   name: string;
   identifier: string;
+  email: string;
+  phone: string;
   role: Role;
   initials: string;
   schoolName: string;
   /** @nullable */
   studentId?: string | null;
+}
+
+export interface UserProfileUpdate {
+  /** @minLength 1 */
+  name?: string;
+  /** @minLength 1 */
+  identifier?: string;
+  email?: string;
+  phone?: string;
+  currentPassword?: string;
+  /** @minLength 8 */
+  newPassword?: string;
 }
 
 export type UserAccountInputUserType = typeof UserAccountInputUserType[keyof typeof UserAccountInputUserType];

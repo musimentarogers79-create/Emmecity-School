@@ -135,6 +135,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>;
           })}
           <p className={`mb-3 mt-8 px-3 text-[10px] font-semibold uppercase tracking-[.18em] text-[hsl(var(--sidebar-foreground)/.42)] ${collapsed ? 'md:hidden' : ''}`}>School</p>
+          <Link href="/profile" onClick={() => setMobileOpen(false)} data-testid="link-nav-profile" className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[hsl(var(--sidebar-foreground)/.82)] transition-colors hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-foreground))] ${location === '/profile' ? 'bg-[hsl(var(--sidebar-primary))] font-semibold text-[hsl(var(--sidebar-primary-foreground))]' : ''} ${collapsed ? 'md:justify-center md:px-2' : ''}`}><UserRound className="size-[18px] shrink-0" /><span className={collapsed ? 'md:hidden' : ''}>My profile</span></Link>
           {(user?.role === 'administrator' || user?.role === 'super_admin') && <Link href="/settings" onClick={() => setMobileOpen(false)} data-testid="link-nav-settings" className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[hsl(var(--sidebar-foreground)/.68)] transition-colors hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-foreground))] ${location === '/settings' ? 'bg-[hsl(var(--sidebar-primary))] font-semibold text-[hsl(var(--sidebar-primary-foreground))]' : ''} ${collapsed ? 'md:justify-center md:px-2' : ''}`}><Settings className="size-[18px] shrink-0" /><span className={collapsed ? 'md:hidden' : ''}>Settings</span></Link>}
         </nav>
         <div className={`border-t border-[hsl(var(--sidebar-border))] p-3 ${collapsed ? 'md:px-2' : ''}`}>
@@ -150,7 +151,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="hidden items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2 text-xs text-[hsl(var(--muted-foreground))] lg:flex"><Search className="size-3.5" /><span>Search Emmecty</span><kbd className="ml-5 rounded bg-[hsl(var(--muted))] px-1.5 py-0.5 font-mono text-[10px]">⌘ K</kbd></div>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/settings" data-testid="link-header-profile" className="group flex items-center gap-2.5 rounded-xl p-1.5 pr-2 transition-colors hover:bg-[hsl(var(--muted))]"><Initials name={displayName} className="size-8" /><span className="hidden text-left sm:block"><span className="block max-w-[140px] truncate text-xs font-semibold">{displayName}</span><span className="block text-[10px] capitalize text-[hsl(var(--muted-foreground))]">{roleLabel}</span></span></Link>
+            <Link href="/profile" data-testid="link-header-profile" className="group flex items-center gap-2.5 rounded-xl p-1.5 pr-2 transition-colors hover:bg-[hsl(var(--muted))]"><Initials name={displayName} className="size-8" /><span className="hidden text-left sm:block"><span className="block max-w-[140px] truncate text-xs font-semibold">{displayName}</span><span className="block text-[10px] capitalize text-[hsl(var(--muted-foreground))]">{roleLabel}</span></span></Link>
           </div>
         </header>
         <main className="app-grid flex-1 overflow-x-hidden"><div className="mx-auto w-full max-w-[1480px] p-5 md:p-8">{children}</div></main>

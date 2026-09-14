@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { OperationsPage } from '@/pages/operations-page';
+import { ProfilePage } from '@/pages/profile-page';
 import {
   AnnouncementsPage,
   AttendancePage,
@@ -41,6 +42,7 @@ function Router() {
         <Route path="/timetable" component={TimetablePage} />
         <Route path="/operations" component={OperationsPage} />
         <Route path="/settings" component={SettingsPage} />
+        <Route path="/profile" component={ProfilePage} />
         <Route component={NotFound} />
       </Switch>
     </RoutedErrorBoundary>

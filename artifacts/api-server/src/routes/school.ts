@@ -7,13 +7,13 @@ import {
   GetStudentResponse, GetTimetableResponse, ListAnnouncementsResponse, ListExpensesResponse, ListPaymentsResponse,
   ListSalariesResponse, ListStudentsQueryParams, ListStudentsResponse, LoginBody, LoginResponse, LogoutResponse,
   RecordPaymentBody, RecordPaymentResponse, SaveAttendanceBody, SaveAttendanceResponse, GetSettingsResponse,
-  UpdateSettingsBody, UpdateSettingsResponse,
+  UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse,
 } from "@workspace/api-zod";
 import {
   AttendanceStatus, consumeLoginAttempt, currencyOptions, createOperation, createStudentWithPayment, createUser, currentUserFromToken,
   clearLoginFailures, deleteSession, findUser, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
   listAttendance, listOperation, listPayments, listStudents, makeSession, publicUser, recordPayment, saveAttendance,
-  updateSchoolSettings, updateStudentBalance, verifyPassword, type OperationKind, type OperationRecord, type SchoolRole, type SchoolUser,
+  updateSchoolSettings, updateStudentBalance, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type SchoolRole, type SchoolUser,
 } from "../lib/school-data";
 
 const router: IRouter = Router();
@@ -68,6 +68,26 @@ router.get("/auth/me", async (req, res): Promise<void> => {
   const user = await requireUser(req);
   if (!user) { errorResponse(res, 401, "Not signed in"); return; }
   res.json(GetCurrentUserResponse.parse({ user: publicUser(user), expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString() }));
+});
+router.patch("/auth/me", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!user) { errorResponse(res, 401, "Not signed in"); return; }
+  const parsed = UpdateCurrentUserBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Enter valid profile details."); return; }
+  if (parsed.data.newPassword && (!parsed.data.currentPassword || !verifyPassword(parsed.data.currentPassword, user.password))) {
+    errorResponse(res, 400, "Your current password is incorrect.");
+    return;
+  }
+  if (parsed.data.identifier && parsed.data.identifier.toLowerCase() !== user.identifier.toLowerCase()) {
+    const existing = await findUser(parsed.data.identifier, user.userType);
+    if (existing) { errorResponse(res, 409, "That username is already in use."); return; }
+  }
+  try {
+    const updated = await updateUserProfile(user, parsed.data);
+    res.json(UpdateCurrentUserResponse.parse({ user: publicUser(updated), expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString() }));
+  } catch {
+    errorResponse(res, 409, "The profile could not be updated. Check the username and try again.");
+  }
 });
 
 router.post("/users", async (req, res): Promise<void> => {
@@ -283,13 +303,17 @@ router.get("/operations", async (req, res): Promise<void> => {
   const visibleClasses = user.role === "teacher" ? data.classes.filter((item) => assigned.includes(String(item.name))) : data.classes;
   const studentIds = new Set(linked.map((item) => item.id));
   const linkedClasses = new Set(linked.map((item) => `${item.className} ${item.stream}`));
+  const documentRows = data.documents.map((item) => {
+    const pupil = students.find((student) => student.id === item.studentId);
+    return pupil ? { ...item, pupilName: pupil.name, registrationNumber: pupil.registrationNumber } : item;
+  });
   const modules = {
     classes: visibleClasses, assignments: isAdministrator(user) ? data.assignments : data.assignments.filter((item) => linkedClasses.has(String(item.className))),
     staff: isAdministrator(user) ? data.staff : [], parents: isAdministrator(user) ? data.parents : [],
     expenses: isAdministrator(user) || user.role === "accountant" ? data.expenses : [], salaries: isAdministrator(user) || user.role === "accountant" ? data.salaryPayments : [],
     discipline: data.discipline.filter((item) => studentIds.has(String(item.studentId))), medical: data.medical.filter((item) => studentIds.has(String(item.studentId))),
     library: data.library, transport: data.transport, inventory: isAdministrator(user) || user.role === "staff" ? data.inventory : [], events: data.events,
-    documents: isAdministrator(user) || user.role === "staff" ? data.documents : [], reports: isAdministrator(user) || user.role === "accountant" ? data.reports : [], notifications: data.notifications,
+    documents: isAdministrator(user) || user.role === "staff" ? documentRows : [], reports: isAdministrator(user) || user.role === "accountant" ? data.reports : [], notifications: data.notifications,
   };
   res.json(GetOperationsResponse.parse({ role: user.role, currencyCode: settings.currencyCode, currencyName: settings.currencyName, currencySymbol: settings.currencySymbol, actions: roleActions(user.role, user.studentId), modules }));
 });

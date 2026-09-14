@@ -35,6 +35,8 @@ export const LoginResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "identifier": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
@@ -60,6 +62,42 @@ export const GetCurrentUserResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "identifier": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string(),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
+  "initials": zod.string(),
+  "schoolName": zod.string(),
+  "studentId": zod.string().nullish()
+}),
+  "expiresAt": zod.string()
+})
+
+
+/**
+ * @summary Update the current user's profile and credentials
+ */
+
+
+export const updateCurrentUserBodyNewPasswordMin = 8;
+
+
+
+export const UpdateCurrentUserBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "identifier": zod.string().min(1).optional(),
+  "email": zod.string().optional(),
+  "phone": zod.string().optional(),
+  "currentPassword": zod.string().optional(),
+  "newPassword": zod.string().min(updateCurrentUserBodyNewPasswordMin).optional()
+})
+
+export const UpdateCurrentUserResponse = zod.object({
+  "user": zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "identifier": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
@@ -91,6 +129,8 @@ export const CreateUserResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "identifier": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),

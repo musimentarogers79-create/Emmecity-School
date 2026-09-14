@@ -11,7 +11,7 @@ import type { SchoolSettings, User } from "@workspace/db";
 export type SchoolRole = "super_admin" | "administrator" | "teacher" | "accountant" | "guardian" | "student" | "staff";
 export type AttendanceStatus = "present" | "absent" | "late" | "excused";
 export type SchoolUser = {
-  id: string; name: string; identifier: string; password: string; userType: "staff" | "guardian" | "learner";
+  id: string; name: string; identifier: string; email: string; phone: string; password: string; userType: "staff" | "guardian" | "learner";
   role: SchoolRole; initials: string; schoolName: string; studentId?: string;
 };
 export type SchoolStudent = {
@@ -84,10 +84,10 @@ export async function initializeSchoolData() {
 export async function getSchoolId() { return initializeSchoolData(); }
 
 function publicRow(row: User, setting: SchoolSettings): SchoolUser {
-  return { id: row.id, name: row.name, identifier: row.identifier, password: row.passwordHash, userType: row.userType as SchoolUser["userType"], role: row.role as SchoolRole, initials: row.initials, schoolName: setting.schoolName, ...(row.studentId ? { studentId: row.studentId } : {}) };
+  return { id: row.id, name: row.name, identifier: row.identifier, email: row.email, phone: row.phone, password: row.passwordHash, userType: row.userType as SchoolUser["userType"], role: row.role as SchoolRole, initials: row.initials, schoolName: setting.schoolName, ...(row.studentId ? { studentId: row.studentId } : {}) };
 }
 export function publicUser(user: SchoolUser) {
-  return { id: user.id, name: user.name, identifier: user.identifier, role: user.role, initials: user.initials, schoolName: user.schoolName, studentId: user.studentId ?? null };
+  return { id: user.id, name: user.name, identifier: user.identifier, email: user.email, phone: user.phone, role: user.role, initials: user.initials, schoolName: user.schoolName, studentId: user.studentId ?? null };
 }
 export async function getSchoolSettings() {
   const id = await getSchoolId();
@@ -127,6 +127,23 @@ export async function createUser(data: { name: string; identifier: string; passw
       data: { name: data.name, role: data.role.replace("_", " "), username: data.identifier, phone: "Not provided", status: "Active" },
     });
   }
+  return publicRow(row, await getSchoolSettings());
+}
+export async function updateUserProfile(user: SchoolUser, data: {
+  name?: string; identifier?: string; email?: string; phone?: string; newPassword?: string;
+}) {
+  const schoolId = await getSchoolId();
+  const updates: Partial<User> = { updatedAt: new Date() };
+  if (data.name !== undefined) {
+    updates.name = data.name.trim();
+    updates.initials = initials(data.name);
+  }
+  if (data.identifier !== undefined) updates.identifier = data.identifier.trim();
+  if (data.email !== undefined) updates.email = data.email.trim();
+  if (data.phone !== undefined) updates.phone = data.phone.trim();
+  if (data.newPassword !== undefined) updates.passwordHash = hashPassword(data.newPassword);
+  const row = (await db.update(users).set(updates).where(and(eq(users.schoolId, schoolId), eq(users.id, user.id))).returning())[0];
+  if (!row) throw new Error("Account not found");
   return publicRow(row, await getSchoolSettings());
 }
 

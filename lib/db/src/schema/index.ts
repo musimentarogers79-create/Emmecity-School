@@ -59,6 +59,8 @@ export const users = pgTable("school_users", {
   schoolId: uuid("school_id").notNull().references(() => schoolSettings.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   identifier: text("identifier").notNull(),
+  email: text("email").notNull().default(""),
+  phone: text("phone").notNull().default(""),
   passwordHash: text("password_hash").notNull(),
   userType: text("user_type").notNull(),
   role: text("role").notNull(),

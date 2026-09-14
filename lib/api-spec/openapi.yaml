@@ -88,6 +88,29 @@ paths:
                 $ref: "#/components/schemas/AuthSession"
         "401":
           description: Not signed in
+    patch:
+      operationId: updateCurrentUser
+      tags: [auth]
+      summary: Update the current user's profile and credentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileUpdate"
+      responses:
+        "200":
+          description: Updated current session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+        "400":
+          description: Invalid profile details or current password
+        "401":
+          description: Not signed in
+        "409":
+          description: Username already in use
   /users:
     post:
       operationId: createUser
@@ -477,6 +500,10 @@ components:
           type: string
         identifier:
           type: string
+        email:
+          type: string
+        phone:
+          type: string
         role:
           $ref: "#/components/schemas/Role"
         initials:
@@ -485,7 +512,25 @@ components:
           type: string
         studentId:
           type: ["string", "null"]
-      required: [id, name, identifier, role, initials, schoolName]
+      required: [id, name, identifier, email, phone, role, initials, schoolName]
+    UserProfileUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        identifier:
+          type: string
+          minLength: 1
+        email:
+          type: string
+        phone:
+          type: string
+        currentPassword:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
     UserAccountInput:
       type: object
       properties:

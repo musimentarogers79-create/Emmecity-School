@@ -69,3 +69,4 @@ export * from './studentStatus';
 export * from './timetableEntry';
 export * from './userAccountInput';
 export * from './userAccountInputUserType';
+export * from './userProfileUpdate';
