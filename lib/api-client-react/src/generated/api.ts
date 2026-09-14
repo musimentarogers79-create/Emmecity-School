@@ -27,6 +27,7 @@ import type {
   AttendanceRegisterInput,
   AuthSession,
   AuthUser,
+  ClassInput,
   Dashboard,
   ExpenseInput,
   FinanceSummary,
@@ -35,6 +36,7 @@ import type {
   ListStudentsParams,
   LoginInput,
   Message,
+  OperationClass,
   OperationExpense,
   OperationsOverview,
   Payment,
@@ -2317,6 +2319,77 @@ export function useGetReportCard<TData = Awaited<ReturnType<typeof getReportCard
 
 
 
+
+export const getCreateClassUrl = () => {
+
+
+
+
+  return `/api/operations`
+}
+
+/**
+ * @summary Create a school class
+ */
+export const createClass = async (classInput: ClassInput, options?: Parameters<typeof customFetch>[1]): Promise<OperationClass> => {
+
+  return customFetch<OperationClass>(getCreateClassUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(classInput)
+  }
+);}
+
+
+
+
+
+export const getCreateClassMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClass>>, TError,{data: BodyType<ClassInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createClass>>, TError,{data: BodyType<ClassInput>}, TContext> => {
+
+const mutationKey = ['createClass'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createClass>>, {data: BodyType<ClassInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createClass(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateClassMutationResult = NonNullable<Awaited<ReturnType<typeof createClass>>>
+    export type CreateClassMutationBody = BodyType<ClassInput>
+    export type CreateClassMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a school class
+ */
+export const useCreateClass = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createClass>>, TError,{data: BodyType<ClassInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createClass>>,
+        TError,
+        {data: BodyType<ClassInput>},
+        TContext
+      > => {
+      return useMutation(getCreateClassMutationOptions(options));
+    }
 
 export const getGetOperationsUrl = () => {
 

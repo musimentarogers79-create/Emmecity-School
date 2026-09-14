@@ -815,6 +815,35 @@ export const GetReportCardResponse = zod.object({
 
 
 /**
+ * @summary Create a school class
+ */
+
+
+
+
+
+
+export const CreateClassBody = zod.object({
+  "name": zod.string().min(1),
+  "grade": zod.string().min(1),
+  "stream": zod.string().min(1),
+  "room": zod.string().min(1),
+  "teacherId": zod.string().nullish()
+})
+
+export const CreateClassResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "grade": zod.string(),
+  "stream": zod.string(),
+  "teacherName": zod.string(),
+  "pupilCount": zod.number(),
+  "room": zod.string(),
+  "subjectCount": zod.number()
+})
+
+
+/**
  * @summary Get role-filtered school operations
  */
 export const GetOperationsResponse = zod.object({

@@ -16,6 +16,7 @@ export * from './attendanceRegisterInput';
 export * from './attendanceStatus';
 export * from './authSession';
 export * from './authUser';
+export * from './classInput';
 export * from './currencyOption';
 export * from './dashboard';
 export * from './dashboardAction';

@@ -393,6 +393,32 @@ export async function listOperation(kind: OperationKind): Promise<OperationRecor
   const rows = await db.select().from(table).where(eq(table.schoolId, schoolId)).orderBy(desc(table.createdAt));
   return rows.map((row) => ({ ...(row.data as OperationRecord), id: row.id }));
 }
+export async function createClass(data: { name: string; grade: string; stream: string; room: string; teacherId?: string | null }) {
+  const name = data.name.trim();
+  const grade = data.grade.trim();
+  const stream = data.stream.trim();
+  const room = data.room.trim();
+  if (!name || !grade || !stream || !room) throw new Error("Complete the class name, grade, stream, and room.");
+  const existing = await listOperation("classes");
+  if (existing.some((item) => String(item.name).trim().toLowerCase() === name.toLowerCase())) {
+    throw new Error("A class with that name already exists.");
+  }
+  const teacher = data.teacherId ? await findUserById(data.teacherId) : undefined;
+  if (data.teacherId && (!teacher || teacher.role !== "teacher")) throw new Error("Choose a registered teacher to assign to this class.");
+  const pupils = await listStudents();
+  const row = await createOperation("classes", {
+    name,
+    grade,
+    stream,
+    room,
+    teacherId: teacher?.id ?? null,
+    teacherName: teacher?.name ?? "Unassigned",
+    pupilCount: pupils.filter((pupil) => pupil.className === name).length,
+    subjectCount: 0,
+  });
+  if (!row) throw new Error("The class could not be created.");
+  return row;
+}
 export async function createOperation(kind: OperationKind, data: Record<string, unknown>) {
   const schoolId = await getSchoolId();
   const table = tables[kind];

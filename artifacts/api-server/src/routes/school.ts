@@ -1,8 +1,8 @@
 import { Router, type IRouter } from "express";
 import {
-  AttendanceRecord, CreateAnnouncementBody, CreateAnnouncementResponse, CreateAttendanceRegisterBody, CreateAttendanceRegisterResponse, CreateExpenseBody, CreateExpenseResponse,
+  AttendanceRecord, CreateAnnouncementBody, CreateAnnouncementResponse, CreateAttendanceRegisterBody, CreateAttendanceRegisterResponse, CreateClassBody, CreateExpenseBody, CreateExpenseResponse,
   CreateSalaryPaymentBody, CreateSalaryPaymentResponse, CreateStudentBody, CreateStudentResponse, CreateUserBody,
-  CreateUserResponse, GetAttendanceQueryParams, GetAttendanceResponse, GetCurrentUserResponse, GetDashboardResponse,
+  CreateClassResponse, CreateUserResponse, GetAttendanceQueryParams, GetAttendanceResponse, GetCurrentUserResponse, GetDashboardResponse,
   GetFinanceSummaryResponse, GetOperationsResponse, GetReportCardParams, GetReportCardResponse, GetStudentParams,
   GetStudentResponse, GetTimetableResponse, CreateTimetableEntryBody, CreateTimetableEntryResponse, ListAnnouncementsResponse, ListExpensesResponse, ListPaymentsResponse,
   ListSalariesResponse, ListStudentsQueryParams, ListStudentsResponse, LoginBody, LoginResponse, LogoutResponse,
@@ -10,7 +10,7 @@ import {
   UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse, UpdateUserPermissionsBody, UpdateUserPermissionsResponse,
 } from "@workspace/api-zod";
 import {
-  AttendanceStatus, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createOperation, createStudentWithPayment, createUser, currentUserFromToken,
+  AttendanceStatus, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, createUser, currentUserFromToken,
   clearLoginFailures, deleteSession, findUser, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
   listAttendance, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance,
   deleteOperation, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserPermissions, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
@@ -362,6 +362,19 @@ router.get("/academics/report-cards/:studentId", async (req, res): Promise<void>
   res.json(GetReportCardResponse.parse({ student, term: "Term 3", academicYear: (await getSchoolSettings()).academicYear, overallAverage: 0, overallGrade: "N/A", position: 0, teacherComment: "", subjects: [] }));
 });
 
+router.post("/operations", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!isAdministrator(user)) { errorResponse(res, 403, "Only administrators can create classes."); return; }
+  const parsed = CreateClassBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Complete the class name, grade, stream, and room."); return; }
+  try {
+    const created = await createClass(parsed.data);
+    res.status(201).json(CreateClassResponse.parse(created));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The class could not be created.";
+    errorResponse(res, message.includes("already exists") ? 409 : 400, message);
+  }
+});
 router.get("/operations", async (req, res): Promise<void> => {
   const user = await requireUser(req);
   if (!user) { errorResponse(res, 401, "Not signed in"); return; }

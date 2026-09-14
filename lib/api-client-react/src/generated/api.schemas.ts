@@ -469,6 +469,19 @@ export interface OperationClass {
   subjectCount: number;
 }
 
+export interface ClassInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  grade: string;
+  /** @minLength 1 */
+  stream: string;
+  /** @minLength 1 */
+  room: string;
+  /** @nullable */
+  teacherId?: string | null;
+}
+
 export interface OperationAssignment {
   id: string;
   title: string;
