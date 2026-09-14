@@ -84,9 +84,8 @@ function Initials({ name, className = '' }: { name: string; className?: string }
 
 export function SchoolMark({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="flex flex-wrap items-center gap-2.5 opacity-95 print:hidden" data-testid="brand-corenexa">
-      <img src="/school-logo.jpg" alt={`${SCHOOL_NAME} crest`} className={`shrink-0 rounded-full object-contain ${compact ? 'h-8 w-8' : 'h-10 w-10 sm:h-11 sm:w-11'}`} />
-      <img src="/corenexa-systems-logo-transparent.png" alt="Corenexa Systems" className={`shrink-0 object-contain ${compact ? 'h-6 w-24' : 'h-8 w-32 sm:h-9 sm:w-36'}`} />
+    <div className="flex flex-wrap items-center gap-2.5 opacity-95 print:hidden" data-testid="brand-school">
+      <img src="/school-logo.jpg" alt={`${SCHOOL_NAME} crest`} className={`shrink-0 rounded-full border-2 border-white/90 bg-white p-1 object-contain shadow-sm ${compact ? 'h-8 w-8' : 'h-10 w-10 sm:h-11 sm:w-11'}`} />
       <span className="hidden basis-full text-[10px] leading-4 text-[hsl(var(--muted-foreground))] print:block">{SCHOOL_POSTAL_ADDRESS} · {SCHOOL_PHONE} · {SCHOOL_LOCATION}</span>
     </div>
   );
