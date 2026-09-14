@@ -42,6 +42,7 @@ import type {
   ReportCard,
   SalaryPayment,
   SalaryPaymentInput,
+  SalaryStaffAccount,
   SchoolSettings,
   SchoolSettingsUpdate,
   Student,
@@ -1866,6 +1867,83 @@ export const useCreateSalaryPayment = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getCreateSalaryPaymentMutationOptions(options));
     }
+
+export const getListSalaryStaffUrl = () => {
+
+
+
+
+  return `/api/finance/salary-staff`
+}
+
+/**
+ * @summary List registered teachers and staff with monthly salaries
+ */
+export const listSalaryStaff = async ( options?: Parameters<typeof customFetch>[1]): Promise<SalaryStaffAccount[]> => {
+
+  return customFetch<SalaryStaffAccount[]>(getListSalaryStaffUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSalaryStaffQueryKey = () => {
+    return [
+    `/api/finance/salary-staff`
+    ] as const;
+    }
+
+
+export const getListSalaryStaffQueryOptions = <TData = Awaited<ReturnType<typeof listSalaryStaff>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSalaryStaff>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSalaryStaffQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSalaryStaff>>> = ({ signal }) => listSalaryStaff({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSalaryStaff>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSalaryStaffQueryResult = NonNullable<Awaited<ReturnType<typeof listSalaryStaff>>>
+export type ListSalaryStaffQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List registered teachers and staff with monthly salaries
+ */
+
+export function useListSalaryStaff<TData = Awaited<ReturnType<typeof listSalaryStaff>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSalaryStaff>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSalaryStaffQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListAnnouncementsUrl = () => {
 

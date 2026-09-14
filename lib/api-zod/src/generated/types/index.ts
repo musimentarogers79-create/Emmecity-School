@@ -59,6 +59,7 @@ export * from './reportCardSubjectsItem';
 export * from './role';
 export * from './salaryPayment';
 export * from './salaryPaymentInput';
+export * from './salaryStaffAccount';
 export * from './schoolSettings';
 export * from './schoolSettingsUpdate';
 export * from './student';

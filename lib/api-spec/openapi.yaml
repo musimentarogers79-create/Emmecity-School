@@ -446,6 +446,20 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SalaryPayment"
+  /finance/salary-staff:
+    get:
+      operationId: listSalaryStaff
+      tags: [finance]
+      summary: List registered teachers and staff with monthly salaries
+      responses:
+        "200":
+          description: Registered salary accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SalaryStaffAccount"
   /announcements:
     get:
       operationId: listAnnouncements
@@ -626,6 +640,9 @@ components:
           type: array
           items:
             type: string
+        monthlySalary:
+          type: number
+          minimum: 0
         role:
           $ref: "#/components/schemas/Role"
         initials:
@@ -692,6 +709,9 @@ components:
           type: array
           items:
             type: string
+        monthlySalary:
+          type: number
+          minimum: 0
       required: [name, identifier, password, role, userType]
     UserPermissionsInput:
       type: object
@@ -867,6 +887,8 @@ components:
       properties:
         id:
           type: string
+        studentId:
+          type: string
         receiptNumber:
           type: string
         studentName:
@@ -882,7 +904,9 @@ components:
         status:
           type: string
           enum: [completed, pending, reversed]
-      required: [id, receiptNumber, studentName, registrationNumber, amount, method, date, status]
+        balance:
+          type: number
+      required: [id, studentId, receiptNumber, studentName, registrationNumber, amount, method, date, status, balance]
     PaymentInput:
       type: object
       properties:
@@ -918,19 +942,29 @@ components:
       properties:
         id:
           type: string
+        staffId:
+          type: string
         staffName:
           type: string
+        monthlySalary:
+          type: number
         period:
           type: string
         amount:
           type: number
+        balance:
+          type: number
+        receiptNumber:
+          type: string
         paymentDate:
           type: string
         method:
           type: string
+        reference:
+          type: string
         status:
           type: string
-      required: [id, staffName, period, amount, paymentDate, method, status]
+      required: [id, staffId, staffName, monthlySalary, period, amount, balance, receiptNumber, paymentDate, method, reference, status]
     SalaryPaymentInput:
       type: object
       properties:
@@ -946,6 +980,18 @@ components:
         reference:
           type: string
       required: [staffId, period, amount, method, reference]
+    SalaryStaffAccount:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        role:
+          $ref: "#/components/schemas/Role"
+        monthlySalary:
+          type: number
+      required: [id, name, role, monthlySalary]
     FinanceSummary:
       type: object
       properties:
@@ -1271,19 +1317,29 @@ components:
       properties:
         id:
           type: string
+        staffId:
+          type: string
         staffName:
           type: string
+        monthlySalary:
+          type: number
         period:
           type: string
         amount:
           type: number
+        balance:
+          type: number
+        receiptNumber:
+          type: string
         paymentDate:
           type: string
         method:
           type: string
+        reference:
+          type: string
         status:
           type: string
-      required: [id, staffName, period, amount, paymentDate, method, status]
+      required: [id, staffId, staffName, monthlySalary, period, amount, balance, receiptNumber, paymentDate, method, reference, status]
     OperationDiscipline:
       type: object
       properties:

@@ -16,6 +16,8 @@ export interface AuthUser {
   phone: string;
   permissions: PermissionKey[];
   assignedClasses?: string[];
+  /** @minimum 0 */
+  monthlySalary?: number;
   role: Role;
   initials: string;
   schoolName: string;

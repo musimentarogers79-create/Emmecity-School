@@ -28,4 +28,6 @@ export interface UserAccountInput {
   employmentType?: string;
   permissions?: PermissionKey[];
   assignedClasses?: string[];
+  /** @minimum 0 */
+  monthlySalary?: number;
 }

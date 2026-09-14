@@ -1,0 +1,1 @@
+ALTER TABLE "school_users" ADD COLUMN "monthly_salary" numeric(14, 2);

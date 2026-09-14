@@ -43,6 +43,13 @@
       "when": 1789394312412,
       "tag": "0005_rapid_dracula",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1789395272429,
+      "tag": "0006_clear_lionheart",
+      "breakpoints": true
     }
   ]
 }

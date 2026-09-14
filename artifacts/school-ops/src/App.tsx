@@ -12,6 +12,7 @@ import {
   DashboardPage,
   FinancePage,
   LoginPage,
+  SalaryReceiptPage,
   SettingsPage,
   StudentProfilePage,
   StudentsPage,
@@ -39,6 +40,7 @@ function Router() {
         <Route path="/support" component={SupportPage} />
         <Route path="/transactions" component={TransactionsPage} />
         <Route path="/transactions/:transactionId" component={TransactionDetailPage} />
+        <Route path="/salary-receipts/:salaryId" component={SalaryReceiptPage} />
         <Route path="/dashboard" component={DashboardPage} />
         <Route path="/students" component={StudentsPage} />
         <Route path="/students/:studentId" component={StudentProfilePage} />

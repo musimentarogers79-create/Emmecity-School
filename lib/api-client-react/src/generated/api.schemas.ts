@@ -63,6 +63,8 @@ export interface AuthUser {
   phone: string;
   permissions: PermissionKey[];
   assignedClasses?: string[];
+  /** @minimum 0 */
+  monthlySalary?: number;
   role: Role;
   initials: string;
   schoolName: string;
@@ -109,6 +111,8 @@ export interface UserAccountInput {
   employmentType?: string;
   permissions?: PermissionKey[];
   assignedClasses?: string[];
+  /** @minimum 0 */
+  monthlySalary?: number;
 }
 
 export interface UserPermissionsInput {
@@ -246,6 +250,7 @@ export const PaymentStatus = {
 
 export interface Payment {
   id: string;
+  studentId: string;
   receiptNumber: string;
   studentName: string;
   registrationNumber: string;
@@ -253,6 +258,7 @@ export interface Payment {
   method: string;
   date: string;
   status: PaymentStatus;
+  balance: number;
 }
 
 export interface PaymentInput {
@@ -276,11 +282,16 @@ export interface ExpenseInput {
 
 export interface SalaryPayment {
   id: string;
+  staffId: string;
   staffName: string;
+  monthlySalary: number;
   period: string;
   amount: number;
+  balance: number;
+  receiptNumber: string;
   paymentDate: string;
   method: string;
+  reference: string;
   status: string;
 }
 
@@ -291,6 +302,13 @@ export interface SalaryPaymentInput {
   amount: number;
   method: string;
   reference: string;
+}
+
+export interface SalaryStaffAccount {
+  id: string;
+  name: string;
+  role: Role;
+  monthlySalary: number;
 }
 
 export type FinanceSummaryMonthlyItem = {
@@ -488,11 +506,16 @@ export interface OperationExpense {
 
 export interface OperationSalary {
   id: string;
+  staffId: string;
   staffName: string;
+  monthlySalary: number;
   period: string;
   amount: number;
+  balance: number;
+  receiptNumber: string;
   paymentDate: string;
   method: string;
+  reference: string;
   status: string;
 }
 

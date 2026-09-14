@@ -67,6 +67,7 @@ export const users = pgTable("school_users", {
   permissions: jsonb("permissions").$type<string[]>().notNull().default([]),
   initials: text("initials").notNull(),
   studentId: uuid("student_id"),
+  monthlySalary: numeric("monthly_salary", { precision: 14, scale: 2 }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

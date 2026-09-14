@@ -8,10 +8,15 @@
 
 export interface OperationSalary {
   id: string;
+  staffId: string;
   staffName: string;
+  monthlySalary: number;
   period: string;
   amount: number;
+  balance: number;
+  receiptNumber: string;
   paymentDate: string;
   method: string;
+  reference: string;
   status: string;
 }

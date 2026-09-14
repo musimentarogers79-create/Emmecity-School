@@ -13,7 +13,7 @@ export type PermissionKey = "expense_approve" | "expense_delete" | "transactions
 export type AttendanceStatus = "present" | "absent" | "late" | "excused";
 export type SchoolUser = {
   id: string; name: string; identifier: string; email: string; phone: string; password: string; userType: "staff" | "guardian" | "learner";
-  role: SchoolRole; permissions: PermissionKey[]; initials: string; schoolName: string; studentId?: string; assignedClasses?: string[];
+  role: SchoolRole; permissions: PermissionKey[]; initials: string; schoolName: string; studentId?: string; assignedClasses?: string[]; monthlySalary?: number;
 };
 export type SchoolStudent = {
   id: string; registrationNumber: string; name: string; firstName: string; lastName: string; middleName?: string;
@@ -22,7 +22,7 @@ export type SchoolStudent = {
   guardianEmail: string; admissionDate: string; enrollmentType?: "day" | "boarding"; termFee?: number; amountPaid?: number;
 };
 export type AttendanceRecord = { id: string; studentId: string; studentName: string; registrationNumber: string; className: string; date: string; status: AttendanceStatus; arrivalTime?: string | null };
-export type Payment = { id: string; receiptNumber: string; studentName: string; registrationNumber: string; amount: number; method: string; date: string; status: "completed" | "pending" | "reversed" };
+export type Payment = { id: string; studentId: string; receiptNumber: string; studentName: string; registrationNumber: string; amount: number; method: string; date: string; status: "completed" | "pending" | "reversed"; balance: number };
 export type OperationRecord = Record<string, unknown> & { id: string };
 
 const SCHOOL_NAME = "EMMECTY NURSERY & PRIMARY SCHOOL";
@@ -86,10 +86,10 @@ export async function getSchoolId() { return initializeSchoolData(); }
 
 function publicRow(row: User, setting: SchoolSettings): SchoolUser {
   const permissions = Array.isArray(row.permissions) ? row.permissions.filter((item): item is PermissionKey => ["expense_approve", "expense_delete", "transactions_view", "transactions_print", "finance_view", "expenses_view", "manage_users"].includes(item)) : [];
-  return { id: row.id, name: row.name, identifier: row.identifier, email: row.email, phone: row.phone, password: row.passwordHash, userType: row.userType as SchoolUser["userType"], role: row.role as SchoolRole, permissions, initials: row.initials, schoolName: setting.schoolName, ...(row.studentId ? { studentId: row.studentId } : {}) };
+  return { id: row.id, name: row.name, identifier: row.identifier, email: row.email, phone: row.phone, password: row.passwordHash, userType: row.userType as SchoolUser["userType"], role: row.role as SchoolRole, permissions, initials: row.initials, schoolName: setting.schoolName, ...(row.studentId ? { studentId: row.studentId } : {}), ...(row.monthlySalary !== null ? { monthlySalary: number(row.monthlySalary) } : {}) };
 }
 export function publicUser(user: SchoolUser) {
-  return { id: user.id, name: user.name, identifier: user.identifier, email: user.email, phone: user.phone, role: user.role, permissions: user.permissions, initials: user.initials, schoolName: user.schoolName, studentId: user.studentId ?? null, ...(user.assignedClasses ? { assignedClasses: user.assignedClasses } : {}) };
+  return { id: user.id, name: user.name, identifier: user.identifier, email: user.email, phone: user.phone, role: user.role, permissions: user.permissions, initials: user.initials, schoolName: user.schoolName, studentId: user.studentId ?? null, ...(user.assignedClasses ? { assignedClasses: user.assignedClasses } : {}), ...(user.monthlySalary !== undefined ? { monthlySalary: user.monthlySalary } : {}) };
 }
 export async function getSchoolSettings() {
   const id = await getSchoolId();
@@ -125,12 +125,12 @@ export async function findUserById(id: string) {
 }
 export async function createUser(data: {
   name: string; identifier: string; password: string; userType: string; role: SchoolRole; studentId?: string;
-  email?: string; phone?: string; address?: string; nextOfKin?: string; hireDate?: string; employmentType?: string; permissions?: PermissionKey[]; assignedClasses?: string[];
+  email?: string; phone?: string; address?: string; nextOfKin?: string; hireDate?: string; employmentType?: string; permissions?: PermissionKey[]; assignedClasses?: string[]; monthlySalary?: number;
 }) {
   const schoolId = await getSchoolId();
   const row = (await db.insert(users).values({
     schoolId, name: data.name, identifier: data.identifier, email: data.email || "", phone: data.phone || "",
-    passwordHash: hashPassword(data.password), userType: data.userType, role: data.role, permissions: data.permissions || [], initials: initials(data.name), studentId: data.studentId,
+    passwordHash: hashPassword(data.password), userType: data.userType, role: data.role, permissions: data.permissions || [], initials: initials(data.name), studentId: data.studentId, monthlySalary: data.monthlySalary ? String(data.monthlySalary) : null,
   }).returning())[0];
   if (!row) throw new Error("Unable to create account");
   if (data.userType === "staff") {
@@ -138,7 +138,7 @@ export async function createUser(data: {
       schoolId,
       data: {
         userId: row.id, name: data.name, role: data.role.replace("_", " "), username: data.identifier, email: data.email || "",
-        phone: data.phone || "Not provided", address: data.address || "", nextOfKin: data.nextOfKin || "",
+         phone: data.phone || "Not provided", address: data.address || "", nextOfKin: data.nextOfKin || "", monthlySalary: data.monthlySalary || 0,
         hireDate: data.hireDate || "", employmentType: data.employmentType || "Full-time", status: "Active",
       },
     });
@@ -283,7 +283,7 @@ export async function createStudentWithPayment(data: {
         schoolId, studentId: studentRowValue.id, receiptNumber, amount: String(initialPayment), method: data.paymentMethod || "Cash",
         reference: data.paymentReference || "", paidOn: isoDate(), status: "completed",
       }).returning())[0];
-      payment = paymentRow ? { id: paymentRow.id, receiptNumber, studentName: `${data.firstName}${data.middleName ? ` ${data.middleName}` : ""} ${data.lastName}`, registrationNumber, amount: initialPayment, method: paymentRow.method, date: getDateLabel(), status: "completed" } : undefined;
+      payment = paymentRow ? { id: paymentRow.id, studentId: studentRowValue.id, receiptNumber, studentName: `${data.firstName}${data.middleName ? ` ${data.middleName}` : ""} ${data.lastName}`, registrationNumber, amount: initialPayment, method: paymentRow.method, date: getDateLabel(), status: "completed", balance: Math.max(0, data.termFee - initialPayment) } : undefined;
     }
     return { student: studentRow(studentRowValue), payment };
   });
@@ -297,7 +297,7 @@ export async function updateStudentBalance(studentId: string, amount: number) {
 export async function listPayments() {
   const schoolId = await getSchoolId();
   const rows = await db.select({ payment: payments, student: students }).from(payments).innerJoin(students, eq(payments.studentId, students.id)).where(eq(payments.schoolId, schoolId)).orderBy(desc(payments.createdAt));
-  return rows.map(({ payment, student }) => ({ id: payment.id, receiptNumber: payment.receiptNumber, studentName: `${student.firstName}${student.middleName ? ` ${student.middleName}` : ""} ${student.lastName}`, registrationNumber: student.registrationNumber, amount: number(payment.amount), method: payment.method, date: new Date(`${payment.paidOn}T00:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }), status: payment.status as Payment["status"] }));
+  return rows.map(({ payment, student }) => ({ id: payment.id, studentId: student.id, receiptNumber: payment.receiptNumber, studentName: `${student.firstName}${student.middleName ? ` ${student.middleName}` : ""} ${student.lastName}`, registrationNumber: student.registrationNumber, amount: number(payment.amount), method: payment.method, date: new Date(`${payment.paidOn}T00:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }), status: payment.status as Payment["status"], balance: number(student.feeBalance) }));
 }
 export async function recordPayment(studentId: string, amount: number, method: string, reference: string) {
   if (amount <= 0) throw new Error("Payment amount must be positive");
@@ -319,8 +319,70 @@ export async function recordPayment(studentId: string, amount: number, method: s
     const receiptNumber = `RCPT-${year}-${String(receiptSequence.value).padStart(4, "0")}`;
     const row = (await tx.insert(payments).values({ schoolId, studentId: student.id, receiptNumber, amount: String(amount), method, reference, paidOn: isoDate(), status: "completed" }).returning())[0];
     await tx.update(students).set({ feeBalance: sql`fee_balance - ${amount}`, amountPaid: sql`coalesce(amount_paid, 0) + ${amount}`, updatedAt: new Date() }).where(and(eq(students.schoolId, schoolId), eq(students.id, student.id)));
-    return row ? { id: row.id, receiptNumber, studentName: student.name, registrationNumber: student.registrationNumber, amount, method, date: getDateLabel(), status: "completed" as const } : undefined;
+    const updatedStudent = (await tx.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.id, student.id))).limit(1))[0];
+    return row ? { id: row.id, studentId: student.id, receiptNumber, studentName: student.name, registrationNumber: student.registrationNumber, amount, method, date: getDateLabel(), status: "completed" as const, balance: number(updatedStudent?.feeBalance) } : undefined;
   });
+}
+
+export async function listSalaryPayments() {
+  const [rows, usersRows] = await Promise.all([listOperation("salaryPayments"), listUsers()]);
+  const totals = new Map<string, number>();
+  rows.forEach((item) => {
+    const key = `${String(item.staffId || "")}::${String(item.period || "")}`;
+    totals.set(key, (totals.get(key) || 0) + number(item.amount as number | string | undefined));
+  });
+  return rows.map((item) => {
+    const staffId = String(item.staffId || "");
+    const staff = usersRows.find((user) => user.id === staffId);
+    const monthlySalary = staff?.monthlySalary ?? number(item.monthlySalary as number | string | undefined);
+    const period = String(item.period || "");
+    return {
+      id: item.id,
+      staffId,
+      staffName: String(item.staffName || staff?.name || "Unknown staff member"),
+      monthlySalary,
+      period,
+      amount: number(item.amount as number | string | undefined),
+      balance: Math.max(0, monthlySalary - (totals.get(`${staffId}::${period}`) || 0)),
+      receiptNumber: String(item.receiptNumber || ""),
+      paymentDate: String(item.paymentDate || ""),
+      method: String(item.method || ""),
+      reference: String(item.reference || ""),
+      status: String(item.status || "Paid"),
+    };
+  });
+}
+
+export async function listSalaryStaff() {
+  return (await listUsers())
+    .filter((user) => user.role === "teacher" || user.role === "staff")
+    .map((user) => ({ id: user.id, name: user.name, role: user.role, monthlySalary: user.monthlySalary || 0 }));
+}
+
+export async function recordSalaryPayment(data: { staffId: string; period: string; amount: number; method: string; reference: string }) {
+  if (data.amount <= 0) throw new Error("Salary payment must be positive");
+  const schoolId = await getSchoolId();
+  const staffUser = (await db.select().from(users).where(and(eq(users.schoolId, schoolId), eq(users.id, data.staffId))).limit(1))[0];
+  if (!staffUser || !["teacher", "staff"].includes(staffUser.role)) throw new Error("Choose a registered teacher or staff member.");
+  const monthlySalary = number(staffUser.monthlySalary);
+  if (monthlySalary <= 0) throw new Error("Register a monthly salary for this staff member before paying them.");
+  const existing = await listOperation("salaryPayments");
+  const paidForPeriod = existing.filter((item) => String(item.staffId || "") === data.staffId && String(item.period || "") === data.period).reduce((sum, item) => sum + number(item.amount as number | string | undefined), 0);
+  const balance = Math.max(0, monthlySalary - paidForPeriod);
+  if (data.amount > balance) throw new Error(`Payment exceeds the ${data.period} salary balance of ${balance}.`);
+  const year = new Date().getFullYear();
+  const sequence = (await db.insert(recordSequences).values({ schoolId, year, kind: "salary_receipt", value: 1 }).onConflictDoUpdate({
+    target: [recordSequences.schoolId, recordSequences.year, recordSequences.kind],
+    set: { value: sql`${recordSequences.value} + 1`, updatedAt: new Date() },
+  }).returning({ value: recordSequences.value }))[0];
+  if (!sequence) throw new Error("Unable to allocate salary receipt number");
+  const receiptNumber = `SAL-${year}-${String(sequence.value).padStart(4, "0")}`;
+  const row = (await db.insert(salaryPayments).values({
+    schoolId,
+    data: { staffId: staffUser.id, staffName: staffUser.name, monthlySalary, period: data.period, amount: data.amount, receiptNumber, paymentDate: getDateLabel(), method: data.method, reference: data.reference, status: "Paid" },
+  }).returning())[0];
+  if (!row) throw new Error("Unable to record salary payment");
+  return (await listSalaryPayments()).find((item) => item.id === row.id);
 }
 
 const tables = { announcements, assignments, classes, discipline, documents, events, expenses, inventory, library, medical, notifications, parents, reports, salaryPayments, staff, subjects, timetable, transport } as const;

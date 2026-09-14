@@ -9,6 +9,7 @@ import type { PaymentStatus } from './paymentStatus';
 
 export interface Payment {
   id: string;
+  studentId: string;
   receiptNumber: string;
   studentName: string;
   registrationNumber: string;
@@ -16,4 +17,5 @@ export interface Payment {
   method: string;
   date: string;
   status: PaymentStatus;
+  balance: number;
 }

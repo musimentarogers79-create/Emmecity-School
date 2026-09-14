@@ -12,7 +12,7 @@ import {
 import {
   AttendanceStatus, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createOperation, createStudentWithPayment, createUser, currentUserFromToken,
   clearLoginFailures, deleteSession, findUser, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
-  listAttendance, listOperation, listPayments, listStudents, listUsers, makeSession, publicUser, recordPayment, saveAttendance,
+  listAttendance, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance,
   deleteOperation, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserPermissions, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
 } from "../lib/school-data";
 
@@ -109,6 +109,7 @@ router.post("/users", async (req, res): Promise<void> => {
     studentId = linked.id;
   }
   if ((parsed.data.role === "student" || parsed.data.role === "guardian") && !studentId) { errorResponse(res, 400, "Link pupil and guardian accounts to a student record."); return; }
+  if ((parsed.data.role === "teacher" || parsed.data.role === "staff") && (!parsed.data.monthlySalary || parsed.data.monthlySalary <= 0)) { errorResponse(res, 400, "Register a positive monthly salary for teachers and staff."); return; }
   try {
     const account = await createUser({ ...parsed.data, role: parsed.data.role as SchoolRole, studentId });
     res.status(201).json(CreateUserResponse.parse(publicUser(account)));
@@ -287,19 +288,26 @@ router.delete("/finance/expenses/:expenseId", async (req, res): Promise<void> =>
 router.get("/finance/salaries", async (req, res): Promise<void> => {
   const user = await requireUser(req);
   if (!user || (!isAdministrator(user) && user.role !== "accountant" && !hasPermission(user, "finance_view"))) { errorResponse(res, 403, "Only users with finance permission can view salary payments."); return; }
-  res.json(ListSalariesResponse.parse(await listOperation("salaryPayments")));
+  res.json(ListSalariesResponse.parse(await listSalaryPayments()));
+});
+router.get("/finance/salary-staff", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!user || (!isAdministrator(user) && user.role !== "accountant" && !hasPermission(user, "finance_view"))) { errorResponse(res, 403, "Only users with finance permission can view salary accounts."); return; }
+  res.json((await listSalaryStaff()));
 });
 router.post("/finance/salaries", async (req, res): Promise<void> => {
   const user = await requireUser(req);
   if (!user || (!isAdministrator(user) && user.role !== "accountant")) { errorResponse(res, 403, "Only finance roles can pay salaries."); return; }
   const parsed = CreateSalaryPaymentBody.safeParse(req.body);
   if (!parsed.success) { errorResponse(res, 400, "Choose a staff member, pay period, amount, method, and reference."); return; }
-  const staff = (await listOperation("staff")).find((item) => item.id === parsed.data.staffId) || (await findUserByIdCompat(parsed.data.staffId));
-  if (!staff) { errorResponse(res, 404, "Staff account not found."); return; }
-  const item = await createOperation("salaryPayments", { ...parsed.data, staffName: String(staff.name), paymentDate: getDateLabel(), status: "Paid" });
-  res.status(201).json(CreateSalaryPaymentResponse.parse(item));
+  try {
+    const item = await recordSalaryPayment(parsed.data);
+    if (!item) { errorResponse(res, 404, "Staff account not found."); return; }
+    res.status(201).json(CreateSalaryPaymentResponse.parse(item));
+  } catch (error) {
+    errorResponse(res, 409, error instanceof Error ? error.message : "Salary payment could not be recorded.");
+  }
 });
-async function findUserByIdCompat(id: string) { const students = await listStudents(); return students.find((item) => item.id === id) as unknown as { name: string } | undefined; }
 
 router.get("/announcements", async (req, res): Promise<void> => {
   const user = await requireUser(req);
@@ -352,7 +360,7 @@ router.get("/operations", async (req, res): Promise<void> => {
   if (!user) { errorResponse(res, 401, "Not signed in"); return; }
   const settings = await getSchoolSettings();
   const kinds: OperationKind[] = ["classes", "assignments", "staff", "parents", "expenses", "salaryPayments", "discipline", "medical", "library", "transport", "inventory", "events", "documents", "reports", "notifications"];
-  const loaded = await Promise.all(kinds.map(async (kind) => [kind, await listOperation(kind)] as const));
+  const loaded = await Promise.all(kinds.map(async (kind) => [kind, kind === "salaryPayments" ? await listSalaryPayments() : await listOperation(kind)] as const));
   const data = Object.fromEntries(loaded) as Record<OperationKind, OperationRecord[]>;
   const students = await listStudents();
   const assigned = await assignedClassNames(user);
