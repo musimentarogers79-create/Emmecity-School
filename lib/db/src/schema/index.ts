@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { boolean, check, date, foreignKey, index, integer, jsonb, numeric, pgTable, text, timestamp, uniqueIndex, uuid } from "drizzle-orm/pg-core";
+import { boolean, check, date, foreignKey, index, integer, jsonb, numeric, pgTable, text, timestamp, unique, uniqueIndex, uuid } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -48,7 +48,7 @@ export const students = pgTable("students", {
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("students_registration_idx").on(table.schoolId, table.registrationNumber),
-  uniqueIndex("students_school_id_idx").on(table.schoolId, table.id),
+  unique("students_school_id_unique").on(table.id, table.schoolId),
   index("students_class_idx").on(table.schoolId, table.className, table.stream),
   check("students_fee_balance_nonnegative", sql`${table.feeBalance} >= 0`),
   check("students_amount_paid_nonnegative", sql`${table.amountPaid} >= 0`),

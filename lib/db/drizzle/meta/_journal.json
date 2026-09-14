@@ -22,6 +22,13 @@
       "when": 1789381637633,
       "tag": "0002_clammy_sebastian_shaw",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1789382670855,
+      "tag": "0003_condemned_proudstar",
+      "breakpoints": true
     }
   ]
 }
