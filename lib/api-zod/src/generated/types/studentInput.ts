@@ -23,7 +23,7 @@ export interface StudentInput {
   /** @minimum 0 */
   termFee: number;
   /** @minimum 0 */
-  initialPayment: number;
+  initialPayment?: number;
   paymentMethod?: string;
   paymentReference?: string;
 }

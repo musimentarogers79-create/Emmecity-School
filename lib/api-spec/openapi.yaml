@@ -549,6 +549,8 @@ components:
           type: number
         amountPaid:
           type: number
+        receiptNumber:
+          type: string
       required: [id, registrationNumber, name, firstName, lastName, className, stream, gender, status, attendancePercentage, feeBalance, avatarTone, enrollmentType, termFee, amountPaid]
     StudentInput:
       type: object
@@ -586,7 +588,7 @@ components:
           type: string
         paymentReference:
           type: string
-      required: [firstName, lastName, dateOfBirth, gender, className, stream, guardianName, guardianPhone, enrollmentType, termFee, initialPayment]
+      required: [firstName, lastName, dateOfBirth, gender, className, stream, guardianName, guardianPhone, enrollmentType, termFee]
     StudentProfile:
       allOf:
         - $ref: "#/components/schemas/Student"

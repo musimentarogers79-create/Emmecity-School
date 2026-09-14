@@ -1,2 +1,3 @@
 - [OpenAPI integer compatibility](openapi-integer-compatibility.md) — this workspace’s generated Zod target may require numeric counts instead of OpenAPI integer schemas.
 - [OpenAPI artifact sync](openapi-artifact-sync.md) — regenerate the shared client and build library project references before artifact typechecks after contract changes.
+- [Drizzle migration output paths](drizzle-migration-output-paths.md) — keep Drizzle’s migration `out` path relative; absolute paths break later snapshot discovery in this workspace.

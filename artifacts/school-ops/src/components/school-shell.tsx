@@ -1,14 +1,20 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetCurrentUserQueryKey, useGetCurrentUser, useLogout } from '@workspace/api-client-react';
-import { BookOpen, CalendarDays, ChevronDown, CircleDollarSign, ClipboardList, FileBarChart, GraduationCap, LayoutDashboard, LogOut, Menu, Megaphone, PanelLeftClose, PanelLeftOpen, ReceiptText, Search, Settings, ShieldCheck, UserRound, Users, X } from 'lucide-react';
+import { BookOpen, CalendarDays, ChevronDown, CircleDollarSign, ClipboardList, FileBarChart, LayoutDashboard, LogOut, Menu, Megaphone, PanelLeftClose, PanelLeftOpen, ReceiptText, Search, Settings, ShieldCheck, UserRound, Users, X } from 'lucide-react';
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
+export const SCHOOL_NAME = 'EMMECTY NURSERY & PRIMARY SCHOOL';
+const pupilizeVisibleText = (value: string) => value
+  .replace(/\bStudents\b/g, 'Pupils')
+  .replace(/\bstudents\b/g, 'pupils')
+  .replace(/\bStudent\b/g, 'Pupil')
+  .replace(/\bstudent\b/g, 'pupil');
 const roleNavigation: Record<string, NavItem[]> = {
   administrator: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-    { href: '/students', label: 'Students', icon: Users },
+    { href: '/students', label: 'Pupils', icon: Users },
     { href: '/attendance', label: 'Attendance', icon: CalendarDays },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
     { href: '/operations?view=classes', label: 'Operations', icon: ClipboardList },
@@ -17,7 +23,7 @@ const roleNavigation: Record<string, NavItem[]> = {
   ],
   super_admin: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-    { href: '/students', label: 'Students', icon: Users },
+    { href: '/students', label: 'Pupils', icon: Users },
     { href: '/attendance', label: 'Attendance', icon: CalendarDays },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
     { href: '/operations?view=classes', label: 'Operations', icon: ClipboardList },
@@ -78,10 +84,7 @@ function Initials({ name, className = '' }: { name: string; className?: string }
 export function SchoolMark({ compact = false }: { compact?: boolean }) {
   return (
     <div className="flex items-center gap-3" data-testid="brand-schoolops">
-      <span className="relative flex size-10 items-center justify-center rounded-xl bg-[hsl(var(--accent))] text-[hsl(var(--accent-foreground))] shadow-sm">
-        <GraduationCap className="size-5" strokeWidth={2.3} />
-        <span className="absolute -right-1 -top-1 size-2 rounded-full bg-[hsl(var(--primary))]" />
-      </span>
+      <img src="/corenexa-systems-logo.png" alt="Corenexa Systems company logo" className={`shrink-0 object-contain ${compact ? 'h-10 w-12' : 'h-12 w-32 sm:w-36'}`} />
       {!compact && <span className="font-display text-xl tracking-tight">School<span className="text-[hsl(var(--accent))]">Ops</span></span>}
     </div>
   );
@@ -104,6 +107,29 @@ export function AppShell({ children }: { children: ReactNode }) {
     return item;
   });
 
+  useEffect(() => {
+    const translate = (node: Node) => {
+      if (node.nodeType === Node.TEXT_NODE && node.nodeValue) {
+        node.nodeValue = pupilizeVisibleText(node.nodeValue);
+        return;
+      }
+      if (node.nodeType !== Node.ELEMENT_NODE) return;
+      const element = node as HTMLElement;
+      for (const attribute of ['placeholder', 'aria-label', 'title']) {
+        const value = element.getAttribute(attribute);
+        if (value) element.setAttribute(attribute, pupilizeVisibleText(value));
+      }
+      node.childNodes.forEach(translate);
+    };
+    translate(document.body);
+    const observer = new MutationObserver((mutations) => mutations.forEach((mutation) => {
+      if (mutation.type === 'characterData') translate(mutation.target);
+      mutation.addedNodes.forEach(translate);
+    }));
+    observer.observe(document.body, { childList: true, characterData: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
+
   const handleLogout = () => {
     logout.mutate(undefined, { onSettled: () => { client.removeQueries({ queryKey: getGetCurrentUserQueryKey() }); setLocation('/'); } });
   };
@@ -113,7 +139,10 @@ export function AppShell({ children }: { children: ReactNode }) {
       {mobileOpen && <button aria-label="Close navigation" data-testid="button-close-mobile-nav" onClick={() => setMobileOpen(false)} className="fixed inset-0 z-30 bg-[hsl(var(--foreground)/.32)] md:hidden" />}
       <aside className={`sidebar-shadow fixed inset-y-0 left-0 z-40 flex w-[264px] flex-col bg-[hsl(var(--sidebar))] text-[hsl(var(--sidebar-foreground))] transition-transform duration-300 md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} ${collapsed ? 'md:w-[82px]' : ''}`}>
         <div className="flex h-[82px] items-center justify-between border-b border-[hsl(var(--sidebar-border))] px-5">
-          <SchoolMark compact={collapsed} />
+          <div className="min-w-0">
+            <SchoolMark compact={collapsed} />
+            {!collapsed && <p className="mt-2 truncate pl-1 text-[10px] font-semibold uppercase tracking-[.08em] text-[hsl(var(--sidebar-foreground)/.6)]">{SCHOOL_NAME}</p>}
+          </div>
           <button onClick={() => setMobileOpen(false)} className="rounded-lg p-2 text-[hsl(var(--sidebar-foreground)/.7)] hover:bg-[hsl(var(--sidebar-accent))] md:hidden" data-testid="button-close-sidebar"><X className="size-4" /></button>
         </div>
         <div className={`border-b border-[hsl(var(--sidebar-border))] px-4 py-5 ${collapsed ? 'md:px-3' : ''}`}>

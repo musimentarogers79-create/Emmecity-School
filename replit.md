@@ -33,7 +33,8 @@ registration numbers; staff accounts use usernames. Passwords are hashed before 
 
 - `artifacts/school-ops` — responsive SchoolOps web app
 - `artifacts/api-server/src/routes/school.ts` — core school API routes
-- `artifacts/api-server/src/lib/school-data.ts` — bootstrap account, school settings, and runtime school records
+- `artifacts/api-server/src/lib/school-data.ts` — PostgreSQL/Drizzle repositories, bootstrap account, and school settings
+- `lib/db/src/schema/index.ts` — PostgreSQL schema for all SchoolOps domains and hashed sessions
 - `lib/api-spec/openapi.yaml` — source-of-truth API contract
 - `artifacts/school-ops/src/pages/school-pages.tsx` — app pages and core workflows
 - `artifacts/school-ops/src/index.css` — SchoolOps visual theme
@@ -43,7 +44,10 @@ registration numbers; staff accounts use usernames. Passwords are hashed before 
 - The permanent pupil-facing identifier is a generated registration number such as `STU-2026-0001`; it is separate from the internal student record id.
 - Login accepts staff usernames and pupil/guardian registration identifiers through the same role-aware entry point.
 - API contracts are defined in OpenAPI first and generated into the shared React client and Zod validation package.
-- The current runtime starts clean apart from the bootstrap administrator and default UGX school settings; records are created through role-authorized API actions.
+- The current runtime starts clean apart from the idempotent bootstrap administrator and default EMMECTY NURSERY & PRIMARY SCHOOL UGX settings; records are created through role-authorized API actions and persist in PostgreSQL.
+- Session cookies contain random bearer tokens while only SHA-256 token digests and expiry timestamps are stored in PostgreSQL.
+- Pupil registration and opening payment use one database transaction. Opening payment is optional; positive payments receive a unique receipt and the response includes `receiptNumber`.
+- Production startup requires the `SCHOOL_BOOTSTRAP_PASSWORD` secret when the bootstrap administrator has not yet been provisioned or still uses the development-only default.
 
 ## Product
 

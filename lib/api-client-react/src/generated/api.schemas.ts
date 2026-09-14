@@ -111,6 +111,7 @@ export interface Student {
   enrollmentType: StudentEnrollmentType;
   termFee: number;
   amountPaid: number;
+  receiptNumber?: string;
 }
 
 export type StudentInputEnrollmentType = typeof StudentInputEnrollmentType[keyof typeof StudentInputEnrollmentType];
@@ -137,7 +138,7 @@ export interface StudentInput {
   /** @minimum 0 */
   termFee: number;
   /** @minimum 0 */
-  initialPayment: number;
+  initialPayment?: number;
   paymentMethod?: string;
   paymentReference?: string;
 }

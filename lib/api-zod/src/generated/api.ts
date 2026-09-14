@@ -138,7 +138,8 @@ export const GetDashboardResponse = zod.object({
   "avatarTone": zod.string(),
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
-  "amountPaid": zod.number()
+  "amountPaid": zod.number(),
+  "receiptNumber": zod.string().optional()
 })),
   "upcomingEvents": zod.array(zod.object({
   "title": zod.string(),
@@ -163,7 +164,8 @@ export const GetDashboardResponse = zod.object({
   "avatarTone": zod.string(),
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
-  "amountPaid": zod.number()
+  "amountPaid": zod.number(),
+  "receiptNumber": zod.string().optional()
 })).optional(),
   "feeBalance": zod.number().optional(),
   "latestResult": zod.number().optional(),
@@ -201,7 +203,8 @@ export const ListStudentsResponseItem = zod.object({
   "avatarTone": zod.string(),
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
-  "amountPaid": zod.number()
+  "amountPaid": zod.number(),
+  "receiptNumber": zod.string().optional()
 })
 export const ListStudentsResponse = zod.array(ListStudentsResponseItem)
 
@@ -229,7 +232,7 @@ export const CreateStudentBody = zod.object({
   "guardianPhone": zod.string(),
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number().min(createStudentBodyTermFeeMin),
-  "initialPayment": zod.number().min(createStudentBodyInitialPaymentMin),
+  "initialPayment": zod.number().min(createStudentBodyInitialPaymentMin).optional(),
   "paymentMethod": zod.string().optional(),
   "paymentReference": zod.string().optional()
 })
@@ -249,7 +252,8 @@ export const CreateStudentResponse = zod.object({
   "avatarTone": zod.string(),
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
-  "amountPaid": zod.number()
+  "amountPaid": zod.number(),
+  "receiptNumber": zod.string().optional()
 })
 
 
@@ -275,7 +279,8 @@ export const GetStudentResponse = zod.object({
   "avatarTone": zod.string(),
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
-  "amountPaid": zod.number()
+  "amountPaid": zod.number(),
+  "receiptNumber": zod.string().optional()
 }).and(zod.object({
   "dateOfBirth": zod.string(),
   "guardianName": zod.string(),
@@ -545,7 +550,8 @@ export const GetReportCardResponse = zod.object({
   "avatarTone": zod.string(),
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
-  "amountPaid": zod.number()
+  "amountPaid": zod.number(),
+  "receiptNumber": zod.string().optional()
 }),
   "term": zod.string(),
   "academicYear": zod.string(),
