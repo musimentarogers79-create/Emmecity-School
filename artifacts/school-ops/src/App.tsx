@@ -8,6 +8,7 @@ import { OperationsPage } from '@/pages/operations-page';
 import { ProfilePage } from '@/pages/profile-page';
 import {
   AnnouncementsPage,
+  AttendanceCreatePage,
   AttendancePage,
   DashboardPage,
   FinancePage,
@@ -46,6 +47,7 @@ function Router() {
         <Route path="/dashboard" component={DashboardPage} />
         <Route path="/students" component={StudentsPage} />
         <Route path="/students/:studentId" component={StudentProfilePage} />
+        <Route path="/attendance/create" component={AttendanceCreatePage} />
         <Route path="/attendance" component={AttendancePage} />
         <Route path="/finance" component={FinancePage} />
         <Route path="/announcements" component={AnnouncementsPage} />
