@@ -90,8 +90,59 @@ function UserManualPage() {
 }
 
 const pdfEscape = (value: string) => value.replace(/\\/g, '\\\\').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
-function receiptPdf(item: Payment, history: Payment[] = []) {
-  const lines = [
+type PdfImage = { bytes: Uint8Array; width: number; height: number };
+let schoolLogoPromise: Promise<PdfImage | undefined> | undefined;
+const loadSchoolLogo = () => {
+  schoolLogoPromise ??= fetch('/school-logo.jpg').then(async (response) => {
+    if (!response.ok) return undefined;
+    return { bytes: new Uint8Array(await response.arrayBuffer()), width: 177, height: 182 };
+  }).catch(() => undefined);
+  return schoolLogoPromise;
+};
+export async function brandedPdf(lines: string[]) {
+  const logo = await loadSchoolLogo();
+  const encoder = new TextEncoder();
+  const contentsObjectNumber = logo ? 6 : 5;
+  const stream = [
+    ...(logo ? ['q', '90 0 0 92 50 660 cm', '/Im1 Do', 'Q'] : []),
+    'BT',
+    logo ? '/F1 18 Tf\n175 740 Td' : '/F1 18 Tf\n50 744 Td',
+    ...lines.flatMap((line, index) => [`(${pdfEscape(line)}) Tj`, ...(index < lines.length - 1 ? ['0 -34 Td', '/F1 11 Tf'] : [])]),
+    'ET',
+  ].join('\n');
+  const objects: { text: string; binary?: Uint8Array; after?: string }[] = [
+    { text: '<< /Type /Catalog /Pages 2 0 R >>' },
+    { text: `<< /Type /Pages /Kids [3 0 R] /Count 1 >>` },
+    { text: `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >>${logo ? ' /XObject << /Im1 5 0 R >>' : ''} >> /Contents ${contentsObjectNumber} 0 R >>` },
+    { text: '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>' },
+    ...(logo ? [{ text: `<< /Type /XObject /Subtype /Image /Width ${logo.width} /Height ${logo.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${logo.bytes.length} >>\nstream\n`, binary: logo.bytes, after: '\nendstream' }] : []),
+    { text: `<< /Length ${encoder.encode(stream).length} >>\nstream\n${stream}\nendstream` },
+  ];
+  const chunks: Uint8Array[] = [];
+  const offsets: number[] = [0];
+  let byteLength = 0;
+  const addText = (text: string) => {
+    const bytes = encoder.encode(text);
+    chunks.push(bytes);
+    byteLength += bytes.length;
+  };
+  const addBytes = (bytes: Uint8Array) => {
+    chunks.push(bytes);
+    byteLength += bytes.length;
+  };
+  addText('%PDF-1.4\n');
+  objects.forEach((object, index) => {
+    offsets.push(byteLength);
+    addText(`${index + 1} 0 obj\n${object.text}`);
+    if (object.binary) addBytes(object.binary);
+    addText(`${object.after ? `${object.after}\n` : '\n'}endobj\n`);
+  });
+  const xref = byteLength;
+  addText(`xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map((offset) => `${String(offset).padStart(10, '0')} 00000 n `).join('\n')}\ntrailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  return new Blob(chunks.map((chunk) => chunk.slice().buffer), { type: 'application/pdf' });
+}
+async function receiptPdf(item: Payment, history: Payment[] = []) {
+  return brandedPdf([
     'EMMECTY NURSERY & PRIMARY SCHOOL',
     'OFFICIAL PAYMENT RECEIPT',
     `Receipt number: ${item.receiptNumber}`,
@@ -105,37 +156,30 @@ function receiptPdf(item: Payment, history: Payment[] = []) {
     'Payment history:',
     ...history.map((payment) => `  ${payment.date} · ${payment.receiptNumber} · ${money(payment.amount)}`),
     "Thank you for supporting the pupil's education.",
-  ];
-  const stream = ['BT', '/F1 18 Tf', '50 744 Td', ...lines.flatMap((line, index) => [`(${pdfEscape(line)}) Tj`, ...(index < lines.length - 1 ? ['0 -34 Td', '/F1 11 Tf'] : [])]), 'ET'].join('\n');
-  const objects = [
-    '<< /Type /Catalog /Pages 2 0 R >>',
-    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
-    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
-  ];
-  let pdf = '%PDF-1.4\n';
-  const offsets = [0];
-  objects.forEach((object, index) => {
-    offsets.push(pdf.length);
-    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
-  });
-  const xref = pdf.length;
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map((offset) => `${String(offset).padStart(10, '0')} 00000 n `).join('\n')}\ntrailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
-  return new Blob([pdf], { type: 'application/pdf' });
+  ]);
+}
+function addPrintLogo(printWindow: Window) {
+  const header = printWindow.document.querySelector('header');
+  if (!header) return;
+  const logo = printWindow.document.createElement('img');
+  logo.src = '/school-logo.jpg';
+  logo.alt = 'EMMECTY Nursery & Primary School logo';
+  logo.style.cssText = 'width:84px;height:86px;object-fit:contain;float:right;margin-left:20px';
+  header.prepend(logo);
 }
 function receiptPrintPage(item: Payment, history: Payment[] = []) {
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
   const row = (label: string, value: string) => `<div><dt>${label}</dt><dd>${value}</dd></div>`;
    printWindow.document.write(`<html><head><title>${item.receiptNumber}</title><style>body{font-family:Arial,sans-serif;color:#17231f;padding:48px;max-width:720px;margin:auto}header{border-bottom:3px solid #1d7056;padding-bottom:18px;margin-bottom:28px}h1{font-size:24px;margin:0 0 6px}p{color:#63756e}dl{display:grid;grid-template-columns:1fr 1fr;gap:18px 32px}dt{font-size:11px;color:#63756e;text-transform:uppercase;letter-spacing:.12em}dd{font-size:16px;font-weight:600;margin:5px 0 0}.amount{font-size:28px;color:#1d7056}table{width:100%;margin-top:32px;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:8px;border-bottom:1px solid #d9e2dc}@media print{body{padding:0}}</style></head><body><header><h1>EMMECTY NURSERY & PRIMARY SCHOOL</h1><p>Official payment receipt · ${item.receiptNumber}</p></header><dl>${row('Pupil', item.studentName)}${row('Registration number', item.registrationNumber)}${row('Amount', `<span class="amount">${money(item.amount)}</span>`)}${row('Payment method', item.method)}${row('Date', item.date)}${row('Status', item.status)}${row('Current balance', money(item.balance))}</dl><h2>Payment history</h2><table><thead><tr><th>Date</th><th>Receipt number</th><th>Amount</th></tr></thead><tbody>${history.map((payment) => `<tr><td>${payment.date}</td><td>${payment.receiptNumber}</td><td>${money(payment.amount)}</td></tr>`).join('')}</tbody></table><p style="margin-top:56px">This is an official EMMECTY school payment record.</p></body></html>`);
-  printWindow.document.close();
+   addPrintLogo(printWindow);
+   printWindow.document.close();
   printWindow.focus();
   printWindow.print();
 }
 
-function admissionFormPdf(form: AdmissionForm) {
-  const lines = [
+async function admissionFormPdf(form: AdmissionForm) {
+  return brandedPdf([
     'EMMECTY NURSERY & PRIMARY SCHOOL',
     'OFFICIAL PUPIL ADMISSION FORM',
     `Registration number: ${form.registrationNumber}`,
@@ -151,28 +195,11 @@ function admissionFormPdf(form: AdmissionForm) {
     `Amount paid: ${money(form.amountPaid)}`,
     `Fee balance: ${money(form.feeBalance)}`,
     'This is an official EMMECTY school admission record.',
-  ];
-  const stream = ['BT', '/F1 18 Tf', '50 744 Td', ...lines.flatMap((line, index) => [`(${pdfEscape(line)}) Tj`, ...(index < lines.length - 1 ? ['0 -34 Td', '/F1 11 Tf'] : [])]), 'ET'].join('\n');
-  const objects = [
-    '<< /Type /Catalog /Pages 2 0 R >>',
-    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
-    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
-  ];
-  let pdf = '%PDF-1.4\n';
-  const offsets = [0];
-  objects.forEach((object, index) => {
-    offsets.push(pdf.length);
-    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
-  });
-  const xref = pdf.length;
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map((offset) => `${String(offset).padStart(10, '0')} 00000 n `).join('\n')}\ntrailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
-  return new Blob([pdf], { type: 'application/pdf' });
+  ]);
 }
 
-function downloadAdmissionForm(form: AdmissionForm) {
-  const url = URL.createObjectURL(admissionFormPdf(form));
+async function downloadAdmissionForm(form: AdmissionForm) {
+  const url = URL.createObjectURL(await admissionFormPdf(form));
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = `${form.registrationNumber}-admission-form.pdf`;
@@ -185,6 +212,7 @@ function printAdmissionForm(form: AdmissionForm) {
   if (!printWindow) return;
   const row = (label: string, value: string) => `<div><dt>${label}</dt><dd>${value}</dd></div>`;
   printWindow.document.write(`<html><head><title>${form.registrationNumber} admission form</title><style>body{font-family:Arial,sans-serif;color:#17231f;padding:48px;max-width:720px;margin:auto}header{border-bottom:3px solid #1d7056;padding-bottom:18px;margin-bottom:28px}h1{font-size:24px;margin:0 0 6px}p{color:#63756e}dl{display:grid;grid-template-columns:1fr 1fr;gap:18px 32px}dt{font-size:11px;color:#63756e;text-transform:uppercase;letter-spacing:.12em}dd{font-size:16px;font-weight:600;margin:5px 0 0}.balance{font-size:24px;color:#1d7056}@media print{body{padding:0}}</style></head><body><header><h1>EMMECTY NURSERY & PRIMARY SCHOOL</h1><p>Official pupil admission form · ${form.registrationNumber}</p></header><dl>${row('Pupil', form.pupilName)}${row('Date of birth', form.dateOfBirth)}${row('Gender', form.gender)}${row('Class', `${form.className}${form.stream ? ` · ${form.stream}` : ''}`)}${row('Guardian', form.guardianName)}${row('Guardian contact', form.guardianPhone)}${row('Admission date', form.admissionDate)}${row('Pupil type', form.enrollmentType)}${row('Term fee', money(form.termFee))}${row('Amount paid', money(form.amountPaid))}${row('Fee balance', `<span class="balance">${money(form.feeBalance)}</span>`)}</dl><p style="margin-top:56px">This is an official EMMECTY school admission record.</p></body></html>`);
+  addPrintLogo(printWindow);
   printWindow.document.close();
   printWindow.focus();
   printWindow.print();
@@ -203,8 +231,8 @@ export function TransactionsPage() {
   const printReceipt = (item: typeof transactions[number]) => {
     receiptPrintPage(item, transactions.filter((payment) => payment.studentId === item.studentId));
   };
-  const downloadReceipt = (item: typeof transactions[number]) => {
-    const url = URL.createObjectURL(receiptPdf(item, transactions.filter((payment) => payment.studentId === item.studentId)));
+  const downloadReceipt = async (item: typeof transactions[number]) => {
+    const url = URL.createObjectURL(await receiptPdf(item, transactions.filter((payment) => payment.studentId === item.studentId)));
     const anchor = document.createElement('a');
     anchor.href = url;
     anchor.download = `${item.receiptNumber}.pdf`;
@@ -212,7 +240,7 @@ export function TransactionsPage() {
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   };
   const shareReceipt = async (item: typeof transactions[number]) => {
-    const file = new File([receiptPdf(item, transactions.filter((payment) => payment.studentId === item.studentId))], `${item.receiptNumber}.pdf`, { type: 'application/pdf' });
+    const file = new File([await receiptPdf(item, transactions.filter((payment) => payment.studentId === item.studentId))], `${item.receiptNumber}.pdf`, { type: 'application/pdf' });
     if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) await navigator.share({ title: item.receiptNumber, files: [file] });
     else if (navigator.clipboard) await navigator.clipboard.writeText(`Receipt ${item.receiptNumber}: ${item.studentName}, ${money(item.amount)}, ${item.date}. Download the PDF to share it.`);
   };
@@ -226,9 +254,9 @@ export function TransactionDetailPage() {
   const item = query.data?.find((payment) => payment.id === transactionId);
   const history = item ? (query.data || []).filter((payment) => payment.studentId === item.studentId) : [];
   const canAct = session?.user.role === 'administrator' || session?.user.role === 'super_admin' || session?.user.permissions.includes('transactions_print');
-  const download = () => {
+  const download = async () => {
     if (!item) return;
-     const url = URL.createObjectURL(receiptPdf(item, history));
+     const url = URL.createObjectURL(await receiptPdf(item, history));
     const anchor = document.createElement('a');
     anchor.href = url;
     anchor.download = `${item.receiptNumber}.pdf`;
@@ -237,7 +265,7 @@ export function TransactionDetailPage() {
   };
   const share = async () => {
     if (!item) return;
-     const file = new File([receiptPdf(item, history)], `${item.receiptNumber}.pdf`, { type: 'application/pdf' });
+      const file = new File([await receiptPdf(item, history)], `${item.receiptNumber}.pdf`, { type: 'application/pdf' });
     if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) await navigator.share({ title: item.receiptNumber, files: [file] });
     else if (navigator.clipboard) await navigator.clipboard.writeText(`Receipt ${item.receiptNumber}: ${item.studentName}, ${money(item.amount)}, ${item.date}. Download the PDF to share it.`);
   };
@@ -254,7 +282,8 @@ export function SalaryReceiptPage() {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
     printWindow.document.write(`<html><head><title>${item.receiptNumber}</title><style>body{font-family:Arial,sans-serif;color:#17231f;padding:48px;max-width:720px;margin:auto}header{border-bottom:3px solid #1d7056;padding-bottom:18px;margin-bottom:28px}h1{font-size:24px;margin:0 0 6px}p{color:#63756e}dl{display:grid;grid-template-columns:1fr 1fr;gap:18px 32px}dt{font-size:11px;color:#63756e;text-transform:uppercase;letter-spacing:.12em}dd{font-size:16px;font-weight:600;margin:5px 0 0}.amount{font-size:28px;color:#1d7056}table{width:100%;margin-top:32px;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:8px;border-bottom:1px solid #d9e2dc}@media print{body{padding:0}}</style></head><body><header><h1>EMMECTY NURSERY & PRIMARY SCHOOL</h1><p>Salary payment receipt · ${item.receiptNumber}</p></header><dl><div><dt>Staff member</dt><dd>${item.staffName}</dd></div><div><dt>Period</dt><dd>${item.period}</dd></div><div><dt>Monthly salary</dt><dd>${money(item.monthlySalary)}</dd></div><div><dt>Amount paid</dt><dd class="amount">${money(item.amount)}</dd></div><div><dt>Balance</dt><dd>${money(item.balance)}</dd></div><div><dt>Payment date</dt><dd>${item.paymentDate}</dd></div><div><dt>Method</dt><dd>${item.method}</dd></div><div><dt>Reference</dt><dd>${item.reference || '—'}</dd></div></dl><h2>Payment history</h2><table><thead><tr><th>Date</th><th>Period</th><th>Receipt number</th><th>Amount</th></tr></thead><tbody>${history.map((payment) => `<tr><td>${payment.paymentDate}</td><td>${payment.period}</td><td>${payment.receiptNumber}</td><td>${money(payment.amount)}</td></tr>`).join('')}</tbody></table></body></html>`);
-    printWindow.document.close();
+     addPrintLogo(printWindow);
+     printWindow.document.close();
     printWindow.focus();
     printWindow.print();
   };

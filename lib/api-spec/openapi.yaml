@@ -690,7 +690,45 @@ components:
           type: string
         studentId:
           type: ["string", "null"]
+        registrationForm:
+          $ref: "#/components/schemas/TeacherRegistrationForm"
       required: [id, name, identifier, email, phone, role, permissions, initials, schoolName]
+    TeacherRegistrationForm:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        name:
+          type: string
+        username:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        nextOfKin:
+          type: string
+        hireDate:
+          type: string
+        employmentType:
+          type: string
+        monthlySalary:
+          type: number
+        assignedClasses:
+          type: array
+          items:
+            type: string
+        permissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PermissionKey"
+        registeredAt:
+          type: string
+      required: [id, userId, name, username, email, phone, address, nextOfKin, hireDate, employmentType, monthlySalary, assignedClasses, permissions, registeredAt]
     UserProfileUpdate:
       type: object
       properties:

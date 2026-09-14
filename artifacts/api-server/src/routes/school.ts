@@ -119,7 +119,7 @@ router.post("/users", async (req, res): Promise<void> => {
   }
   try {
     const account = await createUser({ ...parsed.data, role: parsed.data.role as SchoolRole, studentId });
-    res.status(201).json(CreateUserResponse.parse(publicUser(account)));
+    res.status(201).json(CreateUserResponse.parse(account));
   } catch { errorResponse(res, 409, "That username or registration number is already in use."); }
 });
 router.get("/users", async (req, res): Promise<void> => {

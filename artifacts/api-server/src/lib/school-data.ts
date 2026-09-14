@@ -154,7 +154,31 @@ export async function createUser(data: {
       .filter((item) => data.assignedClasses?.includes(classAssignmentKey(String(item.name), String(item.stream ?? ""))))
       .map((item) => updateOperation("classes", item.id, { ...item, teacherId: row.id, teacherName: data.name })));
   }
-  return publicRow(row, await getSchoolSettings());
+  const publicUser = publicRow(row, await getSchoolSettings());
+  if (data.role !== "teacher") return publicUser;
+  const classRows = await listOperation("classes");
+  const assignedClasses = classRows
+    .filter((item) => item.teacherId === row.id)
+    .map((item) => classAssignmentKey(String(item.name), String(item.stream ?? "")));
+  const registrationForm = {
+    documentType: "teacher_registration_form",
+    title: "Teacher Registration Form",
+    userId: row.id,
+    name: data.name,
+    username: data.identifier,
+    email: data.email || "",
+    phone: data.phone || "",
+    address: data.address || "",
+    nextOfKin: data.nextOfKin || "",
+    hireDate: data.hireDate || "",
+    employmentType: data.employmentType || "Full-time",
+    monthlySalary: data.monthlySalary || 0,
+    assignedClasses,
+    permissions: data.permissions || [],
+    registeredAt: new Date().toISOString(),
+  };
+  const document = (await db.insert(documents).values({ schoolId, data: registrationForm }).returning())[0];
+  return document ? { ...publicUser, assignedClasses, registrationForm: { ...registrationForm, id: document.id } } : { ...publicUser, assignedClasses };
 }
 export async function updateUserProfile(user: SchoolUser, data: {
   name?: string; identifier?: string; email?: string; phone?: string; newPassword?: string;

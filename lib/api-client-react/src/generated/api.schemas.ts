@@ -55,6 +55,23 @@ export const PermissionKey = {
   manage_users: 'manage_users',
 } as const;
 
+export interface TeacherRegistrationForm {
+  id: string;
+  userId: string;
+  name: string;
+  username: string;
+  email: string;
+  phone: string;
+  address: string;
+  nextOfKin: string;
+  hireDate: string;
+  employmentType: string;
+  monthlySalary: number;
+  assignedClasses: string[];
+  permissions: PermissionKey[];
+  registeredAt: string;
+}
+
 export interface AuthUser {
   id: string;
   name: string;
@@ -70,6 +87,7 @@ export interface AuthUser {
   schoolName: string;
   /** @nullable */
   studentId?: string | null;
+  registrationForm?: TeacherRegistrationForm;
 }
 
 export interface UserProfileUpdate {

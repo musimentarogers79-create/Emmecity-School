@@ -7,6 +7,7 @@
  */
 import type { PermissionKey } from './permissionKey';
 import type { Role } from './role';
+import type { TeacherRegistrationForm } from './teacherRegistrationForm';
 
 export interface AuthUser {
   id: string;
@@ -23,4 +24,5 @@ export interface AuthUser {
   schoolName: string;
   /** @nullable */
   studentId?: string | null;
+  registrationForm?: TeacherRegistrationForm;
 }

@@ -72,6 +72,7 @@ export * from './studentInputEnrollmentType';
 export * from './studentProfile';
 export * from './studentProfileAcademicHistoryItem';
 export * from './studentStatus';
+export * from './teacherRegistrationForm';
 export * from './timetableEntry';
 export * from './timetableInput';
 export * from './userAccountInput';

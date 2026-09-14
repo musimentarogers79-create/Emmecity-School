@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
-import { type ClassInput, type ExpenseInput, type PermissionKey, type SalaryPaymentInput, type UserAccountInput, useApproveExpense, useCreateClass, useCreateExpense, useCreateSalaryPayment, useCreateUser, useDeleteExpense, useGetCurrentUser, useGetOperations, getGetOperationsQueryKey, useListSalaryStaff, useListSalaries, useListUsers, useUpdateUserPermissions, getListUsersQueryKey, getListSalaryStaffQueryKey, getListSalariesQueryKey } from '@workspace/api-client-react';
-import { Archive, ArrowRight, BarChart3, Bell, BookOpen, BusFront, CalendarDays, ClipboardList, FileText, HeartPulse, Library, Package, Plus, Receipt, RefreshCcw, ShieldAlert, Users, WalletCards } from 'lucide-react';
+import { type ClassInput, type ExpenseInput, type PermissionKey, type SalaryPaymentInput, type TeacherRegistrationForm, type UserAccountInput, useApproveExpense, useCreateClass, useCreateExpense, useCreateSalaryPayment, useCreateUser, useDeleteExpense, useGetCurrentUser, useGetOperations, getGetOperationsQueryKey, useListSalaryStaff, useListSalaries, useListUsers, useUpdateUserPermissions, getListUsersQueryKey, getListSalaryStaffQueryKey, getListSalariesQueryKey } from '@workspace/api-client-react';
+import { Archive, ArrowRight, BarChart3, Bell, BookOpen, BusFront, CalendarDays, ClipboardList, Download, FileText, HeartPulse, Library, Package, Plus, Printer, Receipt, RefreshCcw, ShieldAlert, Users, WalletCards } from 'lucide-react';
 import { AppShell, Button, EmptyState, ErrorState, PageHeader, Panel, Skeleton } from '@/components/school-shell';
 import { trackEvent } from '@/lib/analytics';
+import { brandedPdf } from './school-pages';
 
 type ViewKey = 'people' | 'classes' | 'assignments' | 'staff' | 'parents' | 'expenses' | 'salaries' | 'discipline' | 'medical' | 'library' | 'transport' | 'inventory' | 'events' | 'documents' | 'reports' | 'notifications';
 type Row = Record<string, string | number | boolean>;
@@ -32,6 +33,42 @@ const compactValue = (value: string | number | boolean | undefined) => value ===
 const money = (value: string | number | boolean | undefined, currency = 'UGX') => typeof value === 'number' ? new Intl.NumberFormat('en-UG', { style: 'currency', currency, maximumFractionDigits: 0 }).format(value) : compactValue(value);
 const inputClass = 'focus-ring h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm outline-none';
 
+async function downloadTeacherRegistration(form: TeacherRegistrationForm) {
+  const pdf = await brandedPdf([
+    'EMMECTY NURSERY & PRIMARY SCHOOL',
+    'OFFICIAL TEACHER REGISTRATION FORM',
+    `Teacher: ${form.name}`,
+    `Username: ${form.username}`,
+    `Email: ${form.email || 'Not provided'}`,
+    `Phone: ${form.phone || 'Not provided'}`,
+    `Address: ${form.address || 'Not provided'}`,
+    `Next of kin: ${form.nextOfKin || 'Not provided'}`,
+    `Hire date: ${form.hireDate || 'Not provided'}`,
+    `Employment type: ${form.employmentType}`,
+    `Monthly salary: ${money(form.monthlySalary)}`,
+    `Assigned classes: ${form.assignedClasses.join(', ')}`,
+    `Action permissions: ${form.permissions.length ? form.permissions.join(', ') : 'None'}`,
+    `Registered at: ${form.registeredAt}`,
+    'This is an official EMMECTY school teacher registration record.',
+  ]);
+  const url = URL.createObjectURL(pdf);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `${form.username}-teacher-registration.pdf`;
+  anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function printTeacherRegistration(form: TeacherRegistrationForm) {
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) return;
+  const row = (label: string, value: string) => `<div><dt>${label}</dt><dd>${value}</dd></div>`;
+  printWindow.document.write(`<html><head><title>${form.name} teacher registration</title><style>body{font-family:Arial,sans-serif;color:#17231f;padding:48px;max-width:720px;margin:auto}header{border-bottom:3px solid #1d7056;padding-bottom:18px;margin-bottom:28px;min-height:88px}header img{float:right;width:84px;height:86px;object-fit:contain}h1{font-size:24px;margin:0 0 6px}p{color:#63756e}dl{display:grid;grid-template-columns:1fr 1fr;gap:18px 32px}dt{font-size:11px;color:#63756e;text-transform:uppercase;letter-spacing:.12em}dd{font-size:16px;font-weight:600;margin:5px 0 0}.classes{grid-column:1/-1;border-top:1px solid #d9e2dc;padding-top:18px}@media print{body{padding:0}}</style></head><body><header><img src="/school-logo.jpg" alt="EMMECTY Nursery & Primary School logo"><h1>EMMECTY NURSERY & PRIMARY SCHOOL</h1><p>Official teacher registration form</p></header><dl>${row('Teacher', form.name)}${row('Username', form.username)}${row('Email', form.email || 'Not provided')}${row('Phone', form.phone || 'Not provided')}${row('Address', form.address || 'Not provided')}${row('Next of kin', form.nextOfKin || 'Not provided')}${row('Hire date', form.hireDate || 'Not provided')}${row('Employment type', form.employmentType)}${row('Monthly salary', money(form.monthlySalary))}<div class="classes"><dt>Assigned classes</dt><dd>${form.assignedClasses.join(', ')}</dd></div><div class="classes"><dt>Action permissions</dt><dd>${form.permissions.length ? form.permissions.join(', ') : 'None'}</dd></div></dl><p style="margin-top:56px">This is an official EMMECTY school teacher registration record.</p></body></html>`);
+  printWindow.document.close();
+  printWindow.focus();
+  printWindow.print();
+}
+
 function OperationsSkeleton() {
   return <div className="grid gap-6 lg:grid-cols-[250px_1fr]"><Panel className="p-4"><Skeleton className="h-5 w-32" /><div className="mt-5 space-y-3">{[1, 2, 3, 4, 5, 6].map((item) => <Skeleton key={item} className="h-10 w-full" />)}</div></Panel><Panel className="p-6"><Skeleton className="h-8 w-52" /><Skeleton className="mt-8 h-48 w-full" /></Panel></div>;
 }
@@ -42,6 +79,7 @@ function CreateAccountPanel() {
   const operations = useGetOperations();
   const [form, setForm] = useState({ name: '', identifier: '', password: '', role: 'teacher', studentId: '', email: '', phone: '', address: '', nextOfKin: '', hireDate: '', employmentType: 'Full-time', monthlySalary: '', permissions: [] as PermissionKey[], assignedClasses: [] as string[] });
   const [assignmentError, setAssignmentError] = useState('');
+  const [teacherConfirmation, setTeacherConfirmation] = useState<TeacherRegistrationForm | null>(null);
   const update = (key: keyof typeof form, value: string) => setForm((old) => ({ ...old, [key]: value }));
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
@@ -58,8 +96,9 @@ function CreateAccountPanel() {
        hireDate: form.hireDate, employmentType: form.employmentType, monthlySalary: form.monthlySalary ? Number(form.monthlySalary) : undefined, permissions: form.permissions, assignedClasses: form.role === 'teacher' ? form.assignedClasses : [],
     };
     create.mutate({ data }, {
-      onSuccess: () => {
+       onSuccess: (account) => {
         trackEvent('account_created', { role: data.role, user_type: data.userType });
+         if (data.role === 'teacher' && account.registrationForm) setTeacherConfirmation(account.registrationForm);
           setForm({ name: '', identifier: '', password: '', role: 'teacher', studentId: '', email: '', phone: '', address: '', nextOfKin: '', hireDate: '', employmentType: 'Full-time', monthlySalary: '', permissions: [], assignedClasses: [] });
         setAssignmentError('');
         client.invalidateQueries({ queryKey: getGetOperationsQueryKey() });
@@ -72,6 +111,7 @@ function CreateAccountPanel() {
     { key: 'finance_view', label: 'Access finance & payments' }, { key: 'expenses_view', label: 'Access expenses' },
   ];
   const classRows = operations.data?.modules?.classes || [];
+  if (teacherConfirmation) return <Panel className="border-dashed p-5" testId="panel-teacher-registration-confirmation"><div className="flex items-start gap-3"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--secondary))] text-[hsl(var(--primary))]"><Users className="size-5" /></span><div><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-[hsl(var(--primary))]">Teacher registered</p><h2 className="font-display text-2xl">Teacher registration form ready</h2><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">The teacher account and assigned classes were saved successfully.</p></div></div><dl className="mt-6 grid gap-4 sm:grid-cols-2"><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Teacher</dt><dd className="mt-1 text-sm font-semibold">{teacherConfirmation.name}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Username</dt><dd className="mt-1 font-mono-ui text-sm font-semibold">{teacherConfirmation.username}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Phone</dt><dd className="mt-1 text-sm font-semibold">{teacherConfirmation.phone || 'Not provided'}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Monthly salary</dt><dd className="mt-1 text-sm font-semibold">{money(teacherConfirmation.monthlySalary)}</dd></div><div className="sm:col-span-2"><dt className="text-xs text-[hsl(var(--muted-foreground))]">Assigned classes</dt><dd className="mt-1 text-sm font-semibold">{teacherConfirmation.assignedClasses.join(', ')}</dd></div></dl><div className="mt-6 flex flex-wrap justify-end gap-3 border-t border-[hsl(var(--border))] pt-5"><Button variant="secondary" onClick={() => void downloadTeacherRegistration(teacherConfirmation)} testId="button-download-teacher-registration"><Download className="size-4" /> Download PDF</Button><Button variant="secondary" onClick={() => printTeacherRegistration(teacherConfirmation)} testId="button-print-teacher-registration"><Printer className="size-4" /> Print registration</Button><Button onClick={() => setTeacherConfirmation(null)} testId="button-finish-teacher-registration">Register another account</Button></div></Panel>;
   return <Panel className="border-dashed p-5" testId="panel-create-account"><div className="flex items-start gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--secondary))] text-[hsl(var(--primary))]"><Plus className="size-4" /></span><div><h2 className="font-display text-xl">Create user account & permissions</h2><p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Staff and teachers sign in with usernames. Register the monthly salary now so salary balances remain accurate.</p></div></div><form onSubmit={submit} className="mt-5 grid gap-3 md:grid-cols-2"><input required value={form.name} onChange={(event) => update('name', event.target.value)} placeholder="Full names" className={inputClass} data-testid="input-account-name" /><input required value={form.identifier} onChange={(event) => update('identifier', event.target.value)} placeholder={form.role === 'student' ? 'Permanent registration number' : 'Username'} className={inputClass} data-testid="input-account-identifier" /><select value={form.role} onChange={(event) => { const role = event.target.value; setForm((old) => ({ ...old, role, assignedClasses: role === 'teacher' ? old.assignedClasses : [] })); setAssignmentError(''); }} className={inputClass} data-testid="select-account-role">{['teacher', 'accountant', 'staff', 'guardian', 'student'].map((role) => <option key={role} value={role}>{role === 'student' ? 'Pupil' : role[0].toUpperCase() + role.slice(1)}</option>)}</select><input required minLength={8} type="password" value={form.password} onChange={(event) => update('password', event.target.value)} placeholder="Temporary password (8+ characters)" className={inputClass} data-testid="input-account-password" /><input type="tel" value={form.phone} onChange={(event) => update('phone', event.target.value)} placeholder="Contact number" className={inputClass} data-testid="input-account-phone" /><input type="email" value={form.email} onChange={(event) => update('email', event.target.value)} placeholder="Email address" className={inputClass} data-testid="input-account-email" /><input value={form.address} onChange={(event) => update('address', event.target.value)} placeholder="Home address" className={inputClass} data-testid="input-account-address" /><input value={form.nextOfKin} onChange={(event) => update('nextOfKin', event.target.value)} placeholder="Next of kin / emergency contact" className={inputClass} data-testid="input-account-next-of-kin" /><input type="date" value={form.hireDate} onChange={(event) => update('hireDate', event.target.value)} className={inputClass} data-testid="input-account-hire-date" /><select value={form.employmentType} onChange={(event) => update('employmentType', event.target.value)} className={inputClass} data-testid="select-account-employment-type"><option>Full-time</option><option>Part-time</option><option>Contract</option><option>Volunteer</option></select>{(form.role === 'teacher' || form.role === 'staff') && <input required min={0} type="number" value={form.monthlySalary} onChange={(event) => update('monthlySalary', event.target.value)} placeholder="Monthly salary (UGX)" className={inputClass} data-testid="input-account-monthly-salary" />}{(form.role === 'guardian' || form.role === 'student') && <input required value={form.studentId} onChange={(event) => update('studentId', event.target.value)} placeholder="Linked pupil ID or registration number" className={`${inputClass} md:col-span-2`} data-testid="input-account-student-id" />}{form.role === 'teacher' && <fieldset className={`md:col-span-2 rounded-2xl bg-[hsl(var(--muted)/.55)] p-4 ${assignmentError ? 'border border-[hsl(var(--destructive)/.45)]' : ''}`}><legend className="px-1 text-xs font-semibold">Assigned classes <span className="text-[hsl(var(--destructive))]">*</span></legend><p className="mt-1 text-[11px] text-[hsl(var(--muted-foreground))]">Choose one or more classes. Use Ctrl/Cmd-click or tap to select multiple.</p><select required multiple value={form.assignedClasses} onChange={(event) => { setForm((old) => ({ ...old, assignedClasses: Array.from(event.target.selectedOptions, (option) => option.value) })); setAssignmentError(''); }} className={`${inputClass} h-auto min-h-24 py-2`} data-testid="select-account-classes">{classRows.map((item) => <option key={item.id} value={item.name}>{item.name}{item.stream ? ` · ${item.stream}` : ''}</option>)}</select>{!classRows.length && <p className="mt-2 text-xs text-[hsl(var(--destructive))]">Create at least one class before registering a teacher.</p>}{assignmentError && <p className="mt-2 text-xs text-[hsl(var(--destructive))]" role="alert" data-testid="status-account-class-error">{assignmentError}</p>}</fieldset>}<div className="md:col-span-2 rounded-2xl bg-[hsl(var(--muted)/.55)] p-4"><p className="text-xs font-semibold">Action permissions</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{permissionOptions.map((permission) => <label key={permission.key} className="flex items-center gap-2 text-xs"><input type="checkbox" checked={form.permissions.includes(permission.key)} onChange={() => setForm((old) => ({ ...old, permissions: old.permissions.includes(permission.key) ? old.permissions.filter((item) => item !== permission.key) : [...old.permissions, permission.key] }))} />{permission.label}</label>)}</div></div><div className="md:col-span-2 flex items-center justify-between gap-3">{create.isError && <p className="text-xs text-[hsl(var(--destructive))]">Account could not be created. Check the identifier, linked pupil, and assigned class.</p>}<Button type="submit" disabled={create.isPending || (form.role === 'teacher' && (!classRows.length || !form.assignedClasses.length))} testId="button-create-account">{create.isPending ? 'Creating…' : 'Create account'}</Button></div></form></Panel>;
 }
 
