@@ -64,7 +64,7 @@ function ExpenseComposer() {
     event.preventDefault();
     create.mutate({ data: form }, {
       onSuccess: () => {
-        trackEvent('expense_recorded', { category: form.category });
+        trackEvent('expense_recorded');
         setForm({ category: '', description: '', amount: 0, date: new Date().toISOString().slice(0, 10), reference: '' });
         client.invalidateQueries({ queryKey: getGetOperationsQueryKey() });
       },
