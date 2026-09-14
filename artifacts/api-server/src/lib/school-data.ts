@@ -9,10 +9,11 @@ import {
 import type { SchoolSettings, User } from "@workspace/db";
 
 export type SchoolRole = "super_admin" | "administrator" | "teacher" | "accountant" | "guardian" | "student" | "staff";
+export type PermissionKey = "expense_approve" | "expense_delete" | "transactions_view" | "transactions_print" | "manage_users";
 export type AttendanceStatus = "present" | "absent" | "late" | "excused";
 export type SchoolUser = {
   id: string; name: string; identifier: string; email: string; phone: string; password: string; userType: "staff" | "guardian" | "learner";
-  role: SchoolRole; initials: string; schoolName: string; studentId?: string;
+  role: SchoolRole; permissions: PermissionKey[]; initials: string; schoolName: string; studentId?: string;
 };
 export type SchoolStudent = {
   id: string; registrationNumber: string; name: string; firstName: string; lastName: string; middleName?: string;
@@ -84,10 +85,11 @@ export async function initializeSchoolData() {
 export async function getSchoolId() { return initializeSchoolData(); }
 
 function publicRow(row: User, setting: SchoolSettings): SchoolUser {
-  return { id: row.id, name: row.name, identifier: row.identifier, email: row.email, phone: row.phone, password: row.passwordHash, userType: row.userType as SchoolUser["userType"], role: row.role as SchoolRole, initials: row.initials, schoolName: setting.schoolName, ...(row.studentId ? { studentId: row.studentId } : {}) };
+  const permissions = Array.isArray(row.permissions) ? row.permissions.filter((item): item is PermissionKey => ["expense_approve", "expense_delete", "transactions_view", "transactions_print", "manage_users"].includes(item)) : [];
+  return { id: row.id, name: row.name, identifier: row.identifier, email: row.email, phone: row.phone, password: row.passwordHash, userType: row.userType as SchoolUser["userType"], role: row.role as SchoolRole, permissions, initials: row.initials, schoolName: setting.schoolName, ...(row.studentId ? { studentId: row.studentId } : {}) };
 }
 export function publicUser(user: SchoolUser) {
-  return { id: user.id, name: user.name, identifier: user.identifier, email: user.email, phone: user.phone, role: user.role, initials: user.initials, schoolName: user.schoolName, studentId: user.studentId ?? null };
+  return { id: user.id, name: user.name, identifier: user.identifier, email: user.email, phone: user.phone, role: user.role, permissions: user.permissions, initials: user.initials, schoolName: user.schoolName, studentId: user.studentId ?? null };
 }
 export async function getSchoolSettings() {
   const id = await getSchoolId();
@@ -119,19 +121,19 @@ export async function findUserById(id: string) {
 }
 export async function createUser(data: {
   name: string; identifier: string; password: string; userType: string; role: SchoolRole; studentId?: string;
-  email?: string; phone?: string; address?: string; nextOfKin?: string; hireDate?: string; employmentType?: string;
+  email?: string; phone?: string; address?: string; nextOfKin?: string; hireDate?: string; employmentType?: string; permissions?: PermissionKey[];
 }) {
   const schoolId = await getSchoolId();
   const row = (await db.insert(users).values({
     schoolId, name: data.name, identifier: data.identifier, email: data.email || "", phone: data.phone || "",
-    passwordHash: hashPassword(data.password), userType: data.userType, role: data.role, initials: initials(data.name), studentId: data.studentId,
+    passwordHash: hashPassword(data.password), userType: data.userType, role: data.role, permissions: data.permissions || [], initials: initials(data.name), studentId: data.studentId,
   }).returning())[0];
   if (!row) throw new Error("Unable to create account");
   if (data.userType === "staff") {
     await db.insert(staff).values({
       schoolId,
       data: {
-        name: data.name, role: data.role.replace("_", " "), username: data.identifier, email: data.email || "",
+        userId: row.id, name: data.name, role: data.role.replace("_", " "), username: data.identifier, email: data.email || "",
         phone: data.phone || "Not provided", address: data.address || "", nextOfKin: data.nextOfKin || "",
         hireDate: data.hireDate || "", employmentType: data.employmentType || "Full-time", status: "Active",
       },
@@ -155,6 +157,11 @@ export async function updateUserProfile(user: SchoolUser, data: {
   const row = (await db.update(users).set(updates).where(and(eq(users.schoolId, schoolId), eq(users.id, user.id))).returning())[0];
   if (!row) throw new Error("Account not found");
   return publicRow(row, await getSchoolSettings());
+}
+export async function updateUserPermissions(userId: string, permissions: PermissionKey[]) {
+  const schoolId = await getSchoolId();
+  const row = (await db.update(users).set({ permissions, updatedAt: new Date() }).where(and(eq(users.schoolId, schoolId), eq(users.id, userId))).returning())[0];
+  return row ? publicRow(row, await getSchoolSettings()) : undefined;
 }
 
 const tokenDigest = (token: string) => createHash("sha256").update(token).digest("hex");
@@ -307,6 +314,18 @@ export async function createOperation(kind: OperationKind, data: Record<string, 
   const table = tables[kind];
   const row = (await db.insert(table).values({ schoolId, data } as never).returning())[0];
   return row ? { ...(row.data as OperationRecord), id: row.id } : undefined;
+}
+export async function updateOperation(kind: OperationKind, id: string, data: Record<string, unknown>) {
+  const schoolId = await getSchoolId();
+  const table = tables[kind];
+  const row = (await db.update(table).set({ data, updatedAt: new Date() } as never).where(and(eq(table.schoolId, schoolId), eq(table.id, id))).returning())[0];
+  return row ? { ...(row.data as OperationRecord), id: row.id } : undefined;
+}
+export async function deleteOperation(kind: OperationKind, id: string) {
+  const schoolId = await getSchoolId();
+  const table = tables[kind];
+  const row = (await db.delete(table).where(and(eq(table.schoolId, schoolId), eq(table.id, id))).returning({ id: table.id }))[0];
+  return !!row;
 }
 export async function saveAttendance(studentId: string, date: string, status: AttendanceStatus) {
   const student = await getStudent(studentId);

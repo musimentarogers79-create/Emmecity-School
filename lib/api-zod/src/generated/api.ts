@@ -37,6 +37,7 @@ export const LoginResponse = zod.object({
   "identifier": zod.string(),
   "email": zod.string(),
   "phone": zod.string(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'manage_users'])),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
@@ -64,6 +65,7 @@ export const GetCurrentUserResponse = zod.object({
   "identifier": zod.string(),
   "email": zod.string(),
   "phone": zod.string(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'manage_users'])),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
@@ -98,6 +100,7 @@ export const UpdateCurrentUserResponse = zod.object({
   "identifier": zod.string(),
   "email": zod.string(),
   "phone": zod.string(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'manage_users'])),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
@@ -105,6 +108,24 @@ export const UpdateCurrentUserResponse = zod.object({
 }),
   "expiresAt": zod.string()
 })
+
+
+/**
+ * @summary List school user accounts for administrator management
+ */
+export const ListUsersResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "identifier": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'manage_users'])),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
+  "initials": zod.string(),
+  "schoolName": zod.string(),
+  "studentId": zod.string().nullish()
+})
+export const ListUsersResponse = zod.array(ListUsersResponseItem)
 
 
 /**
@@ -128,7 +149,8 @@ export const CreateUserBody = zod.object({
   "address": zod.string().optional(),
   "nextOfKin": zod.string().optional(),
   "hireDate": zod.string().optional(),
-  "employmentType": zod.string().optional()
+  "employmentType": zod.string().optional(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'manage_users'])).optional()
 })
 
 export const CreateUserResponse = zod.object({
@@ -137,6 +159,32 @@ export const CreateUserResponse = zod.object({
   "identifier": zod.string(),
   "email": zod.string(),
   "phone": zod.string(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'manage_users'])),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
+  "initials": zod.string(),
+  "schoolName": zod.string(),
+  "studentId": zod.string().nullish()
+})
+
+
+/**
+ * @summary Update the action permissions for a school user
+ */
+export const UpdateUserPermissionsParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const UpdateUserPermissionsBody = zod.object({
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'manage_users']))
+})
+
+export const UpdateUserPermissionsResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "identifier": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'manage_users'])),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
@@ -495,6 +543,33 @@ export const CreateExpenseResponse = zod.object({
   "date": zod.string(),
   "status": zod.string()
 })
+
+
+/**
+ * @summary Approve a pending school expense
+ */
+export const ApproveExpenseParams = zod.object({
+  "expenseId": zod.coerce.string()
+})
+
+export const ApproveExpenseResponse = zod.object({
+  "id": zod.string(),
+  "category": zod.string(),
+  "description": zod.string(),
+  "amount": zod.number(),
+  "date": zod.string(),
+  "status": zod.string()
+})
+
+
+/**
+ * @summary Delete a school expense
+ */
+export const DeleteExpenseParams = zod.object({
+  "expenseId": zod.coerce.string()
+})
+
+export const DeleteExpenseResponse = zod.void()
 
 
 /**

@@ -42,12 +42,24 @@ export interface LoginInput {
   password: string;
 }
 
+export type PermissionKey = typeof PermissionKey[keyof typeof PermissionKey];
+
+
+export const PermissionKey = {
+  expense_approve: 'expense_approve',
+  expense_delete: 'expense_delete',
+  transactions_view: 'transactions_view',
+  transactions_print: 'transactions_print',
+  manage_users: 'manage_users',
+} as const;
+
 export interface AuthUser {
   id: string;
   name: string;
   identifier: string;
   email: string;
   phone: string;
+  permissions: PermissionKey[];
   role: Role;
   initials: string;
   schoolName: string;
@@ -92,6 +104,11 @@ export interface UserAccountInput {
   nextOfKin?: string;
   hireDate?: string;
   employmentType?: string;
+  permissions?: PermissionKey[];
+}
+
+export interface UserPermissionsInput {
+  permissions: PermissionKey[];
 }
 
 export interface AuthSession {

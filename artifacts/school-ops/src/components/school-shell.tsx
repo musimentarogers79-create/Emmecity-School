@@ -15,6 +15,8 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/students', label: 'Pupils', icon: Users },
     { href: '/attendance', label: 'Attendance', icon: CalendarDays },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
+    { href: '/operations?view=expenses', label: 'Expenses', icon: ReceiptText },
+    { href: '/transactions', label: 'Transactions', icon: ReceiptText },
     { href: '/operations?view=classes', label: 'Operations', icon: ClipboardList },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
@@ -40,6 +42,7 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
     { href: '/operations?view=expenses', label: 'Expenses', icon: ReceiptText },
+    { href: '/transactions', label: 'Transactions', icon: ReceiptText },
     { href: '/operations?view=reports', label: 'Reports', icon: FileBarChart },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
   ],
@@ -114,7 +117,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const user = session?.user;
   const displayName = user?.name || 'School administrator';
   const roleLabel = (user?.role || 'administrator').replace('_', ' ');
-  const navItems = (roleNavigation[user?.role || 'staff'] || roleNavigation.staff).map((item) => {
+  const navRole = user?.role === 'super_admin' ? 'administrator' : user?.role || 'staff';
+  const navItems = (roleNavigation[navRole] || roleNavigation.staff).map((item) => {
     if ((user?.role === 'guardian' || user?.role === 'student') && user.studentId && item.href.includes('/students/stu-001')) {
       return { ...item, href: item.href.replace('/students/stu-001', `/students/${user.studentId}`) };
     }

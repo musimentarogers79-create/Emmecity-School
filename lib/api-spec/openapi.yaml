@@ -112,6 +112,21 @@ paths:
         "409":
           description: Username already in use
   /users:
+    get:
+      operationId: listUsers
+      tags: [auth]
+      summary: List school user accounts for administrator management
+      responses:
+        "200":
+          description: User accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuthUser"
+        "403":
+          description: Administrator access required
     post:
       operationId: createUser
       tags: [auth]
@@ -125,6 +140,32 @@ paths:
       responses:
         "201":
           description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "403":
+          description: Administrator access required
+  /users/{userId}/permissions:
+    patch:
+      operationId: updateUserPermissions
+      tags: [auth]
+      summary: Update the action permissions for a school user
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserPermissionsInput"
+      responses:
+        "200":
+          description: Updated user account
           content:
             application/json:
               schema:
@@ -338,6 +379,42 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OperationExpense"
+  /finance/expenses/{expenseId}/approve:
+    patch:
+      operationId: approveExpense
+      tags: [finance]
+      summary: Approve a pending school expense
+      parameters:
+        - name: expenseId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Approved expense
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationExpense"
+        "403":
+          description: Approval permission required
+  /finance/expenses/{expenseId}:
+    delete:
+      operationId: deleteExpense
+      tags: [finance]
+      summary: Delete a school expense
+      parameters:
+        - name: expenseId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Expense deleted
+        "403":
+          description: Delete permission required
   /finance/salaries:
     get:
       operationId: listSalaries
@@ -541,6 +618,10 @@ components:
           type: string
         phone:
           type: string
+        permissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PermissionKey"
         role:
           $ref: "#/components/schemas/Role"
         initials:
@@ -549,7 +630,7 @@ components:
           type: string
         studentId:
           type: ["string", "null"]
-      required: [id, name, identifier, email, phone, role, initials, schoolName]
+      required: [id, name, identifier, email, phone, role, permissions, initials, schoolName]
     UserProfileUpdate:
       type: object
       properties:
@@ -599,7 +680,22 @@ components:
           type: string
         employmentType:
           type: string
+        permissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PermissionKey"
       required: [name, identifier, password, role, userType]
+    UserPermissionsInput:
+      type: object
+      properties:
+        permissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PermissionKey"
+      required: [permissions]
+    PermissionKey:
+      type: string
+      enum: [expense_approve, expense_delete, transactions_view, transactions_print, manage_users]
     AuthSession:
       type: object
       properties:

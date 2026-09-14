@@ -64,6 +64,7 @@ export const users = pgTable("school_users", {
   passwordHash: text("password_hash").notNull(),
   userType: text("user_type").notNull(),
   role: text("role").notNull(),
+  permissions: jsonb("permissions").$type<string[]>().notNull().default([]),
   initials: text("initials").notNull(),
   studentId: uuid("student_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

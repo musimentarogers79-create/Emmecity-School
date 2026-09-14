@@ -16,6 +16,7 @@ import {
   StudentProfilePage,
   StudentsPage,
   SupportPage,
+  TransactionsPage,
   TimetablePage,
 } from '@/pages/school-pages';
 import {
@@ -35,6 +36,7 @@ function Router() {
       <Switch>
         <Route path="/" component={LoginPage} />
         <Route path="/support" component={SupportPage} />
+        <Route path="/transactions" component={TransactionsPage} />
         <Route path="/dashboard" component={DashboardPage} />
         <Route path="/students" component={StudentsPage} />
         <Route path="/students/:studentId" component={StudentProfilePage} />

@@ -5,6 +5,7 @@
  * EMMECTY Nursery & Primary School management API
  * OpenAPI spec version: 0.2.0
  */
+import type { PermissionKey } from './permissionKey';
 import type { Role } from './role';
 import type { UserAccountInputUserType } from './userAccountInputUserType';
 
@@ -25,4 +26,5 @@ export interface UserAccountInput {
   nextOfKin?: string;
   hireDate?: string;
   employmentType?: string;
+  permissions?: PermissionKey[];
 }

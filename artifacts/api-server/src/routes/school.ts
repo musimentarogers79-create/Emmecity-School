@@ -7,13 +7,13 @@ import {
   GetStudentResponse, GetTimetableResponse, CreateTimetableEntryBody, CreateTimetableEntryResponse, ListAnnouncementsResponse, ListExpensesResponse, ListPaymentsResponse,
   ListSalariesResponse, ListStudentsQueryParams, ListStudentsResponse, LoginBody, LoginResponse, LogoutResponse,
   RecordPaymentBody, RecordPaymentResponse, SaveAttendanceBody, SaveAttendanceResponse, GetSettingsResponse,
-  UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse,
+  UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse, UpdateUserPermissionsBody, UpdateUserPermissionsResponse,
 } from "@workspace/api-zod";
 import {
   AttendanceStatus, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createOperation, createStudentWithPayment, createUser, currentUserFromToken,
   clearLoginFailures, deleteSession, findUser, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
-  listAttendance, listOperation, listPayments, listStudents, makeSession, publicUser, recordPayment, saveAttendance,
-  updateSchoolSettings, updateStudentBalance, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type SchoolRole, type SchoolUser,
+  listAttendance, listOperation, listPayments, listStudents, listUsers, makeSession, publicUser, recordPayment, saveAttendance,
+  deleteOperation, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserPermissions, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
 } from "../lib/school-data";
 
 const router: IRouter = Router();
@@ -24,6 +24,7 @@ const setSessionCookie = (res: Parameters<Parameters<IRouter["get"]>[1]>[1], tok
 const requireUser = (req: Parameters<Parameters<IRouter["get"]>[1]>[0]) => currentUserFromToken(getCookie(req, "schoolops_session"));
 const administratorRoles: SchoolRole[] = ["super_admin", "administrator"];
 const isAdministrator = (user?: SchoolUser) => !!user && administratorRoles.includes(user.role);
+const hasPermission = (user: SchoolUser | undefined, permission: PermissionKey) => !!user && (isAdministrator(user) || user.permissions.includes(permission));
 const roleGreeting = (name: string) => `Good morning, ${name.split(" ")[0]}`;
 const roleActions = (role: SchoolRole, studentId?: string) => role === "teacher"
   ? [{ id: "attendance", label: "Record attendance", description: "Mark today's register for your assigned classes.", href: "/attendance", tone: "green" }, { id: "assignments", label: "Manage assignments", description: "Create and follow up work for your classes.", href: "/operations?view=assignments", tone: "blue" }, { id: "classes", label: "Open my classes", description: "See only the classes and subjects assigned to you.", href: "/operations?view=classes", tone: "violet" }]
@@ -31,7 +32,7 @@ const roleActions = (role: SchoolRole, studentId?: string) => role === "teacher"
     ? [{ id: "payment", label: "Record a payment", description: "Issue a receipt and update the learner balance.", href: "/finance", tone: "green" }, { id: "expense", label: "Log an expense", description: "Capture school spending for approval and reporting.", href: "/operations?view=expenses", tone: "amber" }, { id: "reports", label: "Open finance reports", description: "Review collection and expense summaries.", href: "/operations?view=reports", tone: "blue" }]
     : role === "guardian" || role === "student"
       ? [{ id: "child", label: "View my child", description: "Open the linked learner profile and progress.", href: studentId ? `/students/${studentId}` : "/students", tone: "green" }, { id: "fees", label: "Check school fees", description: "Review the current balance for your linked learner.", href: studentId ? `/students/${studentId}` : "/students", tone: "amber" }, { id: "notices", label: "Read school notices", description: "Keep up with school notices.", href: "/announcements", tone: "blue" }]
-      : [{ id: "register", label: "Register a pupil", description: "Create a permanent learner record and registration number.", href: "/students", tone: "green" }, { id: "people", label: "Manage people", description: "Review pupils, guardians, and school staff.", href: "/operations?view=people", tone: "blue" }, { id: "settings", label: "Configure school", description: "Set the academic year and school currency.", href: "/settings", tone: "violet" }];
+      : [{ id: "register", label: "Register a pupil", description: "Create a permanent learner record and registration number.", href: "/students", tone: "green" }, { id: "people", label: "Manage people", description: "Review pupils, guardians, and school staff.", href: "/operations?view=people", tone: "blue" }, { id: "permissions", label: "Users & permissions", description: "Create accounts and configure action-level access.", href: "/operations?view=people", tone: "violet" }, { id: "settings", label: "Configure school", description: "Set the academic year and school currency.", href: "/settings", tone: "violet" }];
 async function assignedClassNames(user?: SchoolUser) {
   if (user?.role !== "teacher") return [];
   const rows = await listOperation("classes");
@@ -108,6 +109,20 @@ router.post("/users", async (req, res): Promise<void> => {
     const account = await createUser({ ...parsed.data, role: parsed.data.role as SchoolRole, studentId });
     res.status(201).json(CreateUserResponse.parse(publicUser(account)));
   } catch { errorResponse(res, 409, "That username or registration number is already in use."); }
+});
+router.get("/users", async (req, res): Promise<void> => {
+  const actor = await requireUser(req);
+  if (!isAdministrator(actor)) { errorResponse(res, 403, "Only administrators can manage user accounts."); return; }
+  res.json((await listUsers()).map(publicUser));
+});
+router.patch("/users/:userId/permissions", async (req, res): Promise<void> => {
+  const actor = await requireUser(req);
+  if (!isAdministrator(actor)) { errorResponse(res, 403, "Only administrators can update permissions."); return; }
+  const parsed = UpdateUserPermissionsBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Choose valid action permissions."); return; }
+  const updated = await updateUserPermissions(req.params.userId, parsed.data.permissions as PermissionKey[]);
+  if (!updated) { errorResponse(res, 404, "User account not found."); return; }
+  res.json(UpdateUserPermissionsResponse.parse(publicUser(updated)));
 });
 
 router.get("/dashboard", async (req, res): Promise<void> => {
@@ -237,6 +252,22 @@ router.post("/finance/expenses", async (req, res): Promise<void> => {
   if (!parsed.success) { errorResponse(res, 400, "Enter a category, description, amount, date, and reference."); return; }
   const item = await createOperation("expenses", { ...parsed.data, status: isAdministrator(user) ? "Approved" : "Pending approval" });
   res.status(201).json(CreateExpenseResponse.parse(item));
+});
+router.patch("/finance/expenses/:expenseId/approve", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!hasPermission(user, "expense_approve")) { errorResponse(res, 403, "You do not have permission to approve expenses."); return; }
+  const rows = await listOperation("expenses");
+  const expense = rows.find((item) => item.id === req.params.expenseId);
+  if (!expense) { errorResponse(res, 404, "Expense not found."); return; }
+  const updated = await updateOperation("expenses", expense.id, { ...expense, status: "Approved", approvedBy: user?.name, approvedAt: getDateLabel() });
+  res.json(CreateExpenseResponse.parse(updated));
+});
+router.delete("/finance/expenses/:expenseId", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!hasPermission(user, "expense_delete")) { errorResponse(res, 403, "You do not have permission to delete expenses."); return; }
+  const deleted = await deleteOperation("expenses", req.params.expenseId);
+  if (!deleted) { errorResponse(res, 404, "Expense not found."); return; }
+  res.status(204).send();
 });
 router.get("/finance/salaries", async (req, res): Promise<void> => {
   const user = await requireUser(req);

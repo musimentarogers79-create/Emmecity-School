@@ -2,3 +2,4 @@
 - [OpenAPI artifact sync](openapi-artifact-sync.md) — regenerate the shared client and build library project references before artifact typechecks after contract changes.
 - [Drizzle migration output paths](drizzle-migration-output-paths.md) — keep Drizzle’s migration `out` path relative; absolute paths break later snapshot discovery in this workspace.
 - [Drizzle composite unique introspection](drizzle-composite-unique-introspection.md) — match composite unique constraints to Drizzle’s introspected table-column order.
+- [Development schema drift](drizzle-dev-schema-drift.md) — isolate additive development changes when Drizzle push is blocked by unrelated legacy constraints.

@@ -50,6 +50,7 @@ import type {
   TimetableEntry,
   TimetableInput,
   UserAccountInput,
+  UserPermissionsInput,
   UserProfileUpdate
 } from './api.schemas';
 
@@ -448,6 +449,83 @@ export const useUpdateCurrentUser = <TError = ErrorType<void>,
       return useMutation(getUpdateCurrentUserMutationOptions(options));
     }
 
+export const getListUsersUrl = () => {
+
+
+
+
+  return `/api/users`
+}
+
+/**
+ * @summary List school user accounts for administrator management
+ */
+export const listUsers = async ( options?: Parameters<typeof customFetch>[1]): Promise<AuthUser[]> => {
+
+  return customFetch<AuthUser[]>(getListUsersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListUsersQueryKey = () => {
+    return [
+    `/api/users`
+    ] as const;
+    }
+
+
+export const getListUsersQueryOptions = <TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListUsersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listUsers>>> = ({ signal }) => listUsers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListUsersQueryResult = NonNullable<Awaited<ReturnType<typeof listUsers>>>
+export type ListUsersQueryError = ErrorType<void>
+
+
+/**
+ * @summary List school user accounts for administrator management
+ */
+
+export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListUsersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
 export const getCreateUserUrl = () => {
 
 
@@ -517,6 +595,78 @@ export const useCreateUser = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreateUserMutationOptions(options));
+    }
+
+export const getUpdateUserPermissionsUrl = (userId: string,) => {
+
+
+
+
+  return `/api/users/${userId}/permissions`
+}
+
+/**
+ * @summary Update the action permissions for a school user
+ */
+export const updateUserPermissions = async (userId: string,
+    userPermissionsInput: UserPermissionsInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthUser> => {
+
+  return customFetch<AuthUser>(getUpdateUserPermissionsUrl(userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(userPermissionsInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateUserPermissionsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUserPermissions>>, TError,{userId: string;data: BodyType<UserPermissionsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateUserPermissions>>, TError,{userId: string;data: BodyType<UserPermissionsInput>}, TContext> => {
+
+const mutationKey = ['updateUserPermissions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateUserPermissions>>, {userId: string;data: BodyType<UserPermissionsInput>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  updateUserPermissions(userId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateUserPermissionsMutationResult = NonNullable<Awaited<ReturnType<typeof updateUserPermissions>>>
+    export type UpdateUserPermissionsMutationBody = BodyType<UserPermissionsInput>
+    export type UpdateUserPermissionsMutationError = ErrorType<void>
+
+    /**
+ * @summary Update the action permissions for a school user
+ */
+export const useUpdateUserPermissions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUserPermissions>>, TError,{userId: string;data: BodyType<UserPermissionsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateUserPermissions>>,
+        TError,
+        {userId: string;data: BodyType<UserPermissionsInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateUserPermissionsMutationOptions(options));
     }
 
 export const getGetDashboardUrl = () => {
@@ -1425,6 +1575,148 @@ export const useCreateExpense = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateExpenseMutationOptions(options));
+    }
+
+export const getApproveExpenseUrl = (expenseId: string,) => {
+
+
+
+
+  return `/api/finance/expenses/${expenseId}/approve`
+}
+
+/**
+ * @summary Approve a pending school expense
+ */
+export const approveExpense = async (expenseId: string, options?: Parameters<typeof customFetch>[1]): Promise<OperationExpense> => {
+
+  return customFetch<OperationExpense>(getApproveExpenseUrl(expenseId),
+  {
+    ...options,
+    method: 'PATCH'
+
+
+  }
+);}
+
+
+
+
+
+export const getApproveExpenseMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveExpense>>, TError,{expenseId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveExpense>>, TError,{expenseId: string}, TContext> => {
+
+const mutationKey = ['approveExpense'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveExpense>>, {expenseId: string}> = (props) => {
+          const {expenseId} = props ?? {};
+
+          return  approveExpense(expenseId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveExpenseMutationResult = NonNullable<Awaited<ReturnType<typeof approveExpense>>>
+
+    export type ApproveExpenseMutationError = ErrorType<void>
+
+    /**
+ * @summary Approve a pending school expense
+ */
+export const useApproveExpense = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveExpense>>, TError,{expenseId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveExpense>>,
+        TError,
+        {expenseId: string},
+        TContext
+      > => {
+      return useMutation(getApproveExpenseMutationOptions(options));
+    }
+
+export const getDeleteExpenseUrl = (expenseId: string,) => {
+
+
+
+
+  return `/api/finance/expenses/${expenseId}`
+}
+
+/**
+ * @summary Delete a school expense
+ */
+export const deleteExpense = async (expenseId: string, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDeleteExpenseUrl(expenseId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDeleteExpenseMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteExpense>>, TError,{expenseId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteExpense>>, TError,{expenseId: string}, TContext> => {
+
+const mutationKey = ['deleteExpense'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteExpense>>, {expenseId: string}> = (props) => {
+          const {expenseId} = props ?? {};
+
+          return  deleteExpense(expenseId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteExpenseMutationResult = NonNullable<Awaited<ReturnType<typeof deleteExpense>>>
+
+    export type DeleteExpenseMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a school expense
+ */
+export const useDeleteExpense = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteExpense>>, TError,{expenseId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteExpense>>,
+        TError,
+        {expenseId: string},
+        TContext
+      > => {
+      return useMutation(getDeleteExpenseMutationOptions(options));
     }
 
 export const getListSalariesUrl = () => {
