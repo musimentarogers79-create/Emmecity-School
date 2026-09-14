@@ -401,3 +401,22 @@
 .font-display { font-family: var(--app-font-serif); }
 .font-mono-ui { font-family: var(--app-font-mono); }
 .focus-ring:focus-visible { outline: 3px solid hsl(var(--accent) / .7); outline-offset: 3px; }
+
+/* Keep the login form reachable on short phone viewports. The form can scroll
+   from the top instead of being vertically centered below the fold. */
+@media (max-width: 767px) {
+  body:has([data-testid="button-sign-in"]) section:has([data-testid="button-sign-in"]) {
+    order: -1;
+  }
+
+  body:has([data-testid="button-sign-in"]) section:has([data-testid="button-sign-in"]) {
+    align-items: flex-start;
+    overflow-y: auto;
+    padding-bottom: 4rem;
+  }
+
+  body:has([data-testid="button-sign-in"]) [data-testid="button-sign-in"] {
+    min-height: 3.5rem;
+    touch-action: manipulation;
+  }
+}
