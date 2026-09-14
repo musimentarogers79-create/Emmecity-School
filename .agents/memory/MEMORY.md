@@ -4,3 +4,4 @@
 - [Drizzle composite unique introspection](drizzle-composite-unique-introspection.md) — match composite unique constraints to Drizzle’s introspected table-column order.
 - [Development schema drift](drizzle-dev-schema-drift.md) — isolate additive development changes when Drizzle push is blocked by unrelated legacy constraints.
 - [Receipt-derived data](receipt-derived-data.md) — receipt responses should include stable identifiers and post-payment balances for complete browser-rendered receipts.
+- [School schema audit](school-schema-audit.md) — preserve existing domain tables; prefer additive integrity checks and indexes over destructive consolidation.

@@ -50,8 +50,11 @@ export const students = pgTable("students", {
   uniqueIndex("students_registration_idx").on(table.schoolId, table.registrationNumber),
   unique("students_school_id_unique").on(table.id, table.schoolId),
   index("students_class_idx").on(table.schoolId, table.className, table.stream),
+  index("students_status_idx").on(table.schoolId, table.status),
   check("students_fee_balance_nonnegative", sql`${table.feeBalance} >= 0`),
   check("students_amount_paid_nonnegative", sql`${table.amountPaid} >= 0`),
+  check("students_registration_nonblank", sql`length(btrim(${table.registrationNumber})) > 0`),
+  check("students_status_valid", sql`${table.status} in ('active', 'inactive')`),
 ]);
 
 export const users = pgTable("school_users", {
@@ -73,6 +76,10 @@ export const users = pgTable("school_users", {
 }, (table) => [
   uniqueIndex("school_users_identifier_idx").on(table.schoolId, table.identifier),
   index("school_users_student_idx").on(table.studentId),
+  index("school_users_role_idx").on(table.schoolId, table.role),
+  check("school_users_identifier_nonblank", sql`length(btrim(${table.identifier})) > 0`),
+  check("school_users_user_type_valid", sql`${table.userType} in ('staff', 'guardian', 'learner')`),
+  check("school_users_role_valid", sql`${table.role} in ('super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff')`),
   foreignKey({
     name: "school_users_school_student_fk",
     columns: [table.schoolId, table.studentId],
@@ -114,6 +121,7 @@ export const payments = pgTable("payments", {
 }, (table) => [
   uniqueIndex("payments_receipt_idx").on(table.schoolId, table.receiptNumber),
   index("payments_student_idx").on(table.studentId),
+  index("payments_school_paid_on_idx").on(table.schoolId, table.paidOn),
   check("payments_amount_positive", sql`${table.amount} > 0`),
   foreignKey({
     name: "payments_school_student_fk",
@@ -153,25 +161,25 @@ export const recordSequences = pgTable("school_record_sequences", {
   check("school_record_sequences_value_positive", sql`${table.value} > 0`),
 ]);
 
-export const expenses = pgTable("expenses", auditColumns);
-export const salaryPayments = pgTable("salary_payments", auditColumns);
-export const announcements = pgTable("announcements", auditColumns);
-export const classes = pgTable("classes", auditColumns);
-export const subjects = pgTable("subjects", auditColumns);
-export const assignments = pgTable("assignments", auditColumns);
-export const staff = pgTable("staff", auditColumns);
-export const parents = pgTable("parents", auditColumns);
-export const guardians = pgTable("guardians", auditColumns);
-export const discipline = pgTable("discipline", auditColumns);
-export const medical = pgTable("medical", auditColumns);
-export const library = pgTable("library", auditColumns);
-export const transport = pgTable("transport", auditColumns);
-export const inventory = pgTable("inventory", auditColumns);
-export const events = pgTable("events", auditColumns);
-export const documents = pgTable("documents", auditColumns);
-export const reports = pgTable("reports", auditColumns);
-export const notifications = pgTable("notifications", auditColumns);
-export const timetable = pgTable("timetable", auditColumns);
+export const expenses = pgTable("expenses", auditColumns, (table) => [index("expenses_school_idx").on(table.schoolId)]);
+export const salaryPayments = pgTable("salary_payments", auditColumns, (table) => [index("salary_payments_school_idx").on(table.schoolId)]);
+export const announcements = pgTable("announcements", auditColumns, (table) => [index("announcements_school_idx").on(table.schoolId)]);
+export const classes = pgTable("classes", auditColumns, (table) => [index("classes_school_idx").on(table.schoolId)]);
+export const subjects = pgTable("subjects", auditColumns, (table) => [index("subjects_school_idx").on(table.schoolId)]);
+export const assignments = pgTable("assignments", auditColumns, (table) => [index("assignments_school_idx").on(table.schoolId)]);
+export const staff = pgTable("staff", auditColumns, (table) => [index("staff_school_idx").on(table.schoolId)]);
+export const parents = pgTable("parents", auditColumns, (table) => [index("parents_school_idx").on(table.schoolId)]);
+export const guardians = pgTable("guardians", auditColumns, (table) => [index("guardians_school_idx").on(table.schoolId)]);
+export const discipline = pgTable("discipline", auditColumns, (table) => [index("discipline_school_idx").on(table.schoolId)]);
+export const medical = pgTable("medical", auditColumns, (table) => [index("medical_school_idx").on(table.schoolId)]);
+export const library = pgTable("library", auditColumns, (table) => [index("library_school_idx").on(table.schoolId)]);
+export const transport = pgTable("transport", auditColumns, (table) => [index("transport_school_idx").on(table.schoolId)]);
+export const inventory = pgTable("inventory", auditColumns, (table) => [index("inventory_school_idx").on(table.schoolId)]);
+export const events = pgTable("events", auditColumns, (table) => [index("events_school_idx").on(table.schoolId)]);
+export const documents = pgTable("documents", auditColumns, (table) => [index("documents_school_idx").on(table.schoolId)]);
+export const reports = pgTable("reports", auditColumns, (table) => [index("reports_school_idx").on(table.schoolId)]);
+export const notifications = pgTable("notifications", auditColumns, (table) => [index("notifications_school_idx").on(table.schoolId)]);
+export const timetable = pgTable("timetable", auditColumns, (table) => [index("timetable_school_idx").on(table.schoolId)]);
 
 export const insertSchoolSettingsSchema = createInsertSchema(schoolSettings);
 export type SchoolSettings = typeof schoolSettings.$inferSelect;
