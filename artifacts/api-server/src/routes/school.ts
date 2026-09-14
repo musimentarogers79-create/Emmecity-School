@@ -110,6 +110,13 @@ router.post("/users", async (req, res): Promise<void> => {
   }
   if ((parsed.data.role === "student" || parsed.data.role === "guardian") && !studentId) { errorResponse(res, 400, "Link pupil and guardian accounts to a student record."); return; }
   if ((parsed.data.role === "teacher" || parsed.data.role === "staff") && (!parsed.data.monthlySalary || parsed.data.monthlySalary <= 0)) { errorResponse(res, 400, "Register a positive monthly salary for teachers and staff."); return; }
+  if (parsed.data.role === "teacher") {
+    const assignedClasses = parsed.data.assignedClasses ?? [];
+    if (!assignedClasses.length) { errorResponse(res, 400, "Assign at least one class before registering a teacher."); return; }
+    const classRows = await listOperation("classes");
+    const availableClasses = new Set(classRows.map((item) => String(item.name)));
+    if (assignedClasses.some((className) => !availableClasses.has(className))) { errorResponse(res, 400, "Choose only existing classes when registering a teacher."); return; }
+  }
   try {
     const account = await createUser({ ...parsed.data, role: parsed.data.role as SchoolRole, studentId });
     res.status(201).json(CreateUserResponse.parse(publicUser(account)));
