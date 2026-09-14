@@ -6,6 +6,9 @@ import { BookOpen, CalendarDays, ChevronDown, CircleDollarSign, ClipboardList, F
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
 export const SCHOOL_NAME = 'EMMECTY NURSERY & PRIMARY SCHOOL';
+export const SCHOOL_POSTAL_ADDRESS = 'P.O. Box 490699, Hoima City';
+export const SCHOOL_PHONE = '0784905399 / 0775705175';
+export const SCHOOL_LOCATION = 'Kasasa Road behind Kabago Fuel Station';
 const roleNavigation: Record<string, NavItem[]> = {
   administrator: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -78,8 +81,9 @@ function Initials({ name, className = '' }: { name: string; className?: string }
 
 export function SchoolMark({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="flex items-center gap-3 opacity-95" data-testid="brand-corenexa">
-      <img src="/corenexa-systems-logo-transparent.png" alt="Corenexa Systems" className={`shrink-0 object-contain ${compact ? 'h-7' : 'h-9 sm:h-10'}`} />
+    <div className="flex items-center gap-2.5 opacity-95" data-testid="brand-corenexa">
+      <img src="/school-logo.jpg" alt={`${SCHOOL_NAME} crest`} className={`shrink-0 rounded-full object-contain ${compact ? 'h-8 w-8' : 'h-10 w-10 sm:h-11 sm:w-11'}`} />
+      <img src="/corenexa-systems-logo-transparent.png" alt="Corenexa Systems" className={`shrink-0 object-contain ${compact ? 'h-6 w-24' : 'h-8 w-32 sm:h-9 sm:w-36'}`} />
     </div>
   );
 }
