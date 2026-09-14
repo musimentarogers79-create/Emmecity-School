@@ -15,6 +15,7 @@ import {
   SettingsPage,
   StudentProfilePage,
   StudentsPage,
+  SupportPage,
   TimetablePage,
 } from '@/pages/school-pages';
 import {
@@ -33,6 +34,7 @@ function Router() {
     <RoutedErrorBoundary>
       <Switch>
         <Route path="/" component={LoginPage} />
+        <Route path="/support" component={SupportPage} />
         <Route path="/dashboard" component={DashboardPage} />
         <Route path="/students" component={StudentsPage} />
         <Route path="/students/:studentId" component={StudentProfilePage} />
