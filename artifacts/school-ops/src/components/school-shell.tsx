@@ -94,12 +94,9 @@ export function SchoolLetterhead() {
     <header className="hidden print:flex print:items-center print:gap-5 print:border-b-2 print:border-[hsl(var(--primary))] print:pb-4" data-testid="print-school-letterhead">
       <img src="/school-logo.jpg" alt={`${SCHOOL_NAME} crest`} className="h-24 w-24 shrink-0 rounded-full object-contain" />
       <div className="min-w-0 flex-1">
-        <div className="flex items-center justify-between gap-5">
-          <div>
-            <h1 className="font-display text-2xl font-bold text-[hsl(var(--foreground))]">{SCHOOL_NAME}</h1>
-            <p className="mt-1 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Official school document</p>
-          </div>
-          <img src="/corenexa-systems-logo-transparent.png" alt="Corenexa Systems" className="h-10 w-40 shrink-0 object-contain object-right" />
+        <div>
+          <h1 className="font-display text-2xl font-bold text-[hsl(var(--foreground))]">{SCHOOL_NAME}</h1>
+          <p className="mt-1 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Official school document</p>
         </div>
         <p className="mt-3 text-xs leading-5 text-[hsl(var(--muted-foreground))]">{SCHOOL_POSTAL_ADDRESS} · Tel: {SCHOOL_PHONE} · {SCHOOL_LOCATION}</p>
       </div>
