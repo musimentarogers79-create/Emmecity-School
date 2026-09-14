@@ -81,11 +81,29 @@ function Initials({ name, className = '' }: { name: string; className?: string }
 
 export function SchoolMark({ compact = false }: { compact?: boolean }) {
   return (
-    <div className="flex flex-wrap items-center gap-2.5 opacity-95" data-testid="brand-corenexa">
+    <div className="flex flex-wrap items-center gap-2.5 opacity-95 print:hidden" data-testid="brand-corenexa">
       <img src="/school-logo.jpg" alt={`${SCHOOL_NAME} crest`} className={`shrink-0 rounded-full object-contain ${compact ? 'h-8 w-8' : 'h-10 w-10 sm:h-11 sm:w-11'}`} />
       <img src="/corenexa-systems-logo-transparent.png" alt="Corenexa Systems" className={`shrink-0 object-contain ${compact ? 'h-6 w-24' : 'h-8 w-32 sm:h-9 sm:w-36'}`} />
       <span className="hidden basis-full text-[10px] leading-4 text-[hsl(var(--muted-foreground))] print:block">{SCHOOL_POSTAL_ADDRESS} · {SCHOOL_PHONE} · {SCHOOL_LOCATION}</span>
     </div>
+  );
+}
+
+export function SchoolLetterhead() {
+  return (
+    <header className="hidden print:flex print:items-center print:gap-5 print:border-b-2 print:border-[hsl(var(--primary))] print:pb-4" data-testid="print-school-letterhead">
+      <img src="/school-logo.jpg" alt={`${SCHOOL_NAME} crest`} className="h-24 w-24 shrink-0 rounded-full object-contain" />
+      <div className="min-w-0 flex-1">
+        <div className="flex items-center justify-between gap-5">
+          <div>
+            <h1 className="font-display text-2xl font-bold text-[hsl(var(--foreground))]">{SCHOOL_NAME}</h1>
+            <p className="mt-1 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Official school document</p>
+          </div>
+          <img src="/corenexa-systems-logo-transparent.png" alt="Corenexa Systems" className="h-10 w-40 shrink-0 object-contain object-right" />
+        </div>
+        <p className="mt-3 text-xs leading-5 text-[hsl(var(--muted-foreground))]">{SCHOOL_POSTAL_ADDRESS} · Tel: {SCHOOL_PHONE} · {SCHOOL_LOCATION}</p>
+      </div>
+    </header>
   );
 }
 
@@ -159,7 +177,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link href="/profile" data-testid="link-header-profile" className="group flex items-center gap-2.5 rounded-xl p-1.5 pr-2 transition-colors hover:bg-[hsl(var(--muted))]"><Initials name={displayName} className="size-8" /><span className="hidden text-left sm:block"><span className="block max-w-[140px] truncate text-xs font-semibold">{displayName}</span><span className="block text-[10px] capitalize text-[hsl(var(--muted-foreground))]">{roleLabel}</span></span></Link>
           </div>
         </header>
-        <main className="app-grid flex-1 overflow-x-hidden"><div className="mx-auto w-full max-w-[1480px] p-5 md:p-8">{children}</div></main>
+        <main className="app-grid flex-1 overflow-x-hidden"><div className="hidden print:block print:px-8 print:pt-6"><SchoolLetterhead /></div><div className="mx-auto w-full max-w-[1480px] p-5 md:p-8">{children}</div></main>
       </div>
     </div>
   );
