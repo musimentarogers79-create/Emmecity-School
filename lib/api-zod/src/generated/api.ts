@@ -274,7 +274,25 @@ export const GetDashboardResponse = zod.object({
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
   "amountPaid": zod.number(),
-  "receiptNumber": zod.string().optional()
+  "receiptNumber": zod.string().optional(),
+  "admissionForm": zod.object({
+  "id": zod.string(),
+  "studentId": zod.string(),
+  "registrationNumber": zod.string(),
+  "pupilName": zod.string(),
+  "dateOfBirth": zod.string(),
+  "gender": zod.string(),
+  "className": zod.string(),
+  "stream": zod.string(),
+  "guardianName": zod.string(),
+  "guardianPhone": zod.string(),
+  "admissionDate": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number(),
+  "feeBalance": zod.number(),
+  "generatedAt": zod.string()
+}).optional()
 })),
   "upcomingEvents": zod.array(zod.object({
   "title": zod.string(),
@@ -300,7 +318,25 @@ export const GetDashboardResponse = zod.object({
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
   "amountPaid": zod.number(),
-  "receiptNumber": zod.string().optional()
+  "receiptNumber": zod.string().optional(),
+  "admissionForm": zod.object({
+  "id": zod.string(),
+  "studentId": zod.string(),
+  "registrationNumber": zod.string(),
+  "pupilName": zod.string(),
+  "dateOfBirth": zod.string(),
+  "gender": zod.string(),
+  "className": zod.string(),
+  "stream": zod.string(),
+  "guardianName": zod.string(),
+  "guardianPhone": zod.string(),
+  "admissionDate": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number(),
+  "feeBalance": zod.number(),
+  "generatedAt": zod.string()
+}).optional()
 })).optional(),
   "feeBalance": zod.number().optional(),
   "latestResult": zod.number().optional(),
@@ -339,7 +375,25 @@ export const ListStudentsResponseItem = zod.object({
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
   "amountPaid": zod.number(),
-  "receiptNumber": zod.string().optional()
+  "receiptNumber": zod.string().optional(),
+  "admissionForm": zod.object({
+  "id": zod.string(),
+  "studentId": zod.string(),
+  "registrationNumber": zod.string(),
+  "pupilName": zod.string(),
+  "dateOfBirth": zod.string(),
+  "gender": zod.string(),
+  "className": zod.string(),
+  "stream": zod.string(),
+  "guardianName": zod.string(),
+  "guardianPhone": zod.string(),
+  "admissionDate": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number(),
+  "feeBalance": zod.number(),
+  "generatedAt": zod.string()
+}).optional()
 })
 export const ListStudentsResponse = zod.array(ListStudentsResponseItem)
 
@@ -388,7 +442,52 @@ export const CreateStudentResponse = zod.object({
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
   "amountPaid": zod.number(),
-  "receiptNumber": zod.string().optional()
+  "receiptNumber": zod.string().optional(),
+  "admissionForm": zod.object({
+  "id": zod.string(),
+  "studentId": zod.string(),
+  "registrationNumber": zod.string(),
+  "pupilName": zod.string(),
+  "dateOfBirth": zod.string(),
+  "gender": zod.string(),
+  "className": zod.string(),
+  "stream": zod.string(),
+  "guardianName": zod.string(),
+  "guardianPhone": zod.string(),
+  "admissionDate": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number(),
+  "feeBalance": zod.number(),
+  "generatedAt": zod.string()
+}).optional()
+})
+
+
+/**
+ * @summary Get the saved admission form for a pupil
+ */
+export const GetAdmissionFormParams = zod.object({
+  "studentId": zod.coerce.string()
+})
+
+export const GetAdmissionFormResponse = zod.object({
+  "id": zod.string(),
+  "studentId": zod.string(),
+  "registrationNumber": zod.string(),
+  "pupilName": zod.string(),
+  "dateOfBirth": zod.string(),
+  "gender": zod.string(),
+  "className": zod.string(),
+  "stream": zod.string(),
+  "guardianName": zod.string(),
+  "guardianPhone": zod.string(),
+  "admissionDate": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number(),
+  "feeBalance": zod.number(),
+  "generatedAt": zod.string()
 })
 
 
@@ -415,7 +514,25 @@ export const GetStudentResponse = zod.object({
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
   "amountPaid": zod.number(),
-  "receiptNumber": zod.string().optional()
+  "receiptNumber": zod.string().optional(),
+  "admissionForm": zod.object({
+  "id": zod.string(),
+  "studentId": zod.string(),
+  "registrationNumber": zod.string(),
+  "pupilName": zod.string(),
+  "dateOfBirth": zod.string(),
+  "gender": zod.string(),
+  "className": zod.string(),
+  "stream": zod.string(),
+  "guardianName": zod.string(),
+  "guardianPhone": zod.string(),
+  "admissionDate": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number(),
+  "feeBalance": zod.number(),
+  "generatedAt": zod.string()
+}).optional()
 }).and(zod.object({
   "dateOfBirth": zod.string(),
   "guardianName": zod.string(),
@@ -796,7 +913,25 @@ export const GetReportCardResponse = zod.object({
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
   "amountPaid": zod.number(),
-  "receiptNumber": zod.string().optional()
+  "receiptNumber": zod.string().optional(),
+  "admissionForm": zod.object({
+  "id": zod.string(),
+  "studentId": zod.string(),
+  "registrationNumber": zod.string(),
+  "pupilName": zod.string(),
+  "dateOfBirth": zod.string(),
+  "gender": zod.string(),
+  "className": zod.string(),
+  "stream": zod.string(),
+  "guardianName": zod.string(),
+  "guardianPhone": zod.string(),
+  "admissionDate": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number(),
+  "feeBalance": zod.number(),
+  "generatedAt": zod.string()
+}).optional()
 }),
   "term": zod.string(),
   "academicYear": zod.string(),

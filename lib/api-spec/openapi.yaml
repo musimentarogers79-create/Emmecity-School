@@ -229,6 +229,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Student"
+  /students/{studentId}/admission-form:
+    get:
+      operationId: getAdmissionForm
+      tags: [students]
+      summary: Get the saved admission form for a pupil
+      parameters:
+        - $ref: "#/components/parameters/StudentId"
+      responses:
+        "200":
+          description: Saved pupil admission form
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdmissionForm"
+        "404":
+          description: Admission form not found
   /students/{studentId}:
     get:
       operationId: getStudent
@@ -796,7 +812,46 @@ components:
           type: number
         receiptNumber:
           type: string
+        admissionForm:
+          $ref: "#/components/schemas/AdmissionForm"
       required: [id, registrationNumber, name, firstName, lastName, className, stream, gender, status, attendancePercentage, feeBalance, avatarTone, enrollmentType, termFee, amountPaid]
+    AdmissionForm:
+      type: object
+      properties:
+        id:
+          type: string
+        studentId:
+          type: string
+        registrationNumber:
+          type: string
+        pupilName:
+          type: string
+        dateOfBirth:
+          type: string
+        gender:
+          type: string
+        className:
+          type: string
+        stream:
+          type: string
+        guardianName:
+          type: string
+        guardianPhone:
+          type: string
+        admissionDate:
+          type: string
+        enrollmentType:
+          type: string
+          enum: [day, boarding]
+        termFee:
+          type: number
+        amountPaid:
+          type: number
+        feeBalance:
+          type: number
+        generatedAt:
+          type: string
+      required: [id, studentId, registrationNumber, pupilName, dateOfBirth, gender, className, stream, guardianName, guardianPhone, admissionDate, enrollmentType, termFee, amountPaid, feeBalance, generatedAt]
     StudentInput:
       type: object
       properties:

@@ -5,6 +5,7 @@
  * EMMECTY Nursery & Primary School management API
  * OpenAPI spec version: 0.2.0
  */
+import type { AdmissionForm } from './admissionForm';
 import type { StudentEnrollmentType } from './studentEnrollmentType';
 import type { StudentStatus } from './studentStatus';
 
@@ -25,4 +26,5 @@ export interface Student {
   termFee: number;
   amountPaid: number;
   receiptNumber?: string;
+  admissionForm?: AdmissionForm;
 }

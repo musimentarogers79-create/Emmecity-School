@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdmissionForm,
   Announcement,
   AnnouncementInput,
   AttendanceInput,
@@ -903,6 +904,83 @@ export const useCreateStudent = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getCreateStudentMutationOptions(options));
     }
+
+export const getGetAdmissionFormUrl = (studentId: string,) => {
+
+
+
+
+  return `/api/students/${studentId}/admission-form`
+}
+
+/**
+ * @summary Get the saved admission form for a pupil
+ */
+export const getAdmissionForm = async (studentId: string, options?: Parameters<typeof customFetch>[1]): Promise<AdmissionForm> => {
+
+  return customFetch<AdmissionForm>(getGetAdmissionFormUrl(studentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdmissionFormQueryKey = (studentId: string,) => {
+    return [
+    `/api/students/${studentId}/admission-form`
+    ] as const;
+    }
+
+
+export const getGetAdmissionFormQueryOptions = <TData = Awaited<ReturnType<typeof getAdmissionForm>>, TError = ErrorType<void>>(studentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdmissionForm>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdmissionFormQueryKey(studentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdmissionForm>>> = ({ signal }) => getAdmissionForm(studentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: studentId !== null && studentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdmissionForm>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdmissionFormQueryResult = NonNullable<Awaited<ReturnType<typeof getAdmissionForm>>>
+export type GetAdmissionFormQueryError = ErrorType<void>
+
+
+/**
+ * @summary Get the saved admission form for a pupil
+ */
+
+export function useGetAdmissionForm<TData = Awaited<ReturnType<typeof getAdmissionForm>>, TError = ErrorType<void>>(
+ studentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdmissionForm>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdmissionFormQueryOptions(studentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetStudentUrl = (studentId: string,) => {
 

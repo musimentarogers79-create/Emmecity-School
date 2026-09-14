@@ -248,6 +248,13 @@ export async function getStudent(id: string) {
   const byRegistration = (await db.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.registrationNumber, id))).limit(1))[0];
   return byRegistration ? studentRow(byRegistration) : undefined;
 }
+export async function getAdmissionForm(id: string) {
+  const schoolId = await getSchoolId();
+  const student = await getStudent(id);
+  if (!student) return undefined;
+  const row = (await db.select().from(documents).where(and(eq(documents.schoolId, schoolId), sql`${documents.data}->>'studentId' = ${student.id}`, sql`${documents.data}->>'documentType' = 'admission_form'`)).orderBy(desc(documents.createdAt)).limit(1))[0];
+  return row ? { ...(row.data as Record<string, unknown>), id: row.id } : undefined;
+}
 export async function createStudentWithPayment(data: {
   firstName: string; middleName?: string; lastName: string; className: string; stream: string; gender: string; dateOfBirth: string;
   guardianName: string; guardianPhone: string; enrollmentType: "day" | "boarding"; termFee: number; initialPayment?: number; paymentMethod?: string; paymentReference?: string;
@@ -290,7 +297,28 @@ export async function createStudentWithPayment(data: {
       }).returning())[0];
       payment = paymentRow ? { id: paymentRow.id, studentId: studentRowValue.id, receiptNumber, studentName: `${data.firstName}${data.middleName ? ` ${data.middleName}` : ""} ${data.lastName}`, registrationNumber, amount: initialPayment, method: paymentRow.method, date: getDateLabel(), status: "completed", balance: Math.max(0, data.termFee - initialPayment) } : undefined;
     }
-    return { student: studentRow(studentRowValue), payment };
+    const admissionFormData = {
+      documentType: "admission_form",
+      title: "Pupil Admission Form",
+      studentId: studentRowValue.id,
+      registrationNumber,
+      pupilName: `${data.firstName}${data.middleName ? ` ${data.middleName}` : ""} ${data.lastName}`,
+      dateOfBirth: data.dateOfBirth,
+      gender: data.gender,
+      className: data.className,
+      stream: data.stream,
+      guardianName: data.guardianName,
+      guardianPhone: data.guardianPhone,
+      admissionDate: studentRowValue.admissionDate,
+      enrollmentType: data.enrollmentType,
+      termFee: data.termFee,
+      amountPaid: initialPayment,
+      feeBalance: Math.max(0, data.termFee - initialPayment),
+      generatedAt: new Date().toISOString(),
+    };
+    const admissionDocument = (await tx.insert(documents).values({ schoolId, data: admissionFormData }).returning())[0];
+    if (!admissionDocument) throw new Error("Unable to save admission form");
+    return { student: studentRow(studentRowValue), payment, admissionForm: { ...admissionFormData, id: admissionDocument.id } };
   });
 }
 export async function updateStudentBalance(studentId: string, amount: number) {

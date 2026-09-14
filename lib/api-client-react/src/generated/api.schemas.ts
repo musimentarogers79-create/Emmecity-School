@@ -141,6 +141,33 @@ export const StudentEnrollmentType = {
   boarding: 'boarding',
 } as const;
 
+export type AdmissionFormEnrollmentType = typeof AdmissionFormEnrollmentType[keyof typeof AdmissionFormEnrollmentType];
+
+
+export const AdmissionFormEnrollmentType = {
+  day: 'day',
+  boarding: 'boarding',
+} as const;
+
+export interface AdmissionForm {
+  id: string;
+  studentId: string;
+  registrationNumber: string;
+  pupilName: string;
+  dateOfBirth: string;
+  gender: string;
+  className: string;
+  stream: string;
+  guardianName: string;
+  guardianPhone: string;
+  admissionDate: string;
+  enrollmentType: AdmissionFormEnrollmentType;
+  termFee: number;
+  amountPaid: number;
+  feeBalance: number;
+  generatedAt: string;
+}
+
 export interface Student {
   id: string;
   registrationNumber: string;
@@ -158,6 +185,7 @@ export interface Student {
   termFee: number;
   amountPaid: number;
   receiptNumber?: string;
+  admissionForm?: AdmissionForm;
 }
 
 export type StudentInputEnrollmentType = typeof StudentInputEnrollmentType[keyof typeof StudentInputEnrollmentType];

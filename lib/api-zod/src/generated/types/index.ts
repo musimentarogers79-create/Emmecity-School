@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.2.0
  */
 
+export * from './admissionForm';
+export * from './admissionFormEnrollmentType';
 export * from './announcement';
 export * from './announcementInput';
 export * from './announcementInputPriority';

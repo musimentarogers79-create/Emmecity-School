@@ -3,14 +3,14 @@ import {
   AttendanceRecord, CreateAnnouncementBody, CreateAnnouncementResponse, CreateAttendanceRegisterBody, CreateAttendanceRegisterResponse, CreateClassBody, CreateExpenseBody, CreateExpenseResponse,
   CreateSalaryPaymentBody, CreateSalaryPaymentResponse, CreateStudentBody, CreateStudentResponse, CreateUserBody,
   CreateClassResponse, CreateUserResponse, GetAttendanceQueryParams, GetAttendanceResponse, GetCurrentUserResponse, GetDashboardResponse,
-  GetFinanceSummaryResponse, GetOperationsResponse, GetReportCardParams, GetReportCardResponse, GetStudentParams,
+  GetAdmissionFormResponse, GetFinanceSummaryResponse, GetOperationsResponse, GetReportCardParams, GetReportCardResponse, GetStudentParams,
   GetStudentResponse, GetTimetableResponse, CreateTimetableEntryBody, CreateTimetableEntryResponse, ListAnnouncementsResponse, ListExpensesResponse, ListPaymentsResponse,
   ListSalariesResponse, ListStudentsQueryParams, ListStudentsResponse, LoginBody, LoginResponse, LogoutResponse,
   RecordPaymentBody, RecordPaymentResponse, SaveAttendanceBody, SaveAttendanceResponse, GetSettingsResponse,
   UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse, UpdateUserPermissionsBody, UpdateUserPermissionsResponse,
 } from "@workspace/api-zod";
 import {
-  AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, createUser, currentUserFromToken,
+  AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, createUser, currentUserFromToken, getAdmissionForm,
   clearLoginFailures, deleteSession, findUser, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
   listAttendance, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance,
   deleteOperation, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserPermissions, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
@@ -186,9 +186,16 @@ router.post("/students", async (req, res): Promise<void> => {
   if (!parsed.success) { errorResponse(res, 400, "Complete the required pupil and guardian fields."); return; }
   try {
     const created = await createStudentWithPayment(parsed.data);
-    const result = { ...created.student, ...(created.payment ? { receiptNumber: created.payment.receiptNumber } : {}) };
+    const result = { ...created.student, ...(created.payment ? { receiptNumber: created.payment.receiptNumber } : {}), admissionForm: created.admissionForm };
     res.status(201).json(CreateStudentResponse.parse(result));
   } catch { errorResponse(res, 409, "A pupil could not be registered. Please try again."); }
+});
+router.get("/students/:studentId/admission-form", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!user) { errorResponse(res, 401, "Not signed in"); return; }
+  const form = await getAdmissionForm(req.params.studentId);
+  if (!form) { errorResponse(res, 404, "Admission form not found."); return; }
+  res.json(GetAdmissionFormResponse.parse(form));
 });
 router.get("/students/:studentId", async (req, res): Promise<void> => {
   const parsed = GetStudentParams.safeParse(req.params);
