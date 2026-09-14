@@ -4,6 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { type ExpenseInput, type SalaryPaymentInput, type UserAccountInput, useCreateExpense, useCreateSalaryPayment, useCreateUser, useGetCurrentUser, useGetOperations, getGetOperationsQueryKey } from '@workspace/api-client-react';
 import { Archive, ArrowRight, BarChart3, Bell, BookOpen, BusFront, CalendarDays, ClipboardList, FileText, HeartPulse, Library, Package, Plus, Receipt, RefreshCcw, ShieldAlert, Users, WalletCards } from 'lucide-react';
 import { AppShell, Button, EmptyState, ErrorState, PageHeader, Panel, Skeleton } from '@/components/school-shell';
+import { trackEvent } from '@/lib/analytics';
 
 type ViewKey = 'people' | 'classes' | 'assignments' | 'staff' | 'parents' | 'expenses' | 'salaries' | 'discipline' | 'medical' | 'library' | 'transport' | 'inventory' | 'events' | 'documents' | 'reports' | 'notifications';
 type Row = Record<string, string | number | boolean>;
@@ -43,7 +44,13 @@ function CreateAccountPanel() {
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     const data: UserAccountInput = { name: form.name, identifier: form.identifier, password: form.password, role: form.role as UserAccountInput['role'], userType: form.role === 'student' || form.role === 'guardian' ? 'learner' : 'staff', studentId: form.role === 'guardian' || form.role === 'student' ? form.studentId : null };
-    create.mutate({ data }, { onSuccess: () => { setForm({ name: '', identifier: '', password: '', role: 'teacher', studentId: '' }); client.invalidateQueries({ queryKey: getGetOperationsQueryKey() }); } });
+    create.mutate({ data }, {
+      onSuccess: () => {
+        trackEvent('account_created', { role: data.role, user_type: data.userType });
+        setForm({ name: '', identifier: '', password: '', role: 'teacher', studentId: '' });
+        client.invalidateQueries({ queryKey: getGetOperationsQueryKey() });
+      },
+    });
   };
   return <Panel className="border-dashed p-5" testId="panel-create-account"><div className="flex items-start gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--secondary))] text-[hsl(var(--primary))]"><Plus className="size-4" /></span><div><h2 className="font-display text-xl">Create a school account</h2><p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Only an administrator can issue usernames, pupil registration-number logins, and passwords.</p></div></div><form onSubmit={submit} className="mt-5 grid gap-3 md:grid-cols-2"><input required value={form.name} onChange={(event) => update('name', event.target.value)} placeholder="Full name" className={inputClass} data-testid="input-account-name" /><input required value={form.identifier} onChange={(event) => update('identifier', event.target.value)} placeholder={form.role === 'student' ? 'Permanent registration number' : 'Username'} className={inputClass} data-testid="input-account-identifier" /><select value={form.role} onChange={(event) => update('role', event.target.value)} className={inputClass} data-testid="select-account-role">{['teacher', 'accountant', 'staff', 'guardian', 'student'].map((role) => <option key={role} value={role}>{role === 'student' ? 'Pupil' : role[0].toUpperCase() + role.slice(1)}</option>)}</select><input required minLength={8} type="password" value={form.password} onChange={(event) => update('password', event.target.value)} placeholder="Temporary password (8+ characters)" className={inputClass} data-testid="input-account-password" />{(form.role === 'guardian' || form.role === 'student') && <input required value={form.studentId} onChange={(event) => update('studentId', event.target.value)} placeholder="Linked pupil ID or registration number" className={`${inputClass} md:col-span-2`} data-testid="input-account-student-id" />}<div className="md:col-span-2 flex items-center justify-between gap-3">{create.isError && <p className="text-xs text-[hsl(var(--destructive))]">Account could not be created. Check the identifier and linked pupil.</p>}<Button type="submit" disabled={create.isPending} testId="button-create-account">{create.isPending ? 'Creating…' : 'Create account'}</Button></div></form></Panel>;
 }
@@ -53,7 +60,16 @@ function ExpenseComposer() {
   const create = useCreateExpense();
   const [form, setForm] = useState<ExpenseInput>({ category: '', description: '', amount: 0, date: new Date().toISOString().slice(0, 10), reference: '' });
   const update = (key: keyof ExpenseInput, value: string) => setForm((old) => ({ ...old, [key]: key === 'amount' ? Number(value) : value }));
-  const submit = (event: React.FormEvent) => { event.preventDefault(); create.mutate({ data: form }, { onSuccess: () => { setForm({ category: '', description: '', amount: 0, date: new Date().toISOString().slice(0, 10), reference: '' }); client.invalidateQueries({ queryKey: getGetOperationsQueryKey() }); } }); };
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    create.mutate({ data: form }, {
+      onSuccess: () => {
+        trackEvent('expense_recorded', { category: form.category });
+        setForm({ category: '', description: '', amount: 0, date: new Date().toISOString().slice(0, 10), reference: '' });
+        client.invalidateQueries({ queryKey: getGetOperationsQueryKey() });
+      },
+    });
+  };
   return <Panel className="border-dashed p-5" testId="panel-create-expense"><h2 className="font-display text-xl">Record an expense</h2><form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-4"><input required value={form.category} onChange={(event) => update('category', event.target.value)} placeholder="Category" className={inputClass} data-testid="input-expense-category" /><input required value={form.description} onChange={(event) => update('description', event.target.value)} placeholder="Description" className={inputClass} data-testid="input-expense-description" /><input required min={1} type="number" value={form.amount || ''} onChange={(event) => update('amount', event.target.value)} placeholder="Amount" className={inputClass} data-testid="input-expense-amount" /><input required value={form.reference} onChange={(event) => update('reference', event.target.value)} placeholder="Reference" className={inputClass} data-testid="input-expense-reference" /><input required type="date" value={form.date} onChange={(event) => update('date', event.target.value)} className={inputClass} data-testid="input-expense-date" /><div className="md:col-span-3 flex justify-end"><Button type="submit" disabled={create.isPending} testId="button-create-expense">{create.isPending ? 'Saving…' : 'Save expense'}</Button></div></form></Panel>;
 }
 
@@ -62,7 +78,16 @@ function SalaryComposer() {
   const create = useCreateSalaryPayment();
   const [form, setForm] = useState<SalaryPaymentInput>({ staffId: '', period: '', amount: 0, method: 'Bank transfer', reference: '' });
   const update = (key: keyof SalaryPaymentInput, value: string) => setForm((old) => ({ ...old, [key]: key === 'amount' ? Number(value) : value }));
-  const submit = (event: React.FormEvent) => { event.preventDefault(); create.mutate({ data: form }, { onSuccess: () => { setForm({ staffId: '', period: '', amount: 0, method: 'Bank transfer', reference: '' }); client.invalidateQueries({ queryKey: getGetOperationsQueryKey() }); } }); };
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    create.mutate({ data: form }, {
+      onSuccess: () => {
+        trackEvent('salary_payment_recorded', { payment_method: form.method });
+        setForm({ staffId: '', period: '', amount: 0, method: 'Bank transfer', reference: '' });
+        client.invalidateQueries({ queryKey: getGetOperationsQueryKey() });
+      },
+    });
+  };
   return <Panel className="border-dashed p-5" testId="panel-create-salary"><h2 className="font-display text-xl">Record a salary payment</h2><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Use the staff account ID shown after an account is created.</p><form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-5"><input required value={form.staffId} onChange={(event) => update('staffId', event.target.value)} placeholder="Staff account ID" className={inputClass} data-testid="input-salary-staff-id" /><input required value={form.period} onChange={(event) => update('period', event.target.value)} placeholder="Period e.g. Sep 2026" className={inputClass} data-testid="input-salary-period" /><input required min={1} type="number" value={form.amount || ''} onChange={(event) => update('amount', event.target.value)} placeholder="Amount" className={inputClass} data-testid="input-salary-amount" /><select value={form.method} onChange={(event) => update('method', event.target.value)} className={inputClass} data-testid="select-salary-method"><option>Bank transfer</option><option>Mobile money</option><option>Cash</option></select><input required value={form.reference} onChange={(event) => update('reference', event.target.value)} placeholder="Reference" className={inputClass} data-testid="input-salary-reference" /><div className="md:col-span-5 flex justify-end"><Button type="submit" disabled={create.isPending} testId="button-create-salary">{create.isPending ? 'Saving…' : 'Save salary payment'}</Button></div></form></Panel>;
 }
 
