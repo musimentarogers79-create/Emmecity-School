@@ -127,6 +127,7 @@ export const attendance = pgTable("attendance", {
   studentId: uuid("student_id").notNull(),
   date: date("date", { mode: "string" }).notNull(),
   status: text("status").notNull(),
+  arrivalTime: text("arrival_time"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

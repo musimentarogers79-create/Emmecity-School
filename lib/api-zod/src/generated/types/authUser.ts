@@ -15,6 +15,7 @@ export interface AuthUser {
   email: string;
   phone: string;
   permissions: PermissionKey[];
+  assignedClasses?: string[];
   role: Role;
   initials: string;
   schoolName: string;

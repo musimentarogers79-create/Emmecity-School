@@ -39,6 +39,10 @@ async function assignedClassNames(user?: SchoolUser) {
   return rows.filter((item) => item.teacherId === user.id).map((item) => String(item.name));
 }
 const errorResponse = (res: Parameters<Parameters<IRouter["get"]>[1]>[1], status: number, error: string) => res.status(status).json({ error });
+const matchesAssignedClass = (assigned: string[], className: string, stream?: string) => {
+  const fullName = stream ? `${className} ${stream}` : className;
+  return assigned.some((candidate) => candidate === fullName || candidate === className || candidate.startsWith(`${className} `) || fullName.startsWith(`${candidate} `));
+};
 
 router.post("/auth/login", async (req, res): Promise<void> => {
   const parsed = LoginBody.safeParse(req.body);
@@ -120,7 +124,7 @@ router.patch("/users/:userId/permissions", async (req, res): Promise<void> => {
   if (!isAdministrator(actor)) { errorResponse(res, 403, "Only administrators can update permissions."); return; }
   const parsed = UpdateUserPermissionsBody.safeParse(req.body);
   if (!parsed.success) { errorResponse(res, 400, "Choose valid action permissions."); return; }
-  const updated = await updateUserPermissions(req.params.userId, parsed.data.permissions as PermissionKey[]);
+  const updated = await updateUserPermissions(req.params.userId, parsed.data.permissions as PermissionKey[], parsed.data.assignedClasses);
   if (!updated) { errorResponse(res, 404, "User account not found."); return; }
   res.json(UpdateUserPermissionsResponse.parse(publicUser(updated)));
 });
@@ -131,8 +135,8 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const [allStudents, allAttendance, allPayments, settings, classesRows, subjectsRows, teacherClasses] = await Promise.all([
     listStudents(), listAttendance(), listPayments(), getSchoolSettings(), listOperation("classes"), listOperation("subjects"), assignedClassNames(user),
   ]);
-  const visibleStudents = user.studentId ? allStudents.filter((item) => item.id === user.studentId) : user.role === "teacher" ? allStudents.filter((item) => teacherClasses.includes(`${item.className} ${item.stream}`)) : allStudents;
-  const visibleAttendance = user.studentId ? allAttendance.filter((item) => item.studentId === user.studentId) : user.role === "teacher" ? allAttendance.filter((item) => teacherClasses.includes(item.className)) : allAttendance;
+  const visibleStudents = user.studentId ? allStudents.filter((item) => item.id === user.studentId) : user.role === "teacher" ? allStudents.filter((item) => matchesAssignedClass(teacherClasses, item.className, item.stream)) : allStudents;
+  const visibleAttendance = user.studentId ? allAttendance.filter((item) => item.studentId === user.studentId) : user.role === "teacher" ? allAttendance.filter((item) => matchesAssignedClass(teacherClasses, item.className)) : allAttendance;
   const present = visibleAttendance.filter((item) => item.status === "present").length;
   const trendDates = [...new Set(visibleAttendance.map((item) => item.date))].sort().slice(-7);
   const attendanceTrend = trendDates.map((date) => {
@@ -162,7 +166,7 @@ router.get("/students", async (req, res): Promise<void> => {
   if (!parsed.success) { errorResponse(res, 400, "Invalid student filters."); return; }
   const rows = await listStudents();
   const classesForTeacher = await assignedClassNames(user);
-  const visible = user.studentId ? rows.filter((item) => item.id === user.studentId) : user.role === "teacher" ? rows.filter((item) => classesForTeacher.includes(`${item.className} ${item.stream}`)) : isAdministrator(user) || user.role === "accountant" ? rows : [];
+  const visible = user.studentId ? rows.filter((item) => item.id === user.studentId) : user.role === "teacher" ? rows.filter((item) => matchesAssignedClass(classesForTeacher, item.className, item.stream)) : isAdministrator(user) || user.role === "accountant" ? rows : [];
   const search = parsed.data.search?.toLowerCase() ?? "";
   res.json(ListStudentsResponse.parse(visible.filter((item) => (!search || [item.name, item.registrationNumber, item.className, item.guardianName].some((field) => field.toLowerCase().includes(search))) && (!parsed.data.className || item.className === parsed.data.className) && (!parsed.data.status || item.status === parsed.data.status))));
 });
@@ -188,7 +192,7 @@ router.get("/students/:studentId", async (req, res): Promise<void> => {
   if (!isAdministrator(user) && user.role !== "teacher" && user.studentId !== student.id) { errorResponse(res, 403, "You do not have access to this pupil."); return; }
   const assigned = await assignedClassNames(user);
   if ((user.role === "student" || user.role === "guardian") && user.studentId !== student.id) { errorResponse(res, 403, "You do not have access to this pupil."); return; }
-  if (user.role === "teacher" && !assigned.includes(`${student.className} ${student.stream}`)) { errorResponse(res, 403, "You do not have access to this assigned class."); return; }
+  if (user.role === "teacher" && !matchesAssignedClass(assigned, student.className, student.stream)) { errorResponse(res, 403, "You do not have access to this assigned class."); return; }
   res.json(GetStudentResponse.parse({ ...student, academicHistory: [] }));
 });
 
@@ -199,7 +203,7 @@ router.get("/attendance", async (req, res): Promise<void> => {
   if (!parsed.success) { errorResponse(res, 400, "Invalid attendance filters."); return; }
   const assigned = await assignedClassNames(user);
   const records = await listAttendance();
-  const visible = records.filter((record) => (!parsed.data.date || record.date === parsed.data.date) && (!parsed.data.className || record.className === parsed.data.className || record.className.startsWith(`${parsed.data.className} `)) && (user.studentId ? record.studentId === user.studentId : user.role === "teacher" ? assigned.includes(record.className) : isAdministrator(user)));
+  const visible = records.filter((record) => (!parsed.data.date || record.date === parsed.data.date) && (!parsed.data.className || record.className === parsed.data.className || record.className.startsWith(`${parsed.data.className} `)) && (user.studentId ? record.studentId === user.studentId : user.role === "teacher" ? matchesAssignedClass(assigned, record.className) : isAdministrator(user)));
   res.json(GetAttendanceResponse.parse(visible));
 });
 router.post("/attendance", async (req, res): Promise<void> => {
@@ -209,8 +213,9 @@ router.post("/attendance", async (req, res): Promise<void> => {
   if (!parsed.success) { errorResponse(res, 400, "Choose a pupil, date, and attendance status."); return; }
   const student = await getStudent(parsed.data.studentId);
   if (!student) { errorResponse(res, 404, "Student not found"); return; }
-  if (user.role === "teacher" && !(await assignedClassNames(user)).includes(`${student.className} ${student.stream}`)) { errorResponse(res, 403, "Teachers can only mark their assigned classes."); return; }
-  const record = await saveAttendance(student.id, parsed.data.date, parsed.data.status as AttendanceStatus);
+  if (user.role === "teacher" && !matchesAssignedClass(await assignedClassNames(user), student.className, student.stream)) { errorResponse(res, 403, "Teachers can only mark their assigned classes."); return; }
+  if (parsed.data.status === "late" && !parsed.data.arrivalTime) { errorResponse(res, 400, "Record the arrival time for a late pupil."); return; }
+  const record = await saveAttendance(student.id, parsed.data.date, parsed.data.status as AttendanceStatus, parsed.data.arrivalTime);
   res.json(SaveAttendanceResponse.parse(record));
 });
 router.post("/attendance/create", async (req, res): Promise<void> => {
@@ -225,7 +230,7 @@ router.post("/attendance/create", async (req, res): Promise<void> => {
 
 router.get("/finance/summary", async (req, res): Promise<void> => {
   const user = await requireUser(req);
-  if (!user || (!isAdministrator(user) && user.role !== "accountant")) { errorResponse(res, 403, "Finance access is limited to administrators and accountants."); return; }
+  if (!user || (!isAdministrator(user) && user.role !== "accountant" && !hasPermission(user, "finance_view"))) { errorResponse(res, 403, "Finance access is limited to users with finance permission."); return; }
   const [rows, studentsRows] = await Promise.all([listPayments(), listStudents()]);
   const collected = rows.filter((item) => item.status === "completed").reduce((sum, item) => sum + item.amount, 0);
   const outstanding = studentsRows.reduce((sum, item) => sum + item.feeBalance, 0);
@@ -233,12 +238,12 @@ router.get("/finance/summary", async (req, res): Promise<void> => {
 });
 router.get("/finance/payments", async (req, res): Promise<void> => {
   const user = await requireUser(req);
-  if (!user || (!isAdministrator(user) && user.role !== "accountant")) { errorResponse(res, 403, "Finance access is limited to administrators and accountants."); return; }
+  if (!user || (!isAdministrator(user) && user.role !== "accountant" && !hasPermission(user, "finance_view"))) { errorResponse(res, 403, "Finance access is limited to users with finance permission."); return; }
   res.json(ListPaymentsResponse.parse(await listPayments()));
 });
 router.post("/finance/payments", async (req, res): Promise<void> => {
   const user = await requireUser(req);
-  if (!user || (!isAdministrator(user) && user.role !== "accountant")) { errorResponse(res, 403, "Only administrators and accountants can record payments."); return; }
+  if (!user || (!isAdministrator(user) && user.role !== "accountant" && !hasPermission(user, "finance_view"))) { errorResponse(res, 403, "Only users with finance permission can record payments."); return; }
   const parsed = RecordPaymentBody.safeParse(req.body);
   if (!parsed.success) { errorResponse(res, 400, "Enter a valid student, amount, method, and reference."); return; }
   try {
@@ -252,12 +257,12 @@ router.post("/finance/payments", async (req, res): Promise<void> => {
 
 router.get("/finance/expenses", async (req, res): Promise<void> => {
   const user = await requireUser(req);
-  if (!user || (!isAdministrator(user) && user.role !== "accountant")) { errorResponse(res, 403, "Only finance roles can view expenses."); return; }
+  if (!user || (!isAdministrator(user) && user.role !== "accountant" && !hasPermission(user, "expenses_view"))) { errorResponse(res, 403, "Only users with expense permission can view expenses."); return; }
   res.json(ListExpensesResponse.parse(await listOperation("expenses")));
 });
 router.post("/finance/expenses", async (req, res): Promise<void> => {
   const user = await requireUser(req);
-  if (!user || (!isAdministrator(user) && user.role !== "accountant")) { errorResponse(res, 403, "Only finance roles can add expenses."); return; }
+  if (!user || (!isAdministrator(user) && user.role !== "accountant" && !hasPermission(user, "expenses_view"))) { errorResponse(res, 403, "Only users with expense permission can add expenses."); return; }
   const parsed = CreateExpenseBody.safeParse(req.body);
   if (!parsed.success) { errorResponse(res, 400, "Enter a category, description, amount, date, and reference."); return; }
   const item = await createOperation("expenses", { ...parsed.data, status: isAdministrator(user) ? "Approved" : "Pending approval" });
@@ -281,7 +286,7 @@ router.delete("/finance/expenses/:expenseId", async (req, res): Promise<void> =>
 });
 router.get("/finance/salaries", async (req, res): Promise<void> => {
   const user = await requireUser(req);
-  if (!user || (!isAdministrator(user) && user.role !== "accountant")) { errorResponse(res, 403, "Only finance roles can view salary payments."); return; }
+  if (!user || (!isAdministrator(user) && user.role !== "accountant" && !hasPermission(user, "finance_view"))) { errorResponse(res, 403, "Only users with finance permission can view salary payments."); return; }
   res.json(ListSalariesResponse.parse(await listOperation("salaryPayments")));
 });
 router.post("/finance/salaries", async (req, res): Promise<void> => {
@@ -354,11 +359,11 @@ router.get("/operations", async (req, res): Promise<void> => {
   const linked = user.studentId
     ? students.filter((item) => item.id === user.studentId)
     : user.role === "teacher"
-      ? students.filter((item) => assigned.includes(`${item.className} ${item.stream}`))
+      ? students.filter((item) => matchesAssignedClass(assigned, item.className, item.stream))
       : isAdministrator(user)
         ? students
         : [];
-  const visibleClasses = user.role === "teacher" ? data.classes.filter((item) => assigned.includes(String(item.name))) : data.classes;
+  const visibleClasses = user.role === "teacher" ? data.classes.filter((item) => matchesAssignedClass(assigned, String(item.name))) : data.classes;
   const studentIds = new Set(linked.map((item) => item.id));
   const linkedClasses = new Set(linked.map((item) => `${item.className} ${item.stream}`));
   const documentRows = data.documents.map((item) => {
@@ -366,9 +371,9 @@ router.get("/operations", async (req, res): Promise<void> => {
     return pupil ? { ...item, pupilName: pupil.name, registrationNumber: pupil.registrationNumber } : item;
   });
   const modules = {
-    classes: visibleClasses, assignments: isAdministrator(user) ? data.assignments : data.assignments.filter((item) => linkedClasses.has(String(item.className))),
+    classes: visibleClasses, assignments: isAdministrator(user) ? data.assignments : data.assignments.filter((item) => matchesAssignedClass(assigned, String(item.className))),
     staff: isAdministrator(user) ? data.staff : [], parents: isAdministrator(user) ? data.parents : [],
-    expenses: isAdministrator(user) || user.role === "accountant" ? data.expenses : [], salaries: isAdministrator(user) || user.role === "accountant" ? data.salaryPayments : [],
+    expenses: isAdministrator(user) || user.role === "accountant" || hasPermission(user, "expenses_view") ? data.expenses : [], salaries: isAdministrator(user) || user.role === "accountant" ? data.salaryPayments : [],
     discipline: data.discipline.filter((item) => studentIds.has(String(item.studentId))), medical: data.medical.filter((item) => studentIds.has(String(item.studentId))),
     library: data.library, transport: data.transport, inventory: isAdministrator(user) || user.role === "staff" ? data.inventory : [], events: data.events,
     documents: isAdministrator(user) || user.role === "staff" ? documentRows : [], reports: isAdministrator(user) || user.role === "accountant" ? data.reports : [], notifications: data.notifications,

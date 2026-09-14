@@ -34,6 +34,9 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
     { href: '/operations?view=classes', label: 'My classes', icon: Users },
     { href: '/attendance', label: 'Attendance', icon: CalendarDays },
+    { href: '/finance', label: 'Finance', icon: CircleDollarSign },
+    { href: '/operations?view=expenses', label: 'Expenses', icon: ReceiptText },
+    { href: '/transactions', label: 'Transactions', icon: ReceiptText },
     { href: '/operations?view=assignments', label: 'Assignments', icon: ClipboardList },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
@@ -70,6 +73,9 @@ const roleNavigation: Record<string, NavItem[]> = {
   ],
   staff: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/finance', label: 'Finance', icon: CircleDollarSign },
+    { href: '/operations?view=expenses', label: 'Expenses', icon: ReceiptText },
+    { href: '/transactions', label: 'Transactions', icon: ReceiptText },
     { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
     { href: '/operations?view=documents', label: 'Documents', icon: FileBarChart },
     { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
@@ -117,7 +123,13 @@ export function AppShell({ children }: { children: ReactNode }) {
   const displayName = user?.name || 'School administrator';
   const roleLabel = (user?.role || 'administrator').replace('_', ' ');
   const navRole = user?.role === 'super_admin' ? 'administrator' : user?.role || 'staff';
-  const navItems = (roleNavigation[navRole] || roleNavigation.staff).map((item) => {
+  const canFinance = user?.role === 'administrator' || user?.role === 'super_admin' || user?.role === 'accountant' || user?.permissions.includes('finance_view');
+  const canExpenses = user?.role === 'administrator' || user?.role === 'super_admin' || user?.role === 'accountant' || user?.permissions.includes('expenses_view');
+  const navItems = (roleNavigation[navRole] || roleNavigation.staff).filter((item) => {
+    if (item.href === '/finance' || item.href === '/transactions') return canFinance;
+    if (item.href.includes('view=expenses')) return canExpenses;
+    return true;
+  }).map((item) => {
     if ((user?.role === 'guardian' || user?.role === 'student') && user.studentId && item.href.includes('/students/stu-001')) {
       return { ...item, href: item.href.replace('/students/stu-001', `/students/${user.studentId}`) };
     }

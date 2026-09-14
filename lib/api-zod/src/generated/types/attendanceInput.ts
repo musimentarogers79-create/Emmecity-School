@@ -11,4 +11,6 @@ export interface AttendanceInput {
   studentId: string;
   date: string;
   status: AttendanceStatus;
+  /** @nullable */
+  arrivalTime?: string | null;
 }

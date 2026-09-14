@@ -27,4 +27,5 @@ export interface UserAccountInput {
   hireDate?: string;
   employmentType?: string;
   permissions?: PermissionKey[];
+  assignedClasses?: string[];
 }

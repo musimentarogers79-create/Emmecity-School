@@ -15,4 +15,6 @@ export interface AttendanceRecord {
   className: string;
   date: string;
   status: AttendanceStatus;
+  /** @nullable */
+  arrivalTime?: string | null;
 }

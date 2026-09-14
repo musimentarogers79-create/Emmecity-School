@@ -37,7 +37,8 @@ export const LoginResponse = zod.object({
   "identifier": zod.string(),
   "email": zod.string(),
   "phone": zod.string(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'manage_users'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
+  "assignedClasses": zod.array(zod.string()).optional(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
@@ -65,7 +66,8 @@ export const GetCurrentUserResponse = zod.object({
   "identifier": zod.string(),
   "email": zod.string(),
   "phone": zod.string(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'manage_users'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
+  "assignedClasses": zod.array(zod.string()).optional(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
@@ -100,7 +102,8 @@ export const UpdateCurrentUserResponse = zod.object({
   "identifier": zod.string(),
   "email": zod.string(),
   "phone": zod.string(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'manage_users'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
+  "assignedClasses": zod.array(zod.string()).optional(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
@@ -119,7 +122,8 @@ export const ListUsersResponseItem = zod.object({
   "identifier": zod.string(),
   "email": zod.string(),
   "phone": zod.string(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'manage_users'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
+  "assignedClasses": zod.array(zod.string()).optional(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
@@ -150,7 +154,8 @@ export const CreateUserBody = zod.object({
   "nextOfKin": zod.string().optional(),
   "hireDate": zod.string().optional(),
   "employmentType": zod.string().optional(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'manage_users'])).optional()
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])).optional(),
+  "assignedClasses": zod.array(zod.string()).optional()
 })
 
 export const CreateUserResponse = zod.object({
@@ -159,7 +164,8 @@ export const CreateUserResponse = zod.object({
   "identifier": zod.string(),
   "email": zod.string(),
   "phone": zod.string(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'manage_users'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
+  "assignedClasses": zod.array(zod.string()).optional(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
@@ -175,7 +181,8 @@ export const UpdateUserPermissionsParams = zod.object({
 })
 
 export const UpdateUserPermissionsBody = zod.object({
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'manage_users']))
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
+  "assignedClasses": zod.array(zod.string()).optional()
 })
 
 export const UpdateUserPermissionsResponse = zod.object({
@@ -184,7 +191,8 @@ export const UpdateUserPermissionsResponse = zod.object({
   "identifier": zod.string(),
   "email": zod.string(),
   "phone": zod.string(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'manage_users'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
+  "assignedClasses": zod.array(zod.string()).optional(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
@@ -404,7 +412,8 @@ export const GetAttendanceResponseItem = zod.object({
   "registrationNumber": zod.string(),
   "className": zod.string(),
   "date": zod.string(),
-  "status": zod.enum(['present', 'absent', 'late', 'excused'])
+  "status": zod.enum(['present', 'absent', 'late', 'excused']),
+  "arrivalTime": zod.string().nullish()
 })
 export const GetAttendanceResponse = zod.array(GetAttendanceResponseItem)
 
@@ -415,7 +424,8 @@ export const GetAttendanceResponse = zod.array(GetAttendanceResponseItem)
 export const SaveAttendanceBody = zod.object({
   "studentId": zod.string(),
   "date": zod.string(),
-  "status": zod.enum(['present', 'absent', 'late', 'excused'])
+  "status": zod.enum(['present', 'absent', 'late', 'excused']),
+  "arrivalTime": zod.string().nullish()
 })
 
 export const SaveAttendanceResponse = zod.object({
@@ -425,7 +435,8 @@ export const SaveAttendanceResponse = zod.object({
   "registrationNumber": zod.string(),
   "className": zod.string(),
   "date": zod.string(),
-  "status": zod.enum(['present', 'absent', 'late', 'excused'])
+  "status": zod.enum(['present', 'absent', 'late', 'excused']),
+  "arrivalTime": zod.string().nullish()
 })
 
 
@@ -444,7 +455,8 @@ export const CreateAttendanceRegisterResponseItem = zod.object({
   "registrationNumber": zod.string(),
   "className": zod.string(),
   "date": zod.string(),
-  "status": zod.enum(['present', 'absent', 'late', 'excused'])
+  "status": zod.enum(['present', 'absent', 'late', 'excused']),
+  "arrivalTime": zod.string().nullish()
 })
 export const CreateAttendanceRegisterResponse = zod.array(CreateAttendanceRegisterResponseItem)
 

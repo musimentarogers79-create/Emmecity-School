@@ -16,6 +16,7 @@ import {
   StudentProfilePage,
   StudentsPage,
   SupportPage,
+  TransactionDetailPage,
   TransactionsPage,
   TimetablePage,
 } from '@/pages/school-pages';
@@ -37,6 +38,7 @@ function Router() {
         <Route path="/" component={LoginPage} />
         <Route path="/support" component={SupportPage} />
         <Route path="/transactions" component={TransactionsPage} />
+        <Route path="/transactions/:transactionId" component={TransactionDetailPage} />
         <Route path="/dashboard" component={DashboardPage} />
         <Route path="/students" component={StudentsPage} />
         <Route path="/students/:studentId" component={StudentProfilePage} />

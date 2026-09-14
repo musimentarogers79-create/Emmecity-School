@@ -36,6 +36,13 @@
       "when": 1789391596387,
       "tag": "0004_tough_cargill",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789394312412,
+      "tag": "0005_rapid_dracula",
+      "breakpoints": true
     }
   ]
 }

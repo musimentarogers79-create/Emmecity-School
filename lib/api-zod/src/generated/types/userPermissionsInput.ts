@@ -9,4 +9,5 @@ import type { PermissionKey } from './permissionKey';
 
 export interface UserPermissionsInput {
   permissions: PermissionKey[];
+  assignedClasses?: string[];
 }

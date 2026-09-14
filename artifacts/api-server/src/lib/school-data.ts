@@ -9,11 +9,11 @@ import {
 import type { SchoolSettings, User } from "@workspace/db";
 
 export type SchoolRole = "super_admin" | "administrator" | "teacher" | "accountant" | "guardian" | "student" | "staff";
-export type PermissionKey = "expense_approve" | "expense_delete" | "transactions_view" | "transactions_print" | "manage_users";
+export type PermissionKey = "expense_approve" | "expense_delete" | "transactions_view" | "transactions_print" | "finance_view" | "expenses_view" | "manage_users";
 export type AttendanceStatus = "present" | "absent" | "late" | "excused";
 export type SchoolUser = {
   id: string; name: string; identifier: string; email: string; phone: string; password: string; userType: "staff" | "guardian" | "learner";
-  role: SchoolRole; permissions: PermissionKey[]; initials: string; schoolName: string; studentId?: string;
+  role: SchoolRole; permissions: PermissionKey[]; initials: string; schoolName: string; studentId?: string; assignedClasses?: string[];
 };
 export type SchoolStudent = {
   id: string; registrationNumber: string; name: string; firstName: string; lastName: string; middleName?: string;
@@ -21,7 +21,7 @@ export type SchoolStudent = {
   feeBalance: number; avatarTone: string; dateOfBirth: string; guardianName: string; guardianPhone: string;
   guardianEmail: string; admissionDate: string; enrollmentType?: "day" | "boarding"; termFee?: number; amountPaid?: number;
 };
-export type AttendanceRecord = { id: string; studentId: string; studentName: string; registrationNumber: string; className: string; date: string; status: AttendanceStatus };
+export type AttendanceRecord = { id: string; studentId: string; studentName: string; registrationNumber: string; className: string; date: string; status: AttendanceStatus; arrivalTime?: string | null };
 export type Payment = { id: string; receiptNumber: string; studentName: string; registrationNumber: string; amount: number; method: string; date: string; status: "completed" | "pending" | "reversed" };
 export type OperationRecord = Record<string, unknown> & { id: string };
 
@@ -85,11 +85,11 @@ export async function initializeSchoolData() {
 export async function getSchoolId() { return initializeSchoolData(); }
 
 function publicRow(row: User, setting: SchoolSettings): SchoolUser {
-  const permissions = Array.isArray(row.permissions) ? row.permissions.filter((item): item is PermissionKey => ["expense_approve", "expense_delete", "transactions_view", "transactions_print", "manage_users"].includes(item)) : [];
+  const permissions = Array.isArray(row.permissions) ? row.permissions.filter((item): item is PermissionKey => ["expense_approve", "expense_delete", "transactions_view", "transactions_print", "finance_view", "expenses_view", "manage_users"].includes(item)) : [];
   return { id: row.id, name: row.name, identifier: row.identifier, email: row.email, phone: row.phone, password: row.passwordHash, userType: row.userType as SchoolUser["userType"], role: row.role as SchoolRole, permissions, initials: row.initials, schoolName: setting.schoolName, ...(row.studentId ? { studentId: row.studentId } : {}) };
 }
 export function publicUser(user: SchoolUser) {
-  return { id: user.id, name: user.name, identifier: user.identifier, email: user.email, phone: user.phone, role: user.role, permissions: user.permissions, initials: user.initials, schoolName: user.schoolName, studentId: user.studentId ?? null };
+  return { id: user.id, name: user.name, identifier: user.identifier, email: user.email, phone: user.phone, role: user.role, permissions: user.permissions, initials: user.initials, schoolName: user.schoolName, studentId: user.studentId ?? null, ...(user.assignedClasses ? { assignedClasses: user.assignedClasses } : {}) };
 }
 export async function getSchoolSettings() {
   const id = await getSchoolId();
@@ -105,7 +105,11 @@ export async function updateSchoolSettings(data: Partial<Pick<SchoolSettings, "s
 }
 export async function listUsers() {
   const [setting, rows] = await Promise.all([getSchoolSettings(), db.select().from(users)]);
-  return rows.filter((row) => row.schoolId === setting.id).map((row) => publicRow(row, setting));
+  const classRows = await listOperation("classes");
+  return rows.filter((row) => row.schoolId === setting.id).map((row) => {
+    const user = publicRow(row, setting);
+    return user.role === "teacher" ? { ...user, assignedClasses: classRows.filter((item) => item.teacherId === user.id).map((item) => String(item.name)) } : user;
+  });
 }
 export async function findUser(identifier: string, userType: string) {
   const schoolId = await getSchoolId();
@@ -121,7 +125,7 @@ export async function findUserById(id: string) {
 }
 export async function createUser(data: {
   name: string; identifier: string; password: string; userType: string; role: SchoolRole; studentId?: string;
-  email?: string; phone?: string; address?: string; nextOfKin?: string; hireDate?: string; employmentType?: string; permissions?: PermissionKey[];
+  email?: string; phone?: string; address?: string; nextOfKin?: string; hireDate?: string; employmentType?: string; permissions?: PermissionKey[]; assignedClasses?: string[];
 }) {
   const schoolId = await getSchoolId();
   const row = (await db.insert(users).values({
@@ -138,6 +142,12 @@ export async function createUser(data: {
         hireDate: data.hireDate || "", employmentType: data.employmentType || "Full-time", status: "Active",
       },
     });
+  }
+  if (data.role === "teacher" && data.assignedClasses?.length) {
+    const classRows = await listOperation("classes");
+    await Promise.all(classRows
+      .filter((item) => data.assignedClasses?.includes(String(item.name)))
+      .map((item) => updateOperation("classes", item.id, { ...item, teacherId: row.id, teacherName: data.name })));
   }
   return publicRow(row, await getSchoolSettings());
 }
@@ -158,10 +168,22 @@ export async function updateUserProfile(user: SchoolUser, data: {
   if (!row) throw new Error("Account not found");
   return publicRow(row, await getSchoolSettings());
 }
-export async function updateUserPermissions(userId: string, permissions: PermissionKey[]) {
+export async function updateUserPermissions(userId: string, permissions: PermissionKey[], assignedClasses?: string[]) {
   const schoolId = await getSchoolId();
   const row = (await db.update(users).set({ permissions, updatedAt: new Date() }).where(and(eq(users.schoolId, schoolId), eq(users.id, userId))).returning())[0];
-  return row ? publicRow(row, await getSchoolSettings()) : undefined;
+  if (!row) return undefined;
+  if (row.role === "teacher" && assignedClasses !== undefined) {
+    const classRows = await listOperation("classes");
+    await Promise.all(classRows.map((item) => {
+      const isAssigned = assignedClasses.includes(String(item.name));
+      if (item.teacherId === row.id && !isAssigned) return updateOperation("classes", item.id, { ...item, teacherId: null, teacherName: "Unassigned" });
+      if (isAssigned) return updateOperation("classes", item.id, { ...item, teacherId: row.id, teacherName: row.name });
+      return undefined;
+    }));
+  }
+  const setting = await getSchoolSettings();
+  const user = publicRow(row, setting);
+  return row.role === "teacher" ? { ...user, assignedClasses: (await listOperation("classes")).filter((item) => item.teacherId === row.id).map((item) => String(item.name)) } : user;
 }
 
 const tokenDigest = (token: string) => createHash("sha256").update(token).digest("hex");
@@ -327,17 +349,17 @@ export async function deleteOperation(kind: OperationKind, id: string) {
   const row = (await db.delete(table).where(and(eq(table.schoolId, schoolId), eq(table.id, id))).returning({ id: table.id }))[0];
   return !!row;
 }
-export async function saveAttendance(studentId: string, date: string, status: AttendanceStatus) {
+export async function saveAttendance(studentId: string, date: string, status: AttendanceStatus, arrivalTime?: string | null) {
   const student = await getStudent(studentId);
   if (!student) return undefined;
   const schoolId = await getSchoolId();
-  const row = (await db.insert(attendance).values({ schoolId, studentId: student.id, date, status }).onConflictDoUpdate({ target: [attendance.studentId, attendance.date], set: { status, updatedAt: new Date() } }).returning())[0];
-  return row ? { id: row.id, studentId: student.id, studentName: student.name, registrationNumber: student.registrationNumber, className: `${student.className} ${student.stream}`, date: row.date, status: row.status as AttendanceStatus } : undefined;
+  const row = (await db.insert(attendance).values({ schoolId, studentId: student.id, date, status, arrivalTime: arrivalTime || null }).onConflictDoUpdate({ target: [attendance.studentId, attendance.date], set: { status, arrivalTime: arrivalTime || null, updatedAt: new Date() } }).returning())[0];
+  return row ? { id: row.id, studentId: student.id, studentName: student.name, registrationNumber: student.registrationNumber, className: `${student.className} ${student.stream}`, date: row.date, status: row.status as AttendanceStatus, arrivalTime: row.arrivalTime } : undefined;
 }
 export async function listAttendance() {
   const schoolId = await getSchoolId();
   const rows = await db.select({ record: attendance, student: students }).from(attendance).innerJoin(students, eq(attendance.studentId, students.id)).where(eq(attendance.schoolId, schoolId)).orderBy(desc(attendance.date));
-  return rows.map(({ record, student }) => ({ id: record.id, studentId: student.id, studentName: `${student.firstName}${student.middleName ? ` ${student.middleName}` : ""} ${student.lastName}`, registrationNumber: student.registrationNumber, className: `${student.className} ${student.stream}`, date: record.date, status: record.status as AttendanceStatus }));
+  return rows.map(({ record, student }) => ({ id: record.id, studentId: student.id, studentName: `${student.firstName}${student.middleName ? ` ${student.middleName}` : ""} ${student.lastName}`, registrationNumber: student.registrationNumber, className: `${student.className} ${student.stream}`, date: record.date, status: record.status as AttendanceStatus, arrivalTime: record.arrivalTime }));
 }
 
 export async function createAttendanceRegister(className: string, date: string) {
@@ -345,9 +367,9 @@ export async function createAttendanceRegister(className: string, date: string) 
   const classStudents = (await db.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.className, className), eq(students.status, "active")))).map(studentRow);
   const created = await Promise.all(classStudents.map(async (student) => {
     const row = (await db.insert(attendance).values({
-      schoolId, studentId: student.id, date, status: "present",
+      schoolId, studentId: student.id, date, status: "present", arrivalTime: null,
     }).onConflictDoNothing({ target: [attendance.studentId, attendance.date] }).returning())[0];
-    return row ? { id: row.id, studentId: student.id, studentName: student.name, registrationNumber: student.registrationNumber, className: `${student.className} ${student.stream}`, date: row.date, status: row.status as AttendanceStatus } : undefined;
+    return row ? { id: row.id, studentId: student.id, studentName: student.name, registrationNumber: student.registrationNumber, className: `${student.className} ${student.stream}`, date: row.date, status: row.status as AttendanceStatus, arrivalTime: row.arrivalTime } : undefined;
   }));
   return created.filter((item): item is NonNullable<typeof item> => !!item);
 }

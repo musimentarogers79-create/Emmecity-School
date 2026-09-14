@@ -50,6 +50,8 @@ export const PermissionKey = {
   expense_delete: 'expense_delete',
   transactions_view: 'transactions_view',
   transactions_print: 'transactions_print',
+  finance_view: 'finance_view',
+  expenses_view: 'expenses_view',
   manage_users: 'manage_users',
 } as const;
 
@@ -60,6 +62,7 @@ export interface AuthUser {
   email: string;
   phone: string;
   permissions: PermissionKey[];
+  assignedClasses?: string[];
   role: Role;
   initials: string;
   schoolName: string;
@@ -105,10 +108,12 @@ export interface UserAccountInput {
   hireDate?: string;
   employmentType?: string;
   permissions?: PermissionKey[];
+  assignedClasses?: string[];
 }
 
 export interface UserPermissionsInput {
   permissions: PermissionKey[];
+  assignedClasses?: string[];
 }
 
 export interface AuthSession {
@@ -213,12 +218,16 @@ export interface AttendanceRecord {
   className: string;
   date: string;
   status: AttendanceStatus;
+  /** @nullable */
+  arrivalTime?: string | null;
 }
 
 export interface AttendanceInput {
   studentId: string;
   date: string;
   status: AttendanceStatus;
+  /** @nullable */
+  arrivalTime?: string | null;
 }
 
 export interface AttendanceRegisterInput {
