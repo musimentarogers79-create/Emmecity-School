@@ -20,6 +20,7 @@ import {
   TransactionDetailPage,
   TransactionsPage,
   TimetablePage,
+  UserManualPage,
 } from '@/pages/school-pages';
 import {
   Route,
@@ -38,6 +39,7 @@ function Router() {
       <Switch>
         <Route path="/" component={LoginPage} />
         <Route path="/support" component={SupportPage} />
+        <Route path="/manual" component={UserManualPage} />
         <Route path="/transactions" component={TransactionsPage} />
         <Route path="/transactions/:transactionId" component={TransactionDetailPage} />
         <Route path="/salary-receipts/:salaryId" component={SalaryReceiptPage} />
