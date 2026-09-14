@@ -117,14 +117,24 @@ export async function findUserById(id: string) {
   const setting = await getSchoolSettings();
   return rows[0] ? publicRow(rows[0], setting) : undefined;
 }
-export async function createUser(data: { name: string; identifier: string; password: string; userType: string; role: SchoolRole; studentId?: string }) {
+export async function createUser(data: {
+  name: string; identifier: string; password: string; userType: string; role: SchoolRole; studentId?: string;
+  email?: string; phone?: string; address?: string; nextOfKin?: string; hireDate?: string; employmentType?: string;
+}) {
   const schoolId = await getSchoolId();
-  const row = (await db.insert(users).values({ schoolId, name: data.name, identifier: data.identifier, passwordHash: hashPassword(data.password), userType: data.userType, role: data.role, initials: initials(data.name), studentId: data.studentId }).returning())[0];
+  const row = (await db.insert(users).values({
+    schoolId, name: data.name, identifier: data.identifier, email: data.email || "", phone: data.phone || "",
+    passwordHash: hashPassword(data.password), userType: data.userType, role: data.role, initials: initials(data.name), studentId: data.studentId,
+  }).returning())[0];
   if (!row) throw new Error("Unable to create account");
   if (data.userType === "staff") {
     await db.insert(staff).values({
       schoolId,
-      data: { name: data.name, role: data.role.replace("_", " "), username: data.identifier, phone: "Not provided", status: "Active" },
+      data: {
+        name: data.name, role: data.role.replace("_", " "), username: data.identifier, email: data.email || "",
+        phone: data.phone || "Not provided", address: data.address || "", nextOfKin: data.nextOfKin || "",
+        hireDate: data.hireDate || "", employmentType: data.employmentType || "Full-time", status: "Active",
+      },
     });
   }
   return publicRow(row, await getSchoolSettings());
@@ -309,4 +319,16 @@ export async function listAttendance() {
   const schoolId = await getSchoolId();
   const rows = await db.select({ record: attendance, student: students }).from(attendance).innerJoin(students, eq(attendance.studentId, students.id)).where(eq(attendance.schoolId, schoolId)).orderBy(desc(attendance.date));
   return rows.map(({ record, student }) => ({ id: record.id, studentId: student.id, studentName: `${student.firstName}${student.middleName ? ` ${student.middleName}` : ""} ${student.lastName}`, registrationNumber: student.registrationNumber, className: `${student.className} ${student.stream}`, date: record.date, status: record.status as AttendanceStatus }));
+}
+
+export async function createAttendanceRegister(className: string, date: string) {
+  const schoolId = await getSchoolId();
+  const classStudents = (await db.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.className, className), eq(students.status, "active")))).map(studentRow);
+  const created = await Promise.all(classStudents.map(async (student) => {
+    const row = (await db.insert(attendance).values({
+      schoolId, studentId: student.id, date, status: "present",
+    }).onConflictDoNothing({ target: [attendance.studentId, attendance.date] }).returning())[0];
+    return row ? { id: row.id, studentId: student.id, studentName: student.name, registrationNumber: student.registrationNumber, className: `${student.className} ${student.stream}`, date: row.date, status: row.status as AttendanceStatus } : undefined;
+  }));
+  return created.filter((item): item is NonNullable<typeof item> => !!item);
 }

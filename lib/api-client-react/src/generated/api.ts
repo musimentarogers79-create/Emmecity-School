@@ -24,6 +24,7 @@ import type {
   AnnouncementInput,
   AttendanceInput,
   AttendanceRecord,
+  AttendanceRegisterInput,
   AuthSession,
   AuthUser,
   Dashboard,
@@ -47,6 +48,7 @@ import type {
   StudentInput,
   StudentProfile,
   TimetableEntry,
+  TimetableInput,
   UserAccountInput,
   UserProfileUpdate
 } from './api.schemas';
@@ -981,6 +983,77 @@ export const useSaveAttendance = <TError = ErrorType<unknown>,
       return useMutation(getSaveAttendanceMutationOptions(options));
     }
 
+export const getCreateAttendanceRegisterUrl = () => {
+
+
+
+
+  return `/api/attendance/create`
+}
+
+/**
+ * @summary Create an attendance register for a class and date
+ */
+export const createAttendanceRegister = async (attendanceRegisterInput: AttendanceRegisterInput, options?: Parameters<typeof customFetch>[1]): Promise<AttendanceRecord[]> => {
+
+  return customFetch<AttendanceRecord[]>(getCreateAttendanceRegisterUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(attendanceRegisterInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAttendanceRegisterMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAttendanceRegister>>, TError,{data: BodyType<AttendanceRegisterInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAttendanceRegister>>, TError,{data: BodyType<AttendanceRegisterInput>}, TContext> => {
+
+const mutationKey = ['createAttendanceRegister'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAttendanceRegister>>, {data: BodyType<AttendanceRegisterInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAttendanceRegister(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAttendanceRegisterMutationResult = NonNullable<Awaited<ReturnType<typeof createAttendanceRegister>>>
+    export type CreateAttendanceRegisterMutationBody = BodyType<AttendanceRegisterInput>
+    export type CreateAttendanceRegisterMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create an attendance register for a class and date
+ */
+export const useCreateAttendanceRegister = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAttendanceRegister>>, TError,{data: BodyType<AttendanceRegisterInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAttendanceRegister>>,
+        TError,
+        {data: BodyType<AttendanceRegisterInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAttendanceRegisterMutationOptions(options));
+    }
+
 export const getGetFinanceSummaryUrl = () => {
 
 
@@ -1726,6 +1799,77 @@ export function useGetTimetable<TData = Awaited<ReturnType<typeof getTimetable>>
 
 
 
+
+export const getCreateTimetableEntryUrl = () => {
+
+
+
+
+  return `/api/academics/timetable`
+}
+
+/**
+ * @summary Create a timetable entry
+ */
+export const createTimetableEntry = async (timetableInput: TimetableInput, options?: Parameters<typeof customFetch>[1]): Promise<TimetableEntry> => {
+
+  return customFetch<TimetableEntry>(getCreateTimetableEntryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(timetableInput)
+  }
+);}
+
+
+
+
+
+export const getCreateTimetableEntryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTimetableEntry>>, TError,{data: BodyType<TimetableInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTimetableEntry>>, TError,{data: BodyType<TimetableInput>}, TContext> => {
+
+const mutationKey = ['createTimetableEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTimetableEntry>>, {data: BodyType<TimetableInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createTimetableEntry(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTimetableEntryMutationResult = NonNullable<Awaited<ReturnType<typeof createTimetableEntry>>>
+    export type CreateTimetableEntryMutationBody = BodyType<TimetableInput>
+    export type CreateTimetableEntryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a timetable entry
+ */
+export const useCreateTimetableEntry = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTimetableEntry>>, TError,{data: BodyType<TimetableInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTimetableEntry>>,
+        TError,
+        {data: BodyType<TimetableInput>},
+        TContext
+      > => {
+      return useMutation(getCreateTimetableEntryMutationOptions(options));
+    }
 
 export const getGetReportCardUrl = (studentId: string,) => {
 

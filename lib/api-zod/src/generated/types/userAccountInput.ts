@@ -19,4 +19,10 @@ export interface UserAccountInput {
   userType: UserAccountInputUserType;
   /** @nullable */
   studentId?: string | null;
+  email?: string;
+  phone?: string;
+  address?: string;
+  nextOfKin?: string;
+  hireDate?: string;
+  employmentType?: string;
 }

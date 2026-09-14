@@ -86,6 +86,12 @@ export interface UserAccountInput {
   userType: UserAccountInputUserType;
   /** @nullable */
   studentId?: string | null;
+  email?: string;
+  phone?: string;
+  address?: string;
+  nextOfKin?: string;
+  hireDate?: string;
+  employmentType?: string;
 }
 
 export interface AuthSession {
@@ -198,6 +204,11 @@ export interface AttendanceInput {
   status: AttendanceStatus;
 }
 
+export interface AttendanceRegisterInput {
+  date: string;
+  className: string;
+}
+
 export type PaymentStatus = typeof PaymentStatus[keyof typeof PaymentStatus];
 
 
@@ -234,7 +245,7 @@ export interface ExpenseInput {
   /** @minimum 1 */
   amount: number;
   date: string;
-  reference: string;
+  reference?: string;
 }
 
 export interface SalaryPayment {
@@ -313,6 +324,22 @@ export interface TimetableEntry {
   className: string;
   room: string;
   accent: string;
+}
+
+export interface TimetableInput {
+  /** @minLength 1 */
+  day: string;
+  /** @minLength 1 */
+  time: string;
+  /** @minLength 1 */
+  subject: string;
+  /** @minLength 1 */
+  teacher: string;
+  /** @minLength 1 */
+  className: string;
+  /** @minLength 1 */
+  room: string;
+  accent?: string;
 }
 
 export type ReportCardSubjectsItem = {

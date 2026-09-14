@@ -1,16 +1,16 @@
 import { Router, type IRouter } from "express";
 import {
-  AttendanceRecord, CreateAnnouncementBody, CreateAnnouncementResponse, CreateExpenseBody, CreateExpenseResponse,
+  AttendanceRecord, CreateAnnouncementBody, CreateAnnouncementResponse, CreateAttendanceRegisterBody, CreateAttendanceRegisterResponse, CreateExpenseBody, CreateExpenseResponse,
   CreateSalaryPaymentBody, CreateSalaryPaymentResponse, CreateStudentBody, CreateStudentResponse, CreateUserBody,
   CreateUserResponse, GetAttendanceQueryParams, GetAttendanceResponse, GetCurrentUserResponse, GetDashboardResponse,
   GetFinanceSummaryResponse, GetOperationsResponse, GetReportCardParams, GetReportCardResponse, GetStudentParams,
-  GetStudentResponse, GetTimetableResponse, ListAnnouncementsResponse, ListExpensesResponse, ListPaymentsResponse,
+  GetStudentResponse, GetTimetableResponse, CreateTimetableEntryBody, CreateTimetableEntryResponse, ListAnnouncementsResponse, ListExpensesResponse, ListPaymentsResponse,
   ListSalariesResponse, ListStudentsQueryParams, ListStudentsResponse, LoginBody, LoginResponse, LogoutResponse,
   RecordPaymentBody, RecordPaymentResponse, SaveAttendanceBody, SaveAttendanceResponse, GetSettingsResponse,
   UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse,
 } from "@workspace/api-zod";
 import {
-  AttendanceStatus, consumeLoginAttempt, currencyOptions, createOperation, createStudentWithPayment, createUser, currentUserFromToken,
+  AttendanceStatus, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createOperation, createStudentWithPayment, createUser, currentUserFromToken,
   clearLoginFailures, deleteSession, findUser, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
   listAttendance, listOperation, listPayments, listStudents, makeSession, publicUser, recordPayment, saveAttendance,
   updateSchoolSettings, updateStudentBalance, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type SchoolRole, type SchoolUser,
@@ -174,7 +174,7 @@ router.get("/attendance", async (req, res): Promise<void> => {
   if (!parsed.success) { errorResponse(res, 400, "Invalid attendance filters."); return; }
   const assigned = await assignedClassNames(user);
   const records = await listAttendance();
-  const visible = records.filter((record) => (!parsed.data.date || record.date === parsed.data.date) && (!parsed.data.className || record.className === parsed.data.className) && (user.studentId ? record.studentId === user.studentId : user.role === "teacher" ? assigned.includes(record.className) : isAdministrator(user)));
+  const visible = records.filter((record) => (!parsed.data.date || record.date === parsed.data.date) && (!parsed.data.className || record.className === parsed.data.className || record.className.startsWith(`${parsed.data.className} `)) && (user.studentId ? record.studentId === user.studentId : user.role === "teacher" ? assigned.includes(record.className) : isAdministrator(user)));
   res.json(GetAttendanceResponse.parse(visible));
 });
 router.post("/attendance", async (req, res): Promise<void> => {
@@ -187,6 +187,15 @@ router.post("/attendance", async (req, res): Promise<void> => {
   if (user.role === "teacher" && !(await assignedClassNames(user)).includes(`${student.className} ${student.stream}`)) { errorResponse(res, 403, "Teachers can only mark their assigned classes."); return; }
   const record = await saveAttendance(student.id, parsed.data.date, parsed.data.status as AttendanceStatus);
   res.json(SaveAttendanceResponse.parse(record));
+});
+router.post("/attendance/create", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!user || (!isAdministrator(user) && user.role !== "teacher")) { errorResponse(res, 403, "Only administrators and teachers can create attendance registers."); return; }
+  const parsed = CreateAttendanceRegisterBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Choose a class and date for the attendance register."); return; }
+  if (user.role === "teacher" && !(await assignedClassNames(user)).some((assignedClass) => assignedClass === parsed.data.className || assignedClass.startsWith(`${parsed.data.className} `))) { errorResponse(res, 403, "Teachers can only create registers for assigned classes."); return; }
+  const records = await createAttendanceRegister(parsed.data.className, parsed.data.date);
+  res.status(201).json(CreateAttendanceRegisterResponse.parse(records));
 });
 
 router.get("/finance/summary", async (req, res): Promise<void> => {
@@ -270,6 +279,14 @@ router.get("/academics/timetable", async (req, res): Promise<void> => {
   const assigned = await assignedClassNames(user);
   const visible = user.role === "teacher" ? rows.filter((item) => assigned.includes(String(item.className)) && item.teacher === user.name) : student ? rows.filter((item) => item.className === `${student.className} ${student.stream}`) : isAdministrator(user) || user.role === "staff" || user.role === "accountant" ? rows : [];
   res.json(GetTimetableResponse.parse(visible));
+});
+router.post("/academics/timetable", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!isAdministrator(user)) { errorResponse(res, 403, "Only administrators can create timetable entries."); return; }
+  const parsed = CreateTimetableEntryBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Complete the day, time, subject, teacher, class, and room."); return; }
+  const item = await createOperation("timetable", { ...parsed.data, accent: parsed.data.accent || "hsl(var(--primary))" });
+  res.status(201).json(CreateTimetableEntryResponse.parse(item));
 });
 router.get("/academics/report-cards/:studentId", async (req, res): Promise<void> => {
   const parsed = GetReportCardParams.safeParse(req.params);

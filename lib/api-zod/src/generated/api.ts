@@ -122,7 +122,13 @@ export const CreateUserBody = zod.object({
   "password": zod.string().min(createUserBodyPasswordMin),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "userType": zod.enum(['staff', 'learner']),
-  "studentId": zod.string().nullish()
+  "studentId": zod.string().nullish(),
+  "email": zod.string().optional(),
+  "phone": zod.string().optional(),
+  "address": zod.string().optional(),
+  "nextOfKin": zod.string().optional(),
+  "hireDate": zod.string().optional(),
+  "employmentType": zod.string().optional()
 })
 
 export const CreateUserResponse = zod.object({
@@ -376,6 +382,26 @@ export const SaveAttendanceResponse = zod.object({
 
 
 /**
+ * @summary Create an attendance register for a class and date
+ */
+export const CreateAttendanceRegisterBody = zod.object({
+  "date": zod.string(),
+  "className": zod.string()
+})
+
+export const CreateAttendanceRegisterResponseItem = zod.object({
+  "id": zod.string(),
+  "studentId": zod.string(),
+  "studentName": zod.string(),
+  "registrationNumber": zod.string(),
+  "className": zod.string(),
+  "date": zod.string(),
+  "status": zod.enum(['present', 'absent', 'late', 'excused'])
+})
+export const CreateAttendanceRegisterResponse = zod.array(CreateAttendanceRegisterResponseItem)
+
+
+/**
  * @summary Get fee collection summary
  */
 export const GetFinanceSummaryResponse = zod.object({
@@ -458,7 +484,7 @@ export const CreateExpenseBody = zod.object({
   "description": zod.string().min(1),
   "amount": zod.number().min(1),
   "date": zod.string(),
-  "reference": zod.string()
+  "reference": zod.string().optional()
 })
 
 export const CreateExpenseResponse = zod.object({
@@ -565,6 +591,39 @@ export const GetTimetableResponseItem = zod.object({
   "accent": zod.string()
 })
 export const GetTimetableResponse = zod.array(GetTimetableResponseItem)
+
+
+/**
+ * @summary Create a timetable entry
+ */
+
+
+
+
+
+
+
+
+export const CreateTimetableEntryBody = zod.object({
+  "day": zod.string().min(1),
+  "time": zod.string().min(1),
+  "subject": zod.string().min(1),
+  "teacher": zod.string().min(1),
+  "className": zod.string().min(1),
+  "room": zod.string().min(1),
+  "accent": zod.string().optional()
+})
+
+export const CreateTimetableEntryResponse = zod.object({
+  "id": zod.string(),
+  "day": zod.string(),
+  "time": zod.string(),
+  "subject": zod.string(),
+  "teacher": zod.string(),
+  "className": zod.string(),
+  "room": zod.string(),
+  "accent": zod.string()
+})
 
 
 /**

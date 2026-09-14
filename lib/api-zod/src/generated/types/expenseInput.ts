@@ -14,5 +14,5 @@ export interface ExpenseInput {
   /** @minimum 1 */
   amount: number;
   date: string;
-  reference: string;
+  reference?: string;
 }

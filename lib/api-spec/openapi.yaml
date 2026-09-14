@@ -244,6 +244,26 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AttendanceRecord"
+  /attendance/create:
+    post:
+      operationId: createAttendanceRegister
+      tags: [attendance]
+      summary: Create an attendance register for a class and date
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AttendanceRegisterInput"
+      responses:
+        "201":
+          description: Created attendance register
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AttendanceRecord"
   /finance/summary:
     get:
       operationId: getFinanceSummary
@@ -394,6 +414,23 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TimetableEntry"
+    post:
+      operationId: createTimetableEntry
+      tags: [academics]
+      summary: Create a timetable entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TimetableInput"
+      responses:
+        "201":
+          description: Created timetable entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TimetableEntry"
   /academics/report-cards/{studentId}:
     get:
       operationId: getReportCard
@@ -550,6 +587,18 @@ components:
           enum: [staff, learner]
         studentId:
           type: ["string", "null"]
+        email:
+          type: string
+        phone:
+          type: string
+        address:
+          type: string
+        nextOfKin:
+          type: string
+        hireDate:
+          type: string
+        employmentType:
+          type: string
       required: [name, identifier, password, role, userType]
     AuthSession:
       type: object
@@ -693,6 +742,14 @@ components:
         status:
           $ref: "#/components/schemas/AttendanceStatus"
       required: [studentId, date, status]
+    AttendanceRegisterInput:
+      type: object
+      properties:
+        date:
+          type: string
+        className:
+          type: string
+      required: [date, className]
     Payment:
       type: object
       properties:
@@ -743,7 +800,7 @@ components:
           type: string
         reference:
           type: string
-      required: [category, description, amount, date, reference]
+      required: [category, description, amount, date]
     SalaryPayment:
       type: object
       properties:
@@ -853,6 +910,30 @@ components:
         accent:
           type: string
       required: [id, day, time, subject, teacher, className, room, accent]
+    TimetableInput:
+      type: object
+      properties:
+        day:
+          type: string
+          minLength: 1
+        time:
+          type: string
+          minLength: 1
+        subject:
+          type: string
+          minLength: 1
+        teacher:
+          type: string
+          minLength: 1
+        className:
+          type: string
+          minLength: 1
+        room:
+          type: string
+          minLength: 1
+        accent:
+          type: string
+      required: [day, time, subject, teacher, className, room]
     ReportCard:
       type: object
       properties:
