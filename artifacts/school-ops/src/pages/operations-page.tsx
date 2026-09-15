@@ -85,7 +85,7 @@ function printTeacherRegistration(form: TeacherRegistrationForm) {
 }
 
 function OperationsSkeleton() {
-  return <div className="grid gap-6 lg:grid-cols-[250px_1fr]"><Panel className="p-4"><Skeleton className="h-5 w-32" /><div className="mt-5 space-y-3">{[1, 2, 3, 4, 5, 6].map((item) => <Skeleton key={item} className="h-10 w-full" />)}</div></Panel><Panel className="p-6"><Skeleton className="h-8 w-52" /><Skeleton className="mt-8 h-48 w-full" /></Panel></div>;
+  return <div className="space-y-6"><Panel className="p-6"><Skeleton className="h-8 w-52" /><Skeleton className="mt-8 h-48 w-full" /></Panel></div>;
 }
 
 function CreateAccountPanel() {
