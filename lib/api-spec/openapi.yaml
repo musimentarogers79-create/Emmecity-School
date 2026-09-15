@@ -947,6 +947,48 @@ components:
           type: string
         guardianPhone:
           type: string
+        guardianEmail:
+          type: string
+        religion:
+          type: string
+        placeOfBirth:
+          type: string
+        homeVillage:
+          type: string
+        nationality:
+          type: string
+        tribe:
+          type: string
+        guardianRelationship:
+          type: string
+        guardianNationalId:
+          type: string
+        residentialAddress:
+          type: string
+        guardianOccupation:
+          type: string
+        alternativeContact:
+          type: string
+        previousSchool:
+          type: string
+        lastClassCompleted:
+          type: string
+        medicalConditions:
+          type: string
+        specialNeeds:
+          type: string
+        knownMedicalNote:
+          type: string
+        emergencyContactName:
+          type: string
+        emergencyContactPhone:
+          type: string
+        emergencyContactRelationship:
+          type: string
+        declarationAccepted:
+          type: boolean
+        declarationDate:
+          type: string
         admissionDate:
           type: string
         enrollmentType:
@@ -984,6 +1026,48 @@ components:
           type: string
         guardianPhone:
           type: string
+        guardianEmail:
+          type: string
+        religion:
+          type: string
+        placeOfBirth:
+          type: string
+        homeVillage:
+          type: string
+        nationality:
+          type: string
+        tribe:
+          type: string
+        guardianRelationship:
+          type: string
+        guardianNationalId:
+          type: string
+        residentialAddress:
+          type: string
+        guardianOccupation:
+          type: string
+        alternativeContact:
+          type: string
+        previousSchool:
+          type: string
+        lastClassCompleted:
+          type: string
+        medicalConditions:
+          type: string
+        specialNeeds:
+          type: string
+        knownMedicalNote:
+          type: string
+        emergencyContactName:
+          type: string
+        emergencyContactPhone:
+          type: string
+        emergencyContactRelationship:
+          type: string
+        declarationAccepted:
+          type: boolean
+        declarationDate:
+          type: string
         enrollmentType:
           type: string
           enum: [day, boarding]
@@ -997,7 +1081,7 @@ components:
           type: string
         paymentReference:
           type: string
-      required: [firstName, lastName, dateOfBirth, gender, className, stream, guardianName, guardianPhone, enrollmentType, termFee]
+      required: [firstName, lastName, dateOfBirth, gender, className, stream, guardianName, guardianPhone, guardianEmail, enrollmentType, termFee, religion, placeOfBirth, homeVillage, nationality, tribe, guardianRelationship, guardianNationalId, residentialAddress, guardianOccupation, alternativeContact, previousSchool, lastClassCompleted, medicalConditions, specialNeeds, knownMedicalNote, emergencyContactName, emergencyContactPhone, emergencyContactRelationship, declarationAccepted, declarationDate]
     StudentUpdateInput:
       type: object
       properties:
@@ -1022,6 +1106,46 @@ components:
         guardianPhone:
           type: string
         guardianEmail:
+          type: string
+        religion:
+          type: string
+        placeOfBirth:
+          type: string
+        homeVillage:
+          type: string
+        nationality:
+          type: string
+        tribe:
+          type: string
+        guardianRelationship:
+          type: string
+        guardianNationalId:
+          type: string
+        residentialAddress:
+          type: string
+        guardianOccupation:
+          type: string
+        alternativeContact:
+          type: string
+        previousSchool:
+          type: string
+        lastClassCompleted:
+          type: string
+        medicalConditions:
+          type: string
+        specialNeeds:
+          type: string
+        knownMedicalNote:
+          type: string
+        emergencyContactName:
+          type: string
+        emergencyContactPhone:
+          type: string
+        emergencyContactRelationship:
+          type: string
+        declarationAccepted:
+          type: boolean
+        declarationDate:
           type: string
         enrollmentType:
           type: string

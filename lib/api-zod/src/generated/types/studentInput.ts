@@ -19,6 +19,27 @@ export interface StudentInput {
   stream: string;
   guardianName: string;
   guardianPhone: string;
+  guardianEmail: string;
+  religion: string;
+  placeOfBirth: string;
+  homeVillage: string;
+  nationality: string;
+  tribe: string;
+  guardianRelationship: string;
+  guardianNationalId: string;
+  residentialAddress: string;
+  guardianOccupation: string;
+  alternativeContact: string;
+  previousSchool: string;
+  lastClassCompleted: string;
+  medicalConditions: string;
+  specialNeeds: string;
+  knownMedicalNote: string;
+  emergencyContactName: string;
+  emergencyContactPhone: string;
+  emergencyContactRelationship: string;
+  declarationAccepted: boolean;
+  declarationDate: string;
   enrollmentType: StudentInputEnrollmentType;
   /** @minimum 0 */
   termFee: number;

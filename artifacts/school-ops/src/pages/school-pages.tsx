@@ -16,6 +16,66 @@ const dateLabel = (value?: string) => value ? new Intl.DateTimeFormat('en-GB', {
 const todayLabel = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(new Date());
 const pupilClassOptions = ['Baby Class', 'Middle Class', 'Top Class', 'Daycare', 'Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6', 'Primary 7'];
 
+function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarationChange }: {
+  form: Record<string, string | boolean>;
+  update: (key: string, value: string) => void;
+  declarationAccepted: boolean;
+  onDeclarationChange: (accepted: boolean) => void;
+}) {
+  return <div className="space-y-5">
+    <div className="rounded-2xl border border-[hsl(var(--border))] p-4">
+      <p className="mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Pupil details</p>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <Field label="Religion" value={String(form.religion || '')} onChange={(value) => update('religion', value)} placeholder="Religion" />
+        <Field label="Place of birth" value={String(form.placeOfBirth || '')} onChange={(value) => update('placeOfBirth', value)} placeholder="Town, district, or country" />
+        <Field label="Home village" value={String(form.homeVillage || '')} onChange={(value) => update('homeVillage', value)} placeholder="Village or parish" />
+        <Field label="Nationality" value={String(form.nationality || '')} onChange={(value) => update('nationality', value)} placeholder="Ugandan" />
+        <Field label="Tribe" value={String(form.tribe || '')} onChange={(value) => update('tribe', value)} placeholder="Tribe" />
+      </div>
+    </div>
+    <div className="rounded-2xl border border-[hsl(var(--border))] p-4">
+      <p className="mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Parent or guardian details</p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Email address" type="email" value={String(form.guardianEmail || '')} onChange={(value) => update('guardianEmail', value)} placeholder="guardian@example.com" />
+        <Field label="Relationship to pupil" value={String(form.guardianRelationship || '')} onChange={(value) => update('guardianRelationship', value)} placeholder="Parent, aunt, uncle..." />
+        <Field label="National ID number" value={String(form.guardianNationalId || '')} onChange={(value) => update('guardianNationalId', value)} placeholder="National ID number" />
+        <Field label="Residential address" value={String(form.residentialAddress || '')} onChange={(value) => update('residentialAddress', value)} placeholder="Home address" />
+        <Field label="Occupation" value={String(form.guardianOccupation || '')} onChange={(value) => update('guardianOccupation', value)} placeholder="Occupation" />
+        <Field label="Alternative contact" value={String(form.alternativeContact || '')} onChange={(value) => update('alternativeContact', value)} placeholder="Name and phone" />
+      </div>
+    </div>
+    <div className="rounded-2xl border border-[hsl(var(--border))] p-4">
+      <p className="mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Previous school and health information</p>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Previous school" value={String(form.previousSchool || '')} onChange={(value) => update('previousSchool', value)} placeholder="Write None if not applicable" />
+        <Field label="Last class completed" value={String(form.lastClassCompleted || '')} onChange={(value) => update('lastClassCompleted', value)} placeholder="For example, Primary 2" />
+        <Field label="Medical conditions or allergies" value={String(form.medicalConditions || '')} onChange={(value) => update('medicalConditions', value)} placeholder="Write None if not applicable" />
+        <Field label="Special needs or disabilities" value={String(form.specialNeeds || '')} onChange={(value) => update('specialNeeds', value)} placeholder="Write None if not applicable" />
+        <Field label="Known medical notes" value={String(form.knownMedicalNote || '')} onChange={(value) => update('knownMedicalNote', value)} placeholder="Medication or other notes" />
+      </div>
+    </div>
+    <div className="rounded-2xl border border-[hsl(var(--border))] p-4">
+      <p className="mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Emergency contact</p>
+      <div className="grid gap-4 sm:grid-cols-3">
+        <Field label="Emergency contact name" value={String(form.emergencyContactName || '')} onChange={(value) => update('emergencyContactName', value)} placeholder="Full name" />
+        <Field label="Emergency contact phone" value={String(form.emergencyContactPhone || '')} onChange={(value) => update('emergencyContactPhone', value)} placeholder="+256 7..." />
+        <Field label="Emergency contact relationship" value={String(form.emergencyContactRelationship || '')} onChange={(value) => update('emergencyContactRelationship', value)} placeholder="Relationship" />
+      </div>
+    </div>
+    <div className="rounded-2xl bg-[hsl(var(--secondary)/.6)] p-4">
+      <p className="text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Declaration</p>
+      <p className="mt-2 text-sm leading-6 text-[hsl(var(--muted-foreground))]">I confirm that the information supplied on this admission form is correct and that I will notify the school of any changes.</p>
+      <div className="mt-4 grid gap-4 sm:grid-cols-2">
+        <Field label="Declaration date" type="date" value={String(form.declarationDate || '')} onChange={(value) => update('declarationDate', value)} />
+        <label className="flex items-center gap-3 rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3.5 text-sm">
+          <input type="checkbox" checked={declarationAccepted} onChange={(event) => onDeclarationChange(event.target.checked)} required className="size-4 accent-[hsl(var(--primary))]" data-testid="checkbox-declaration-accepted" />
+          <span>I accept the declaration</span>
+        </label>
+      </div>
+    </div>
+  </div>;
+}
+
 function Modal({ title, description, onClose, children, wide = false }: { title: string; description?: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
   return <div className="fixed inset-0 z-50 flex items-end justify-center bg-[hsl(var(--foreground)/.35)] p-0 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" data-testid="modal-dialog"><div className={`max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-2xl sm:rounded-3xl ${wide ? 'max-w-2xl' : 'max-w-lg'}`}><div className="mb-6 flex items-start justify-between gap-4"><div><h2 className="font-display text-2xl">{title}</h2>{description && <p className="mt-1 text-sm leading-5 text-[hsl(var(--muted-foreground))]">{description}</p>}</div><button onClick={onClose} className="rounded-lg p-2 hover:bg-[hsl(var(--muted))]" data-testid="button-close-modal"><X className="size-4" /></button></div>{children}</div></div>;
 }
@@ -145,22 +205,39 @@ const loadSchoolLogo = () => {
 export async function brandedPdf(lines: string[]) {
   const logo = await loadSchoolLogo();
   const encoder = new TextEncoder();
-  const contentsObjectNumber = logo ? 6 : 5;
-  const stream = [
-    ...(logo ? ['q', '90 0 0 92 50 660 cm', '/Im1 Do', 'Q'] : []),
-    'BT',
-    logo ? '/F1 18 Tf\n175 740 Td' : '/F1 18 Tf\n50 744 Td',
-    ...lines.flatMap((line, index) => [`(${pdfEscape(line)}) Tj`, ...(index < lines.length - 1 ? ['0 -34 Td', '/F1 11 Tf'] : [])]),
-    'ET',
-  ].join('\n');
+  const wrappedLines = lines.flatMap((line) => {
+    const value = String(line);
+    if (value.length <= 82) return [value];
+    const chunks: string[] = [];
+    for (let index = 0; index < value.length; index += 82) chunks.push(value.slice(index, index + 82));
+    return chunks;
+  });
+  const headerLines = [SCHOOL_NAME, SCHOOL_POSTAL_ADDRESS, `Tel: ${SCHOOL_PHONE}`, SCHOOL_LOCATION, ''];
+  const pageSize = logo ? 20 : 23;
+  const bodyPageSize = pageSize - headerLines.length;
+  const pages = Array.from({ length: Math.max(1, Math.ceil(wrappedLines.length / bodyPageSize)) }, (_, index) => [...headerLines, ...wrappedLines.slice(index * bodyPageSize, (index + 1) * bodyPageSize)]);
+  const firstPageObject = logo ? 5 : 4;
+  const pageObjects = pages.map((_, index) => firstPageObject + index * 2);
   const objects: { text: string; binary?: Uint8Array; after?: string }[] = [
     { text: '<< /Type /Catalog /Pages 2 0 R >>' },
-    { text: `<< /Type /Pages /Kids [3 0 R] /Count 1 >>` },
-    { text: `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >>${logo ? ' /XObject << /Im1 5 0 R >>' : ''} >> /Contents ${contentsObjectNumber} 0 R >>` },
+    { text: `<< /Type /Pages /Kids [${pageObjects.map((objectNumber) => `${objectNumber} 0 R`).join(' ')}] /Count ${pages.length} >>` },
     { text: '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>' },
     ...(logo ? [{ text: `<< /Type /XObject /Subtype /Image /Width ${logo.width} /Height ${logo.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${logo.bytes.length} >>\nstream\n`, binary: logo.bytes, after: '\nendstream' }] : []),
-    { text: `<< /Length ${encoder.encode(stream).length} >>\nstream\n${stream}\nendstream` },
   ];
+  pages.forEach((pageLines, index) => {
+    const contentObjectNumber = firstPageObject + index * 2 + 1;
+    const stream = [
+      ...(logo ? ['q', '90 0 0 92 50 660 cm', '/Im1 Do', 'Q'] : []),
+      'BT',
+      logo ? '/F1 15 Tf\n175 740 Td' : '/F1 15 Tf\n50 744 Td',
+      ...pageLines.flatMap((line, lineIndex) => [`(${pdfEscape(line)}) Tj`, ...(lineIndex < pageLines.length - 1 ? ['0 -30 Td', '/F1 10 Tf'] : [])]),
+      'ET',
+    ].join('\n');
+    objects.push({
+      text: `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >>${logo ? ' /XObject << /Im1 4 0 R >>' : ''} >> /Contents ${contentObjectNumber} 0 R >>`,
+    });
+    objects.push({ text: `<< /Length ${encoder.encode(stream).length} >>\nstream\n${stream}\nendstream` });
+  });
   const chunks: Uint8Array[] = [];
   const offsets: number[] = [0];
   let byteLength = 0;
@@ -186,7 +263,6 @@ export async function brandedPdf(lines: string[]) {
 }
 async function receiptPdf(item: Payment, history: Payment[] = []) {
   return brandedPdf([
-    'EMMECTY NURSERY & PRIMARY SCHOOL',
     'OFFICIAL PAYMENT RECEIPT',
     `Receipt number: ${item.receiptNumber}`,
     `Pupil: ${item.studentName}`,
@@ -210,12 +286,13 @@ function addPrintLogo(printWindow: Window) {
   logo.style.cssText = 'width:84px;height:86px;object-fit:contain;float:right;margin-left:20px';
   header.prepend(logo);
 }
+const htmlEscape = (value: unknown) => String(value ?? '—').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character] || character);
+const schoolPrintHeader = (subtitle: string) => `<header><img src="/school-logo.jpg" alt="${htmlEscape(SCHOOL_NAME)} crest"><div><h1>${htmlEscape(SCHOOL_NAME)}</h1><p>${htmlEscape(SCHOOL_POSTAL_ADDRESS)} · Tel: ${htmlEscape(SCHOOL_PHONE)}</p><p>${htmlEscape(SCHOOL_LOCATION)}</p><strong>${htmlEscape(subtitle)}</strong></div></header>`;
 function receiptPrintPage(item: Payment, history: Payment[] = []) {
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
   const row = (label: string, value: string) => `<div><dt>${label}</dt><dd>${value}</dd></div>`;
-   printWindow.document.write(`<html><head><title>${item.receiptNumber}</title><style>body{font-family:Arial,sans-serif;color:#17231f;padding:48px;max-width:720px;margin:auto}header{border-bottom:3px solid #1d7056;padding-bottom:18px;margin-bottom:28px}h1{font-size:24px;margin:0 0 6px}p{color:#63756e}dl{display:grid;grid-template-columns:1fr 1fr;gap:18px 32px}dt{font-size:11px;color:#63756e;text-transform:uppercase;letter-spacing:.12em}dd{font-size:16px;font-weight:600;margin:5px 0 0}.amount{font-size:28px;color:#1d7056}table{width:100%;margin-top:32px;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:8px;border-bottom:1px solid #d9e2dc}@media print{body{padding:0}}</style></head><body><header><h1>EMMECTY NURSERY & PRIMARY SCHOOL</h1><p>Official payment receipt · ${item.receiptNumber}</p></header><dl>${row('Pupil', item.studentName)}${row('Registration number', item.registrationNumber)}${row('Amount', `<span class="amount">${money(item.amount)}</span>`)}${row('Payment method', item.method)}${row('Date', item.date)}${row('Status', item.status)}${row('Current balance', money(item.balance))}</dl><h2>Payment history</h2><table><thead><tr><th>Date</th><th>Receipt number</th><th>Amount</th></tr></thead><tbody>${history.map((payment) => `<tr><td>${payment.date}</td><td>${payment.receiptNumber}</td><td>${money(payment.amount)}</td></tr>`).join('')}</tbody></table><p style="margin-top:56px">This is an official EMMECTY school payment record.</p></body></html>`);
-   addPrintLogo(printWindow);
+   printWindow.document.write(`<html><head><title>${htmlEscape(item.receiptNumber)}</title><style>body{font-family:Arial,sans-serif;color:#17231f;padding:48px;max-width:720px;margin:auto}header{display:flex;gap:18px;border-bottom:3px solid #1d7056;padding-bottom:18px;margin-bottom:28px;min-height:92px}header img{width:84px;height:86px;object-fit:contain;order:2;margin-left:auto}h1{font-size:24px;margin:0 0 6px}p{color:#63756e;margin:4px 0}header strong{display:block;margin-top:10px}dl{display:grid;grid-template-columns:1fr 1fr;gap:18px 32px}dt{font-size:11px;color:#63756e;text-transform:uppercase;letter-spacing:.12em}dd{font-size:16px;font-weight:600;margin:5px 0 0}.amount{font-size:28px;color:#1d7056}table{width:100%;margin-top:32px;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:8px;border-bottom:1px solid #d9e2dc}@media print{body{padding:0}}</style></head><body>${schoolPrintHeader(`Official payment receipt · ${item.receiptNumber}`)}<dl>${row('Pupil', htmlEscape(item.studentName))}${row('Registration number', htmlEscape(item.registrationNumber))}${row('Amount', `<span class="amount">${htmlEscape(money(item.amount))}</span>`)}${row('Payment method', htmlEscape(item.method))}${row('Date', htmlEscape(item.date))}${row('Status', htmlEscape(item.status))}${row('Current balance', htmlEscape(money(item.balance)))}</dl><h2>Payment history</h2><table><thead><tr><th>Date</th><th>Receipt number</th><th>Amount</th></tr></thead><tbody>${history.map((payment) => `<tr><td>${htmlEscape(payment.date)}</td><td>${htmlEscape(payment.receiptNumber)}</td><td>${htmlEscape(money(payment.amount))}</td></tr>`).join('')}</tbody></table><p style="margin-top:56px">This is an official EMMECTY school payment record.</p></body></html>`);
    printWindow.document.close();
   printWindow.focus();
   printWindow.print();
@@ -223,22 +300,44 @@ function receiptPrintPage(item: Payment, history: Payment[] = []) {
 
 async function admissionFormPdf(form: AdmissionForm) {
   return brandedPdf([
-    'EMMECTY NURSERY & PRIMARY SCHOOL',
     'OFFICIAL PUPIL ADMISSION FORM',
     `Registration number: ${form.registrationNumber}`,
     `Pupil: ${form.pupilName}`,
     `Date of birth: ${form.dateOfBirth}`,
     `Gender: ${form.gender}`,
     `Class: ${form.className}${form.stream ? ` · ${form.stream}` : ''}`,
+    `Religion: ${form.religion || '—'}`,
+    `Place of birth: ${form.placeOfBirth || '—'}`,
+    `Home village: ${form.homeVillage || '—'}`,
+    `Nationality: ${form.nationality || '—'}`,
+    `Tribe: ${form.tribe || '—'}`,
     `Guardian: ${form.guardianName}`,
     `Guardian contact: ${form.guardianPhone}`,
+    `Guardian email: ${form.guardianEmail || '—'}`,
+    `Relationship: ${form.guardianRelationship || '—'}`,
+    `National ID: ${form.guardianNationalId || '—'}`,
+    `Residential address: ${form.residentialAddress || '—'}`,
+    `Occupation: ${form.guardianOccupation || '—'}`,
+    `Alternative contact: ${form.alternativeContact || '—'}`,
+    `Previous school: ${form.previousSchool || '—'}`,
+    `Last class completed: ${form.lastClassCompleted || '—'}`,
+    `Medical conditions/allergies: ${form.medicalConditions || '—'}`,
+    `Special needs/disabilities: ${form.specialNeeds || '—'}`,
+    `Known medical notes: ${form.knownMedicalNote || '—'}`,
+    `Emergency contact: ${form.emergencyContactName || '—'} · ${form.emergencyContactPhone || '—'} · ${form.emergencyContactRelationship || '—'}`,
     `Admission date: ${form.admissionDate}`,
     `Pupil type: ${form.enrollmentType}`,
     `Term fee: ${money(form.termFee)}`,
     `Amount paid: ${money(form.amountPaid)}`,
     `Fee balance: ${money(form.feeBalance)}`,
+    `Declaration accepted: ${form.declarationAccepted ? 'Yes' : 'No'} · ${form.declarationDate || '—'}`,
     'This is an official EMMECTY school admission record.',
   ]);
+}
+
+function admissionPrintContent(form: AdmissionForm) {
+  const field = (label: string, value: unknown) => `<div><dt>${htmlEscape(label)}</dt><dd>${htmlEscape(value || '—')}</dd></div>`;
+  return `<div class="section"><h2>Pupil information</h2><dl>${field('Pupil full name', form.pupilName)}${field('Registration number', form.registrationNumber)}${field('Date of birth', form.dateOfBirth)}${field('Gender', form.gender)}${field('Religion', form.religion)}${field('Place of birth', form.placeOfBirth)}${field('Home village', form.homeVillage)}${field('Nationality', form.nationality)}${field('Tribe', form.tribe)}${field('Class applying for', `${form.className}${form.stream ? ` · ${form.stream}` : ''}`)}${field('Day or boarding', form.enrollmentType)}</dl></div><div class="section"><h2>Parent or guardian information</h2><dl>${field('Name', form.guardianName)}${field('Relationship', form.guardianRelationship)}${field('Phone number', form.guardianPhone)}${field('Email address', form.guardianEmail)}${field('National ID number', form.guardianNationalId)}${field('Residential address', form.residentialAddress)}${field('Occupation', form.guardianOccupation)}${field('Alternative contact', form.alternativeContact)}</dl></div><div class="section"><h2>Previous school and health</h2><dl>${field('Previous school', form.previousSchool)}${field('Last class completed', form.lastClassCompleted)}${field('Medical conditions or allergies', form.medicalConditions)}${field('Special needs or disabilities', form.specialNeeds)}${field('Known medical notes', form.knownMedicalNote)}</dl></div><div class="section"><h2>Emergency contact</h2><dl>${field('Name', form.emergencyContactName)}${field('Phone number', form.emergencyContactPhone)}${field('Relationship', form.emergencyContactRelationship)}</dl></div><div class="section"><h2>Fees and declaration</h2><dl>${field('Admission date', form.admissionDate)}${field('Termly fee', money(form.termFee))}${field('Opening payment', money(form.amountPaid))}${field('Fee balance', money(form.feeBalance))}${field('Declaration accepted', form.declarationAccepted ? 'Yes' : 'No')}${field('Declaration date', form.declarationDate)}</dl><p class="declaration">I confirm that the information supplied on this admission form is correct.</p></div>`;
 }
 
 async function downloadAdmissionForm(form: AdmissionForm) {
@@ -256,9 +355,8 @@ async function printAllAdmissionForms(students: Student[]) {
   if (!availableForms.length) throw new Error('No admission forms are available.');
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
-  const row = (label: string, value: string) => `<div><dt>${label}</dt><dd>${value}</dd></div>`;
-  const pages = availableForms.map((form) => `<section class="form"><header><h1>EMMECTY NURSERY & PRIMARY SCHOOL</h1><p>Official pupil admission form · ${form.registrationNumber}</p></header><dl>${row('Pupil', form.pupilName)}${row('Date of birth', form.dateOfBirth)}${row('Gender', form.gender)}${row('Class', `${form.className}${form.stream ? ` · ${form.stream}` : ''}`)}${row('Guardian', form.guardianName)}${row('Guardian contact', form.guardianPhone)}${row('Admission date', form.admissionDate)}${row('Pupil type', form.enrollmentType)}${row('Term fee', money(form.termFee))}${row('Amount paid', money(form.amountPaid))}${row('Fee balance', `<span class="balance">${money(form.feeBalance)}</span>`)}</dl><p class="note">This is an official EMMECTY school admission record.</p></section>`).join('');
-  printWindow.document.write(`<html><head><title>All pupil admission forms</title><style>body{font-family:Arial,sans-serif;color:#17231f;padding:36px;max-width:760px;margin:auto}.form{break-after:page;margin-bottom:48px}.form:last-child{break-after:auto}header{border-bottom:3px solid #1d7056;padding-bottom:18px;margin-bottom:28px;min-height:76px}header:before{content:'';display:block;float:right;width:72px;height:72px;background:url('/school-logo.jpg') center/contain no-repeat;margin-left:20px}h1{font-size:24px;margin:0 0 6px}p{color:#63756e}dl{display:grid;grid-template-columns:1fr 1fr;gap:18px 32px}dt{font-size:11px;color:#63756e;text-transform:uppercase;letter-spacing:.12em}dd{font-size:16px;font-weight:600;margin:5px 0 0}.balance{font-size:24px;color:#1d7056}.note{margin-top:56px}@media print{body{padding:0}.form{margin-bottom:0}}</style></head><body>${pages}</body></html>`);
+   const pages = availableForms.map((form) => `<section class="form">${schoolPrintHeader(`Official pupil admission form · ${form.registrationNumber}`)}${admissionPrintContent(form)}<p class="note">This is an official EMMECTY school admission record.</p></section>`).join('');
+   printWindow.document.write(`<html><head><title>All pupil admission forms</title><style>body{font-family:Arial,sans-serif;color:#17231f;padding:36px;max-width:760px;margin:auto}.form{break-after:page;margin-bottom:48px}.form:last-child{break-after:auto}header{display:flex;gap:18px;border-bottom:3px solid #1d7056;padding-bottom:18px;margin-bottom:28px;min-height:92px}header img{width:84px;height:86px;object-fit:contain;order:2;margin-left:auto}h1{font-size:24px;margin:0 0 6px}p{color:#63756e;margin:4px 0}header strong{display:block;margin-top:10px}.section{border-top:1px solid #d9e2dc;padding-top:12px;margin-top:18px}.section h2{font-size:15px;margin:0 0 10px;color:#1d7056}dl{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px}dt{font-size:10px;color:#63756e;text-transform:uppercase;letter-spacing:.12em}dd{font-size:14px;font-weight:600;margin:4px 0 0}.declaration{margin-top:18px}.note{margin-top:40px}@media print{body{padding:0}.form{margin-bottom:0}}</style></head><body>${pages}</body></html>`);
   printWindow.document.close();
   printWindow.focus();
   printWindow.print();
@@ -267,9 +365,7 @@ async function printAllAdmissionForms(students: Student[]) {
 function printAdmissionForm(form: AdmissionForm) {
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
-  const row = (label: string, value: string) => `<div><dt>${label}</dt><dd>${value}</dd></div>`;
-  printWindow.document.write(`<html><head><title>${form.registrationNumber} admission form</title><style>body{font-family:Arial,sans-serif;color:#17231f;padding:48px;max-width:720px;margin:auto}header{border-bottom:3px solid #1d7056;padding-bottom:18px;margin-bottom:28px}h1{font-size:24px;margin:0 0 6px}p{color:#63756e}dl{display:grid;grid-template-columns:1fr 1fr;gap:18px 32px}dt{font-size:11px;color:#63756e;text-transform:uppercase;letter-spacing:.12em}dd{font-size:16px;font-weight:600;margin:5px 0 0}.balance{font-size:24px;color:#1d7056}@media print{body{padding:0}}</style></head><body><header><h1>EMMECTY NURSERY & PRIMARY SCHOOL</h1><p>Official pupil admission form · ${form.registrationNumber}</p></header><dl>${row('Pupil', form.pupilName)}${row('Date of birth', form.dateOfBirth)}${row('Gender', form.gender)}${row('Class', `${form.className}${form.stream ? ` · ${form.stream}` : ''}`)}${row('Guardian', form.guardianName)}${row('Guardian contact', form.guardianPhone)}${row('Admission date', form.admissionDate)}${row('Pupil type', form.enrollmentType)}${row('Term fee', money(form.termFee))}${row('Amount paid', money(form.amountPaid))}${row('Fee balance', `<span class="balance">${money(form.feeBalance)}</span>`)}</dl><p style="margin-top:56px">This is an official EMMECTY school admission record.</p></body></html>`);
-  addPrintLogo(printWindow);
+  printWindow.document.write(`<html><head><title>${htmlEscape(form.registrationNumber)} admission form</title><style>body{font-family:Arial,sans-serif;color:#17231f;padding:48px;max-width:720px;margin:auto}header{display:flex;gap:18px;border-bottom:3px solid #1d7056;padding-bottom:18px;margin-bottom:28px;min-height:92px}header img{width:84px;height:86px;object-fit:contain;order:2;margin-left:auto}h1{font-size:24px;margin:0 0 6px}p{color:#63756e;margin:4px 0}header strong{display:block;margin-top:10px}.section{border-top:1px solid #d9e2dc;padding-top:12px;margin-top:18px}.section h2{font-size:15px;margin:0 0 10px;color:#1d7056}dl{display:grid;grid-template-columns:1fr 1fr;gap:14px 28px}dt{font-size:10px;color:#63756e;text-transform:uppercase;letter-spacing:.12em}dd{font-size:14px;font-weight:600;margin:4px 0 0}.declaration{margin-top:18px}@media print{body{padding:0}}</style></head><body>${schoolPrintHeader(`Official pupil admission form · ${form.registrationNumber}`)}${admissionPrintContent(form)}<p style="margin-top:40px">This is an official EMMECTY school admission record.</p></body></html>`);
   printWindow.document.close();
   printWindow.focus();
   printWindow.print();
@@ -457,12 +553,19 @@ function StudentsPage() {
   const [generatingAdmissionForms, setGeneratingAdmissionForms] = useState(false);
   const [admissionFormsError, setAdmissionFormsError] = useState('');
   const [registrationConfirmation, setRegistrationConfirmation] = useState<{ registrationNumber: string; pupilName: string; className: string; stream: string; guardianName: string; guardianPhone: string; receiptNumber?: string; amount?: number; method?: string; admissionForm?: AdmissionForm } | null>(null);
-  const emptyForm = { firstName: '', middleName: '', lastName: '', dateOfBirth: '', gender: 'Female', className: 'Primary 1', stream: 'A', guardianName: '', guardianPhone: '', enrollmentType: 'day', termFee: '', initialPayment: '', paymentMethod: 'Cash', paymentReference: '' };
+   const emptyForm = {
+     firstName: '', middleName: '', lastName: '', dateOfBirth: '', gender: 'Female', className: 'Primary 1', stream: 'A',
+     guardianName: '', guardianPhone: '', guardianEmail: '', enrollmentType: 'day', termFee: '', initialPayment: '', paymentMethod: 'Cash', paymentReference: '',
+     religion: '', placeOfBirth: '', homeVillage: '', nationality: '', tribe: '', guardianRelationship: '', guardianNationalId: '',
+     residentialAddress: '', guardianOccupation: '', alternativeContact: '', previousSchool: '', lastClassCompleted: '',
+     medicalConditions: '', specialNeeds: '', knownMedicalNote: '', emergencyContactName: '', emergencyContactPhone: '',
+     emergencyContactRelationship: '', declarationAccepted: false, declarationDate: new Date().toISOString().slice(0, 10),
+   };
   const [form, setForm] = useState(emptyForm);
    const params = useMemo(() => ({ search: search || undefined, className: className === 'All classes' ? undefined : className, status: status ? status as 'active' | 'inactive' : undefined }), [search, className, status]);
   const query = useListStudents(params);
   const create = useCreateStudent();
-  const update = (key: keyof typeof form, value: string) => setForm((old) => ({ ...old, [key]: value }));
+   const update = (key: string, value: string) => setForm((old) => ({ ...old, [key]: value }));
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const openingPayment = form.initialPayment ? Number(form.initialPayment) : undefined;
@@ -504,7 +607,7 @@ function StudentsPage() {
   if (registrationConfirmation) {
     return <AppShell><PageHeader eyebrow="Pupil registered" title="Admission form ready" description="The pupil was saved, the permanent registration number was generated, and the admission form was saved automatically." /><Panel className="mx-auto max-w-2xl overflow-hidden" testId="panel-registration-confirmation"><div className="border-b border-[hsl(var(--border))] bg-[hsl(var(--secondary)/.55)] p-6"><SchoolMark /><h2 className="mt-5 font-display text-2xl">{SCHOOL_NAME}</h2><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Official pupil admission form</p></div><dl className="grid gap-4 p-6 sm:grid-cols-2"><div className="sm:col-span-2 rounded-2xl bg-[hsl(var(--primary)/.08)] p-4"><dt className="text-xs text-[hsl(var(--muted-foreground))]">Permanent registration number</dt><dd className="mt-1 font-mono-ui text-xl font-semibold text-[hsl(var(--primary))]" data-testid="text-registration-number">{registrationConfirmation.registrationNumber}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Pupil</dt><dd className="mt-1 text-sm font-semibold">{registrationConfirmation.pupilName}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Class</dt><dd className="mt-1 text-sm font-semibold">{registrationConfirmation.className}{registrationConfirmation.stream ? ` · ${registrationConfirmation.stream}` : ''}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Guardian</dt><dd className="mt-1 text-sm font-semibold">{registrationConfirmation.guardianName}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Guardian contact</dt><dd className="mt-1 text-sm font-semibold">{registrationConfirmation.guardianPhone}</dd></div>{registrationConfirmation.receiptNumber && <><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Opening receipt</dt><dd className="mt-1 font-mono-ui text-sm font-semibold">{registrationConfirmation.receiptNumber}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Opening payment</dt><dd className="mt-1 text-sm font-semibold">{money(registrationConfirmation.amount)} · {registrationConfirmation.method}</dd></div></>}</dl><div className="flex flex-wrap justify-end gap-3 border-t border-[hsl(var(--border))] p-5">{registrationConfirmation.admissionForm ? <><Button variant="secondary" onClick={() => downloadAdmissionForm(registrationConfirmation.admissionForm!)} testId="button-download-admission-form"><Download className="size-4" /> Download PDF</Button><Button variant="secondary" onClick={() => printAdmissionForm(registrationConfirmation.admissionForm!)} testId="button-print-admission-form"><Printer className="size-4" /> Print admission form</Button></> : <Button variant="secondary" onClick={() => window.print()} testId="button-print-registration-form"><Printer className="size-4" /> Print registration form</Button>}<Button onClick={() => setRegistrationConfirmation(null)} testId="button-finish-registration">Return to pupils</Button></div></Panel></AppShell>;
   }
-   return <AppShell><PageHeader eyebrow="Directory" title={outstandingOnly ? "Pupils with outstanding balances" : "Students"} description={outstandingOnly ? "Every active pupil with a fee balance, linked directly from the dashboard total." : "A clear record of every learner, from first admission to final report card."} action={canRegister ? <div className="flex flex-wrap justify-end gap-2"><Button variant="secondary" onClick={() => void generateAllAdmissionForms()} disabled={generatingAdmissionForms || !query.data?.length} testId="button-generate-all-admission-forms"><Printer className="size-4" /> {generatingAdmissionForms ? 'Preparing forms…' : 'Generate all admission forms'}</Button><Button onClick={() => setShowForm(true)} testId="button-open-register"><Plus className="size-4" /> Register student</Button></div> : undefined} />{admissionFormsError && <p className="mb-5 text-sm text-[hsl(var(--destructive))]" role="alert" data-testid="status-admission-forms-error">{admissionFormsError}</p>}<Panel className="mb-6 p-4" testId="panel-student-filters"><div className="flex flex-col gap-3 lg:flex-row"><label className="relative flex-1"><Search className="absolute left-3.5 top-3.5 size-4 text-[hsl(var(--muted-foreground))]" /><input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name or registration number" className="focus-ring h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] pl-10 pr-4 text-sm outline-none" data-testid="input-student-search" /></label><div className="flex gap-3"><SelectField label="" value={className} onChange={setClassName} options={['All classes', ...pupilClassOptions]} /><SelectField label="" value={status || 'All statuses'} onChange={(value) => setStatus(value === 'All statuses' ? '' : value)} options={['All statuses', 'active', 'inactive']} /></div></div></Panel><Panel className="overflow-hidden" testId="panel-students-table">{query.isError ? <ErrorState onRetry={() => query.refetch()} /> : query.isLoading ? <div className="space-y-4 p-6">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-14 w-full" />)}</div> : students.length === 0 ? <EmptyState icon={Users} title={outstandingOnly ? "No outstanding balances" : "No students found"} description={search ? 'Try a different name, class, or registration number.' : canRegister ? 'Your student directory is ready for its first registration.' : 'No linked learners are available to your role.'} action={canRegister ? <Button onClick={() => setShowForm(true)}><UserPlus className="size-4" /> Register first student</Button> : undefined} /> : <><div className="hidden grid-cols-[1.6fr_1fr_.7fr_.8fr_.8fr_auto] gap-4 border-b border-[hsl(var(--border))] px-5 py-3 text-[10px] font-semibold uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))] md:grid"><span>Learner</span><span>Class</span><span>Attendance</span><span>Fees due</span><span>Status</span><span /></div><div className="divide-y divide-[hsl(var(--border))]">{students.map((student) => <Link href={`/students/${student.id}`} key={student.id} data-testid={`link-student-${student.id}`} className="grid items-center gap-3 px-5 py-4 transition-colors hover:bg-[hsl(var(--muted)/.5)] md:grid-cols-[1.6fr_1fr_.7fr_.8fr_.8fr_auto] md:gap-4"><div className="flex min-w-0 items-center gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--secondary))] text-xs font-bold text-[hsl(var(--primary))]">{student.firstName[0]}{student.lastName[0]}</span><span className="min-w-0"><span className="block truncate text-sm font-semibold">{student.name}</span><span className="block font-mono-ui text-[10px] text-[hsl(var(--muted-foreground))]">{student.registrationNumber}</span></span></div><span className="hidden text-sm md:block">{student.className} <span className="text-[hsl(var(--muted-foreground))]">{student.stream}</span></span><span className="text-xs text-[hsl(var(--muted-foreground))] md:text-sm"><span className="md:hidden">Attendance </span><b className={student.attendancePercentage < 80 ? 'text-[hsl(var(--destructive))]' : 'text-[hsl(var(--primary))'}>{student.attendancePercentage}%</b></span><span className="text-xs text-[hsl(var(--muted-foreground))] md:text-sm">{money(student.feeBalance)}</span><span className={`w-fit rounded-full px-2 py-1 text-[10px] font-semibold capitalize ${student.status === 'active' ? 'bg-[hsl(var(--primary)/.1)] text-[hsl(var(--primary))]' : 'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]'}`}>{student.status}</span><ArrowRight className="hidden size-4 text-[hsl(var(--muted-foreground))] md:block" /></Link>)}</div></>}</Panel>{showForm && canRegister && <Modal title="Register a student" description="Add a learner to the permanent school register." onClose={() => setShowForm(false)} wide><form onSubmit={submit} className="space-y-5"><div className="grid gap-4 sm:grid-cols-3"><Field label="First name" value={form.firstName} onChange={(v) => update('firstName', v)} placeholder="First name" /><Field label="Middle name" value={form.middleName} onChange={(v) => update('middleName', v)} placeholder="Optional" required={false} /><Field label="Last name" value={form.lastName} onChange={(v) => update('lastName', v)} placeholder="Last name" /></div><div className="grid gap-4 sm:grid-cols-3"><Field label="Date of birth" type="date" value={form.dateOfBirth} onChange={(v) => update('dateOfBirth', v)} /><SelectField label="Gender" value={form.gender} onChange={(v) => update('gender', v)} options={['Female', 'Male', 'Prefer not to say']} /><div className="grid grid-cols-2 gap-3"><SelectField label="Class" value={form.className} onChange={(v) => update('className', v)} options={pupilClassOptions} /><SelectField label="Stream" value={form.stream} onChange={(v) => update('stream', v)} options={['A', 'B', 'C']} /></div></div><div className="grid gap-4 rounded-2xl bg-[hsl(var(--secondary)/.6)] p-4 sm:grid-cols-3"><SelectField label="Pupil type" value={form.enrollmentType} onChange={(v) => update('enrollmentType', v)} options={['day', 'boarding']} /><Field label="Term fee (UGX)" type="number" value={form.termFee} onChange={(v) => update('termFee', v)} placeholder="0" /><Field label="Opening payment" type="number" value={form.initialPayment} onChange={(v) => update('initialPayment', v)} placeholder="0" /></div><div className="grid gap-4 sm:grid-cols-2"><SelectField label="Payment method" value={form.paymentMethod} onChange={(v) => update('paymentMethod', v)} options={['Cash', 'Mobile money', 'Bank transfer', 'Card']} /><Field label="Payment reference" value={form.paymentReference} onChange={(v) => update('paymentReference', v)} placeholder="Receipt or transaction number" required={false} /></div><div className="rounded-2xl bg-[hsl(var(--muted)/.65)] p-4"><p className="mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Guardian contact</p><div className="grid gap-4 sm:grid-cols-2"><Field label="Full name" value={form.guardianName} onChange={(v) => update('guardianName', v)} placeholder="Guardian name" /><Field label="Phone number" value={form.guardianPhone} onChange={(v) => update('guardianPhone', v)} placeholder="+256 7..." /></div></div>{create.isError && <p className="text-sm text-[hsl(var(--destructive))]" data-testid="status-register-error">We couldn’t register this student. Please check the details.</p>}<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => setShowForm(false)} testId="button-cancel-register">Cancel</Button><Button type="submit" disabled={create.isPending} testId="button-submit-register">{create.isPending ? 'Registering…' : 'Register student'}<ArrowRight className="size-4" /></Button></div></form></Modal>}</AppShell>;
+   return <AppShell><PageHeader eyebrow="Directory" title={outstandingOnly ? "Pupils with outstanding balances" : "Students"} description={outstandingOnly ? "Every active pupil with a fee balance, linked directly from the dashboard total." : "A clear record of every learner, from first admission to final report card."} action={canRegister ? <div className="flex flex-wrap justify-end gap-2"><Button variant="secondary" onClick={() => void generateAllAdmissionForms()} disabled={generatingAdmissionForms || !query.data?.length} testId="button-generate-all-admission-forms"><Printer className="size-4" /> {generatingAdmissionForms ? 'Preparing forms…' : 'Generate all admission forms'}</Button><Button onClick={() => setShowForm(true)} testId="button-open-register"><Plus className="size-4" /> Register student</Button></div> : undefined} />{admissionFormsError && <p className="mb-5 text-sm text-[hsl(var(--destructive))]" role="alert" data-testid="status-admission-forms-error">{admissionFormsError}</p>}<Panel className="mb-6 p-4" testId="panel-student-filters"><div className="flex flex-col gap-3 lg:flex-row"><label className="relative flex-1"><Search className="absolute left-3.5 top-3.5 size-4 text-[hsl(var(--muted-foreground))]" /><input type="search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search by name or registration number" className="focus-ring h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] pl-10 pr-4 text-sm outline-none" data-testid="input-student-search" /></label><div className="flex gap-3"><SelectField label="" value={className} onChange={setClassName} options={['All classes', ...pupilClassOptions]} /><SelectField label="" value={status || 'All statuses'} onChange={(value) => setStatus(value === 'All statuses' ? '' : value)} options={['All statuses', 'active', 'inactive']} /></div></div></Panel><Panel className="overflow-hidden" testId="panel-students-table">{query.isError ? <ErrorState onRetry={() => query.refetch()} /> : query.isLoading ? <div className="space-y-4 p-6">{[1, 2, 3, 4, 5].map((i) => <Skeleton key={i} className="h-14 w-full" />)}</div> : students.length === 0 ? <EmptyState icon={Users} title={outstandingOnly ? "No outstanding balances" : "No students found"} description={search ? 'Try a different name, class, or registration number.' : canRegister ? 'Your student directory is ready for its first registration.' : 'No linked learners are available to your role.'} action={canRegister ? <Button onClick={() => setShowForm(true)}><UserPlus className="size-4" /> Register first student</Button> : undefined} /> : <><div className="hidden grid-cols-[1.6fr_1fr_.7fr_.8fr_.8fr_auto] gap-4 border-b border-[hsl(var(--border))] px-5 py-3 text-[10px] font-semibold uppercase tracking-[.13em] text-[hsl(var(--muted-foreground))] md:grid"><span>Learner</span><span>Class</span><span>Attendance</span><span>Fees due</span><span>Status</span><span /></div><div className="divide-y divide-[hsl(var(--border))]">{students.map((student) => <Link href={`/students/${student.id}`} key={student.id} data-testid={`link-student-${student.id}`} className="grid items-center gap-3 px-5 py-4 transition-colors hover:bg-[hsl(var(--muted)/.5)] md:grid-cols-[1.6fr_1fr_.7fr_.8fr_.8fr_auto] md:gap-4"><div className="flex min-w-0 items-center gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--secondary))] text-xs font-bold text-[hsl(var(--primary))]">{student.firstName[0]}{student.lastName[0]}</span><span className="min-w-0"><span className="block truncate text-sm font-semibold">{student.name}</span><span className="block font-mono-ui text-[10px] text-[hsl(var(--muted-foreground))]">{student.registrationNumber}</span></span></div><span className="hidden text-sm md:block">{student.className} <span className="text-[hsl(var(--muted-foreground))]">{student.stream}</span></span><span className="text-xs text-[hsl(var(--muted-foreground))] md:text-sm"><span className="md:hidden">Attendance </span><b className={student.attendancePercentage < 80 ? 'text-[hsl(var(--destructive))]' : 'text-[hsl(var(--primary))'}>{student.attendancePercentage}%</b></span><span className="text-xs text-[hsl(var(--muted-foreground))] md:text-sm">{money(student.feeBalance)}</span><span className={`w-fit rounded-full px-2 py-1 text-[10px] font-semibold capitalize ${student.status === 'active' ? 'bg-[hsl(var(--primary)/.1)] text-[hsl(var(--primary))]' : 'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]'}`}>{student.status}</span><ArrowRight className="hidden size-4 text-[hsl(var(--muted-foreground))] md:block" /></Link>)}</div></>}</Panel>{showForm && canRegister && <Modal title="Register a student" description="Complete every section of the official pupil admission form. The registration number is generated automatically." onClose={() => setShowForm(false)} wide><form onSubmit={submit} className="space-y-5"><div className="grid gap-4 sm:grid-cols-3"><Field label="First name" value={form.firstName} onChange={(v) => update('firstName', v)} placeholder="First name" /><Field label="Middle name" value={form.middleName} onChange={(v) => update('middleName', v)} placeholder="Optional" required={false} /><Field label="Last name" value={form.lastName} onChange={(v) => update('lastName', v)} placeholder="Last name" /></div><div className="grid gap-4 sm:grid-cols-3"><Field label="Date of birth" type="date" value={form.dateOfBirth} onChange={(v) => update('dateOfBirth', v)} /><SelectField label="Gender" value={form.gender} onChange={(v) => update('gender', v)} options={['Female', 'Male', 'Prefer not to say']} /><div className="grid grid-cols-2 gap-3"><SelectField label="Class applying for" value={form.className} onChange={(v) => update('className', v)} options={pupilClassOptions} /><SelectField label="Stream" value={form.stream} onChange={(v) => update('stream', v)} options={['A', 'B', 'C']} /></div></div><div className="grid gap-4 rounded-2xl bg-[hsl(var(--secondary)/.6)] p-4 sm:grid-cols-3"><SelectField label="Day or boarding" value={form.enrollmentType} onChange={(v) => update('enrollmentType', v)} options={['day', 'boarding']} /><Field label="Term fee (UGX)" type="number" value={form.termFee} onChange={(v) => update('termFee', v)} placeholder="0" /><Field label="Opening payment" type="number" value={form.initialPayment} onChange={(v) => update('initialPayment', v)} placeholder="0" /></div><div className="grid gap-4 sm:grid-cols-2"><SelectField label="Payment method" value={form.paymentMethod} onChange={(v) => update('paymentMethod', v)} options={['Cash', 'Mobile money', 'Bank transfer', 'Card']} /><Field label="Payment reference" value={form.paymentReference} onChange={(v) => update('paymentReference', v)} placeholder="Receipt or transaction number" required={false} /></div><div className="rounded-2xl bg-[hsl(var(--muted)/.65)] p-4"><p className="mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Guardian contact</p><div className="grid gap-4 sm:grid-cols-2"><Field label="Full name" value={form.guardianName} onChange={(v) => update('guardianName', v)} placeholder="Guardian name" /><Field label="Phone number" value={form.guardianPhone} onChange={(v) => update('guardianPhone', v)} placeholder="+256 7..." /></div></div><AdmissionDetailsFields form={form} update={update} declarationAccepted={form.declarationAccepted === true} onDeclarationChange={(accepted) => setForm((old) => ({ ...old, declarationAccepted: accepted }))} />{create.isError && <p className="text-sm text-[hsl(var(--destructive))]" data-testid="status-register-error">We couldn’t register this student. Please check the details.</p>}<div className="flex justify-end gap-3"><Button variant="secondary" onClick={() => setShowForm(false)} testId="button-cancel-register">Cancel</Button><Button type="submit" disabled={create.isPending} testId="button-submit-register">{create.isPending ? 'Registering…' : 'Register student'}<ArrowRight className="size-4" /></Button></div></form></Modal>}</AppShell>;
 }
 
 function LegacyStudentProfilePage() {

@@ -51,7 +51,6 @@ const salaryExpenseCategories = ["Teachers' salaries", 'Non-teaching staff salar
 
 async function downloadTeacherRegistration(form: TeacherRegistrationForm) {
   const pdf = await brandedPdf([
-    'EMMECTY NURSERY & PRIMARY SCHOOL',
     'OFFICIAL TEACHER REGISTRATION FORM',
     `Teacher: ${form.name}`,
     `Username: ${form.username}`,

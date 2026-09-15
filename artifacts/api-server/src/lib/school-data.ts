@@ -289,6 +289,11 @@ export async function updateStudent(id: string, data: {
   firstName?: string; middleName?: string; lastName?: string; dateOfBirth?: string; gender?: string;
   className?: string; stream?: string; guardianName?: string; guardianPhone?: string; guardianEmail?: string;
   enrollmentType?: "day" | "boarding"; termFee?: number; status?: "active" | "inactive"; newPassword?: string;
+  religion?: string; placeOfBirth?: string; homeVillage?: string; nationality?: string; tribe?: string;
+  guardianRelationship?: string; guardianNationalId?: string; residentialAddress?: string; guardianOccupation?: string;
+  alternativeContact?: string; previousSchool?: string; lastClassCompleted?: string; medicalConditions?: string;
+  specialNeeds?: string; knownMedicalNote?: string; emergencyContactName?: string; emergencyContactPhone?: string;
+  emergencyContactRelationship?: string; declarationAccepted?: boolean; declarationDate?: string;
 }) {
   const schoolId = await getSchoolId();
   const current = (await db.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.id, id))).limit(1))[0];
@@ -317,6 +322,16 @@ export async function updateStudent(id: string, data: {
   const admission = (await db.select().from(documents).where(and(eq(documents.schoolId, schoolId), sql`${documents.data}->>'studentId' = ${id}`, sql`${documents.data}->>'documentType' = 'admission_form`)).orderBy(desc(documents.createdAt)).limit(1))[0];
   if (admission) {
     const currentForm = admission.data as Record<string, unknown>;
+    const admissionFields = [
+      "guardianEmail", "religion", "placeOfBirth", "homeVillage", "nationality", "tribe",
+      "guardianRelationship", "guardianNationalId", "residentialAddress", "guardianOccupation",
+      "alternativeContact", "previousSchool", "lastClassCompleted", "medicalConditions", "specialNeeds",
+      "knownMedicalNote", "emergencyContactName", "emergencyContactPhone", "emergencyContactRelationship",
+      "declarationAccepted", "declarationDate",
+    ] as const;
+    for (const key of admissionFields) {
+      if (data[key] !== undefined) currentForm[key] = data[key];
+    }
     await db.update(documents).set({
       data: {
         ...currentForm,
@@ -327,6 +342,7 @@ export async function updateStudent(id: string, data: {
         stream: updated.stream,
         guardianName: updated.guardianName,
         guardianPhone: updated.guardianPhone,
+        guardianEmail: updated.guardianEmail,
         enrollmentType: updated.enrollmentType,
         termFee: number(updated.termFee),
         amountPaid: number(updated.amountPaid),
@@ -368,7 +384,13 @@ export async function getAdmissionForm(id: string) {
 }
 export async function createStudentWithPayment(data: {
   firstName: string; middleName?: string; lastName: string; className: string; stream: string; gender: string; dateOfBirth: string;
-  guardianName: string; guardianPhone: string; enrollmentType: "day" | "boarding"; termFee: number; initialPayment?: number; paymentMethod?: string; paymentReference?: string;
+  guardianName: string; guardianPhone: string; guardianEmail: string; enrollmentType: "day" | "boarding"; termFee: number;
+  religion: string; placeOfBirth: string; homeVillage: string; nationality: string; tribe: string;
+  guardianRelationship: string; guardianNationalId: string; residentialAddress: string; guardianOccupation: string;
+  alternativeContact: string; previousSchool: string; lastClassCompleted: string; medicalConditions: string;
+  specialNeeds: string; knownMedicalNote: string; emergencyContactName: string; emergencyContactPhone: string;
+  emergencyContactRelationship: string; declarationAccepted: boolean; declarationDate: string;
+  initialPayment?: number; paymentMethod?: string; paymentReference?: string;
 }) {
   const schoolId = await getSchoolId();
   return db.transaction(async (tx) => {
@@ -387,7 +409,7 @@ export async function createStudentWithPayment(data: {
     const studentRowValue = (await tx.insert(students).values({
       schoolId, registrationNumber, firstName: data.firstName, middleName: data.middleName, lastName: data.lastName,
       className: data.className, stream: data.stream, gender: data.gender, dateOfBirth: data.dateOfBirth,
-      guardianName: data.guardianName, guardianPhone: data.guardianPhone, admissionDate: isoDate(), enrollmentType: data.enrollmentType,
+      guardianName: data.guardianName, guardianPhone: data.guardianPhone, guardianEmail: data.guardianEmail, admissionDate: isoDate(), enrollmentType: data.enrollmentType,
       termFee: String(data.termFee), amountPaid: String(initialPayment), feeBalance: String(Math.max(0, data.termFee - initialPayment)),
     }).returning())[0];
     if (!studentRowValue) throw new Error("Unable to register pupil");
@@ -420,6 +442,27 @@ export async function createStudentWithPayment(data: {
       stream: data.stream,
       guardianName: data.guardianName,
       guardianPhone: data.guardianPhone,
+      guardianEmail: data.guardianEmail,
+      religion: data.religion,
+      placeOfBirth: data.placeOfBirth,
+      homeVillage: data.homeVillage,
+      nationality: data.nationality,
+      tribe: data.tribe,
+      guardianRelationship: data.guardianRelationship,
+      guardianNationalId: data.guardianNationalId,
+      residentialAddress: data.residentialAddress,
+      guardianOccupation: data.guardianOccupation,
+      alternativeContact: data.alternativeContact,
+      previousSchool: data.previousSchool,
+      lastClassCompleted: data.lastClassCompleted,
+      medicalConditions: data.medicalConditions,
+      specialNeeds: data.specialNeeds,
+      knownMedicalNote: data.knownMedicalNote,
+      emergencyContactName: data.emergencyContactName,
+      emergencyContactPhone: data.emergencyContactPhone,
+      emergencyContactRelationship: data.emergencyContactRelationship,
+      declarationAccepted: data.declarationAccepted,
+      declarationDate: data.declarationDate,
       admissionDate: studentRowValue.admissionDate,
       enrollmentType: data.enrollmentType,
       termFee: data.termFee,
