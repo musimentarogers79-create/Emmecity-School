@@ -269,9 +269,9 @@ function studentRow(row: typeof students.$inferSelect): SchoolStudent {
     guardianEmail: row.guardianEmail, admissionDate: row.admissionDate,
   };
   if (row.middleName) result.middleName = row.middleName;
-  if (row.enrollmentType) result.enrollmentType = row.enrollmentType as "day" | "boarding";
-  if (row.termFee !== null) result.termFee = number(row.termFee);
-  if (row.amountPaid !== null) result.amountPaid = number(row.amountPaid);
+  result.enrollmentType = (row.enrollmentType || "day") as "day" | "boarding";
+  result.termFee = number(row.termFee);
+  result.amountPaid = number(row.amountPaid);
   return result;
 }
 export async function listStudents() {
@@ -295,7 +295,10 @@ export async function updateStudent(id: string, data: {
   if (!current) return undefined;
   const updates: Partial<typeof students.$inferInsert> = { updatedAt: new Date() };
   for (const key of ["firstName", "middleName", "lastName", "dateOfBirth", "gender", "className", "stream", "guardianName", "guardianPhone", "guardianEmail", "enrollmentType", "status"] as const) {
-    if (data[key] !== undefined) updates[key] = data[key] as never;
+    if (data[key] !== undefined) {
+      const value = typeof data[key] === "string" ? data[key].trim() : data[key];
+      updates[key] = (key === "middleName" && value === "" ? null : value) as never;
+    }
   }
   if (data.termFee !== undefined) {
     updates.termFee = String(data.termFee);
@@ -303,6 +306,14 @@ export async function updateStudent(id: string, data: {
   }
   const updated = (await db.update(students).set(updates).where(and(eq(students.schoolId, schoolId), eq(students.id, id))).returning())[0];
   if (!updated) return undefined;
+  const classRows = await listOperation("classes");
+  if (classRows.length) {
+    const pupils = await listStudents();
+    await Promise.all(classRows.map((item) => updateOperation("classes", item.id, {
+      ...item,
+      pupilCount: pupils.filter((pupil) => pupil.className === String(item.name)).length,
+    })));
+  }
   const admission = (await db.select().from(documents).where(and(eq(documents.schoolId, schoolId), sql`${documents.data}->>'studentId' = ${id}`, sql`${documents.data}->>'documentType' = 'admission_form`)).orderBy(desc(documents.createdAt)).limit(1))[0];
   if (admission) {
     const currentForm = admission.data as Record<string, unknown>;
