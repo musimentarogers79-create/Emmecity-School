@@ -554,9 +554,21 @@ function UsersRolesDirectory({ createMode, onBack }: { createMode: boolean; onBa
             <h2 className="mt-1 font-display text-2xl">Users & Roles</h2>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-[hsl(var(--muted-foreground))]">Search staff accounts, confirm their sign-in details, and update access without losing usernames or role assignments.</p>
           </div>
-          <Link href="/operations?view=people&mode=create" className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-semibold text-[hsl(var(--primary-foreground))] transition-all hover:brightness-110 focus-ring" data-testid="button-create-new-staff">
-            <Plus className="size-4" /> Create new staff
-          </Link>
+          <button
+            type="button"
+            onClick={() => setLocation('/operations?view=people&mode=create')}
+            className="group flex min-h-14 shrink-0 items-center gap-3 rounded-2xl border border-[hsl(var(--primary)/.25)] bg-[hsl(var(--secondary)/.55)] px-4 py-3 text-left transition-all hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/.55)] hover:bg-[hsl(var(--secondary))] focus-ring"
+            data-testid="button-create-new-staff"
+          >
+            <span className="flex size-9 items-center justify-center rounded-xl bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-sm">
+              <Plus className="size-4" />
+            </span>
+            <span>
+              <span className="block text-sm font-semibold text-[hsl(var(--foreground))]">Create new staff</span>
+              <span className="mt-0.5 block text-[11px] text-[hsl(var(--muted-foreground))]">Add a username and role</span>
+            </span>
+            <ArrowRight className="ml-1 size-4 text-[hsl(var(--primary))] transition-transform group-hover:translate-x-0.5" />
+          </button>
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl bg-[hsl(var(--secondary)/.65)] p-3"><p className="text-xs text-[hsl(var(--muted-foreground))]">Staff accounts</p><p className="mt-1 font-display text-2xl">{allStaffUsers.length}</p></div>
