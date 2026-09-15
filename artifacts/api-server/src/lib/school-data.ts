@@ -322,7 +322,25 @@ export async function getAdmissionForm(id: string) {
   const student = await getStudent(id);
   if (!student) return undefined;
   const row = (await db.select().from(documents).where(and(eq(documents.schoolId, schoolId), sql`${documents.data}->>'studentId' = ${student.id}`, sql`${documents.data}->>'documentType' = 'admission_form'`)).orderBy(desc(documents.createdAt)).limit(1))[0];
-  return row ? { ...(row.data as Record<string, unknown>), id: row.id } : undefined;
+  if (row) return { ...(row.data as Record<string, unknown>), id: row.id };
+  return {
+    id: `generated-admission-${student.id}`,
+    studentId: student.id,
+    registrationNumber: student.registrationNumber,
+    pupilName: student.name,
+    dateOfBirth: student.dateOfBirth,
+    gender: student.gender,
+    className: student.className,
+    stream: student.stream,
+    guardianName: student.guardianName,
+    guardianPhone: student.guardianPhone,
+    admissionDate: student.admissionDate,
+    enrollmentType: student.enrollmentType || "day",
+    termFee: student.termFee || 0,
+    amountPaid: student.amountPaid || 0,
+    feeBalance: student.feeBalance,
+    generatedAt: new Date().toISOString(),
+  };
 }
 export async function createStudentWithPayment(data: {
   firstName: string; middleName?: string; lastName: string; className: string; stream: string; gender: string; dateOfBirth: string;
