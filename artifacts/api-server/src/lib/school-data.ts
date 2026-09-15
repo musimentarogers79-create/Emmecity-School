@@ -272,6 +272,51 @@ export async function getStudent(id: string) {
   const byRegistration = (await db.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.registrationNumber, id))).limit(1))[0];
   return byRegistration ? studentRow(byRegistration) : undefined;
 }
+export async function updateStudent(id: string, data: {
+  firstName?: string; middleName?: string; lastName?: string; dateOfBirth?: string; gender?: string;
+  className?: string; stream?: string; guardianName?: string; guardianPhone?: string; guardianEmail?: string;
+  enrollmentType?: "day" | "boarding"; termFee?: number; status?: "active" | "inactive"; newPassword?: string;
+}) {
+  const schoolId = await getSchoolId();
+  const current = (await db.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.id, id))).limit(1))[0];
+  if (!current) return undefined;
+  const updates: Partial<typeof students.$inferInsert> = { updatedAt: new Date() };
+  for (const key of ["firstName", "middleName", "lastName", "dateOfBirth", "gender", "className", "stream", "guardianName", "guardianPhone", "guardianEmail", "enrollmentType", "status"] as const) {
+    if (data[key] !== undefined) updates[key] = data[key] as never;
+  }
+  if (data.termFee !== undefined) {
+    updates.termFee = String(data.termFee);
+    updates.feeBalance = String(Math.max(0, data.termFee - number(current.amountPaid)));
+  }
+  const updated = (await db.update(students).set(updates).where(and(eq(students.schoolId, schoolId), eq(students.id, id))).returning())[0];
+  if (!updated) return undefined;
+  const admission = (await db.select().from(documents).where(and(eq(documents.schoolId, schoolId), sql`${documents.data}->>'studentId' = ${id}`, sql`${documents.data}->>'documentType' = 'admission_form`)).orderBy(desc(documents.createdAt)).limit(1))[0];
+  if (admission) {
+    const currentForm = admission.data as Record<string, unknown>;
+    await db.update(documents).set({
+      data: {
+        ...currentForm,
+        pupilName: `${updated.firstName}${updated.middleName ? ` ${updated.middleName}` : ""} ${updated.lastName}`,
+        dateOfBirth: updated.dateOfBirth,
+        gender: updated.gender,
+        className: updated.className,
+        stream: updated.stream,
+        guardianName: updated.guardianName,
+        guardianPhone: updated.guardianPhone,
+        enrollmentType: updated.enrollmentType,
+        termFee: number(updated.termFee),
+        amountPaid: number(updated.amountPaid),
+        feeBalance: number(updated.feeBalance),
+        updatedAt: new Date().toISOString(),
+      },
+      updatedAt: new Date(),
+    }).where(and(eq(documents.schoolId, schoolId), eq(documents.id, admission.id)));
+  }
+  if (data.newPassword) {
+    await db.update(users).set({ passwordHash: hashPassword(data.newPassword), updatedAt: new Date() }).where(and(eq(users.schoolId, schoolId), eq(users.studentId, id), eq(users.role, "student")));
+  }
+  return studentRow(updated);
+}
 export async function getAdmissionForm(id: string) {
   const schoolId = await getSchoolId();
   const student = await getStudent(id);

@@ -14,6 +14,7 @@ export interface Student {
   registrationNumber: string;
   name: string;
   firstName: string;
+  middleName?: string;
   lastName: string;
   className: string;
   stream: string;

@@ -359,6 +359,7 @@ export const GetDashboardResponse = zod.object({
   "registrationNumber": zod.string(),
   "name": zod.string(),
   "firstName": zod.string(),
+  "middleName": zod.string().optional(),
   "lastName": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
@@ -403,6 +404,7 @@ export const GetDashboardResponse = zod.object({
   "registrationNumber": zod.string(),
   "name": zod.string(),
   "firstName": zod.string(),
+  "middleName": zod.string().optional(),
   "lastName": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
@@ -460,6 +462,7 @@ export const ListStudentsResponseItem = zod.object({
   "registrationNumber": zod.string(),
   "name": zod.string(),
   "firstName": zod.string(),
+  "middleName": zod.string().optional(),
   "lastName": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
@@ -527,6 +530,7 @@ export const CreateStudentResponse = zod.object({
   "registrationNumber": zod.string(),
   "name": zod.string(),
   "firstName": zod.string(),
+  "middleName": zod.string().optional(),
   "lastName": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
@@ -599,6 +603,89 @@ export const GetStudentResponse = zod.object({
   "registrationNumber": zod.string(),
   "name": zod.string(),
   "firstName": zod.string(),
+  "middleName": zod.string().optional(),
+  "lastName": zod.string(),
+  "className": zod.string(),
+  "stream": zod.string(),
+  "gender": zod.string(),
+  "status": zod.enum(['active', 'inactive']),
+  "attendancePercentage": zod.number(),
+  "feeBalance": zod.number(),
+  "avatarTone": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number(),
+  "receiptNumber": zod.string().optional(),
+  "admissionForm": zod.object({
+  "id": zod.string(),
+  "studentId": zod.string(),
+  "registrationNumber": zod.string(),
+  "pupilName": zod.string(),
+  "dateOfBirth": zod.string(),
+  "gender": zod.string(),
+  "className": zod.string(),
+  "stream": zod.string(),
+  "guardianName": zod.string(),
+  "guardianPhone": zod.string(),
+  "admissionDate": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number(),
+  "feeBalance": zod.number(),
+  "generatedAt": zod.string()
+}).optional()
+}).and(zod.object({
+  "dateOfBirth": zod.string(),
+  "guardianName": zod.string(),
+  "guardianPhone": zod.string(),
+  "guardianEmail": zod.string(),
+  "admissionDate": zod.string(),
+  "academicHistory": zod.array(zod.object({
+  "term": zod.string(),
+  "average": zod.number(),
+  "grade": zod.string()
+}))
+}))
+
+
+/**
+ * @summary Update a pupil record and linked pupil account password
+ */
+export const UpdateStudentParams = zod.object({
+  "studentId": zod.coerce.string()
+})
+
+
+
+export const updateStudentBodyTermFeeMin = 0;
+
+export const updateStudentBodyNewPasswordMin = 8;
+
+
+
+export const UpdateStudentBody = zod.object({
+  "firstName": zod.string().min(1).optional(),
+  "middleName": zod.string().optional(),
+  "lastName": zod.string().min(1).optional(),
+  "dateOfBirth": zod.string().optional(),
+  "gender": zod.string().optional(),
+  "className": zod.string().optional(),
+  "stream": zod.string().optional(),
+  "guardianName": zod.string().optional(),
+  "guardianPhone": zod.string().optional(),
+  "guardianEmail": zod.string().optional(),
+  "enrollmentType": zod.enum(['day', 'boarding']).optional(),
+  "termFee": zod.number().min(updateStudentBodyTermFeeMin).optional(),
+  "status": zod.enum(['active', 'inactive']).optional(),
+  "newPassword": zod.string().min(updateStudentBodyNewPasswordMin).optional()
+})
+
+export const UpdateStudentResponse = zod.object({
+  "id": zod.string(),
+  "registrationNumber": zod.string(),
+  "name": zod.string(),
+  "firstName": zod.string(),
+  "middleName": zod.string().optional(),
   "lastName": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
@@ -998,6 +1085,7 @@ export const GetReportCardResponse = zod.object({
   "registrationNumber": zod.string(),
   "name": zod.string(),
   "firstName": zod.string(),
+  "middleName": zod.string().optional(),
   "lastName": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),

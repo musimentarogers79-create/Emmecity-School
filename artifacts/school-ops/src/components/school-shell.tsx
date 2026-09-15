@@ -15,7 +15,7 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/students', label: 'Pupils', icon: Users },
     { href: '/attendance', label: 'Attendance', icon: CalendarDays },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
-    { href: '/operations?view=expenses', label: 'Expenses', icon: ReceiptText },
+    { href: '/expenses', label: 'Expenses', icon: ReceiptText },
     { href: '/transactions', label: 'Transactions', icon: ReceiptText },
     { href: '/operations?view=classes', label: 'Operations', icon: ClipboardList },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
@@ -26,6 +26,7 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/students', label: 'Pupils', icon: Users },
     { href: '/attendance', label: 'Attendance', icon: CalendarDays },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
+    { href: '/expenses', label: 'Expenses', icon: ReceiptText },
     { href: '/operations?view=classes', label: 'Operations', icon: ClipboardList },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
@@ -35,7 +36,7 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/operations?view=classes', label: 'My classes', icon: Users },
     { href: '/attendance', label: 'Attendance', icon: CalendarDays },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
-    { href: '/operations?view=expenses', label: 'Expenses', icon: ReceiptText },
+    { href: '/expenses', label: 'Expenses', icon: ReceiptText },
     { href: '/transactions', label: 'Transactions', icon: ReceiptText },
     { href: '/operations?view=assignments', label: 'Assignments', icon: ClipboardList },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
@@ -44,7 +45,7 @@ const roleNavigation: Record<string, NavItem[]> = {
   accountant: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
-    { href: '/operations?view=expenses', label: 'Expenses', icon: ReceiptText },
+    { href: '/expenses', label: 'Expenses', icon: ReceiptText },
     { href: '/transactions', label: 'Transactions', icon: ReceiptText },
     { href: '/operations?view=reports', label: 'Reports', icon: FileBarChart },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
@@ -74,7 +75,7 @@ const roleNavigation: Record<string, NavItem[]> = {
   staff: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
-    { href: '/operations?view=expenses', label: 'Expenses', icon: ReceiptText },
+    { href: '/expenses', label: 'Expenses', icon: ReceiptText },
     { href: '/transactions', label: 'Transactions', icon: ReceiptText },
     { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
     { href: '/operations?view=documents', label: 'Documents', icon: FileBarChart },
@@ -127,7 +128,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const canExpenses = user?.role === 'administrator' || user?.role === 'super_admin' || user?.role === 'accountant' || user?.permissions.includes('expenses_view');
   const navItems = (roleNavigation[navRole] || roleNavigation.staff).filter((item) => {
     if (item.href === '/finance' || item.href === '/transactions') return canFinance;
-    if (item.href.includes('view=expenses')) return canExpenses;
+    if (item.href === '/expenses') return canExpenses;
     return true;
   }).map((item) => {
     if ((user?.role === 'guardian' || user?.role === 'student') && user.studentId && item.href.includes('/students/stu-001')) {

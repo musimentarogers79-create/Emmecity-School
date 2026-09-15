@@ -7,12 +7,12 @@ import {
   GetStudentResponse, GetTimetableResponse, CreateTimetableEntryBody, CreateTimetableEntryResponse, ListAnnouncementsResponse, ListExpensesResponse, ListPaymentsResponse,
   ListSalariesResponse, ListStudentsQueryParams, ListStudentsResponse, LoginBody, LoginResponse, LogoutResponse,
   RecordPaymentBody, RecordPaymentResponse, SaveAttendanceBody, SaveAttendanceResponse, GetSettingsResponse,
-  UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse, UpdateUserPermissionsBody, UpdateUserPermissionsResponse,
+  UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse, UpdateStudentBody, UpdateStudentResponse, UpdateUserPermissionsBody, UpdateUserPermissionsResponse,
 } from "@workspace/api-zod";
 import {
   AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, createUser, currentUserFromToken, getAdmissionForm,
   clearLoginFailures, deleteSession, findUser, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
-  listAttendance, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance,
+  listAttendance, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance, updateStudent,
   deleteOperation, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserPermissions, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
 } from "../lib/school-data";
 
@@ -29,7 +29,7 @@ const roleGreeting = (name: string) => `Good morning, ${name.split(" ")[0]}`;
 const roleActions = (role: SchoolRole, studentId?: string) => role === "teacher"
   ? [{ id: "attendance", label: "Record attendance", description: "Mark today's register for your assigned classes.", href: "/attendance", tone: "green" }, { id: "assignments", label: "Manage assignments", description: "Create and follow up work for your classes.", href: "/operations?view=assignments", tone: "blue" }, { id: "classes", label: "Open my classes", description: "See only the classes and subjects assigned to you.", href: "/operations?view=classes", tone: "violet" }]
   : role === "accountant"
-    ? [{ id: "payment", label: "Record a payment", description: "Issue a receipt and update the learner balance.", href: "/finance", tone: "green" }, { id: "expense", label: "Log an expense", description: "Capture school spending for approval and reporting.", href: "/operations?view=expenses", tone: "amber" }, { id: "reports", label: "Open finance reports", description: "Review collection and expense summaries.", href: "/operations?view=reports", tone: "blue" }]
+    ? [{ id: "payment", label: "Record a payment", description: "Issue a receipt and update the learner balance.", href: "/finance", tone: "green" }, { id: "expense", label: "Log an expense", description: "Capture school spending for approval and reporting.", href: "/expenses", tone: "amber" }, { id: "reports", label: "Open finance reports", description: "Review collection and expense summaries.", href: "/operations?view=reports", tone: "blue" }]
     : role === "guardian" || role === "student"
       ? [{ id: "child", label: "View my child", description: "Open the linked learner profile and progress.", href: studentId ? `/students/${studentId}` : "/students", tone: "green" }, { id: "fees", label: "Check school fees", description: "Review the current balance for your linked learner.", href: studentId ? `/students/${studentId}` : "/students", tone: "amber" }, { id: "notices", label: "Read school notices", description: "Keep up with school notices.", href: "/announcements", tone: "blue" }]
       : [{ id: "register", label: "Register a pupil", description: "Create a permanent learner record and registration number.", href: "/students", tone: "green" }, { id: "people", label: "Manage people", description: "Review pupils, guardians, and school staff.", href: "/operations?view=people", tone: "blue" }, { id: "permissions", label: "Users & permissions", description: "Create accounts and configure action-level access.", href: "/operations?view=people", tone: "violet" }, { id: "settings", label: "Configure school", description: "Set the academic year and school currency.", href: "/settings", tone: "violet" }];
@@ -220,6 +220,19 @@ router.get("/students/:studentId", async (req, res): Promise<void> => {
   if ((user.role === "student" || user.role === "guardian") && user.studentId !== student.id) { errorResponse(res, 403, "You do not have access to this pupil."); return; }
   if (user.role === "teacher" && !matchesAssignedClass(assigned, student.className, student.stream)) { errorResponse(res, 403, "You do not have access to this assigned class."); return; }
   res.json(GetStudentResponse.parse({ ...student, academicHistory: [] }));
+});
+router.patch("/students/:studentId", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!isAdministrator(user)) { errorResponse(res, 403, "Only administrators can update pupil records."); return; }
+  const parsed = UpdateStudentBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Enter valid pupil details. Passwords must be at least 8 characters."); return; }
+  try {
+    const updated = await updateStudent(req.params.studentId, parsed.data);
+    if (!updated) { errorResponse(res, 404, "Student not found."); return; }
+    res.json(UpdateStudentResponse.parse({ ...updated, academicHistory: [] }));
+  } catch {
+    errorResponse(res, 409, "The pupil record could not be updated.");
+  }
 });
 
 router.get("/attendance", async (req, res): Promise<void> => {

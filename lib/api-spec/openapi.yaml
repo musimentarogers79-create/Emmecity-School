@@ -261,6 +261,29 @@ paths:
                 $ref: "#/components/schemas/StudentProfile"
         "404":
           description: Student not found
+    patch:
+      operationId: updateStudent
+      tags: [students]
+      summary: Update a pupil record and linked pupil account password
+      parameters:
+        - $ref: "#/components/parameters/StudentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StudentUpdateInput"
+      responses:
+        "200":
+          description: Updated pupil profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentProfile"
+        "403":
+          description: Administrator access required
+        "404":
+          description: Student not found
   /attendance:
     get:
       operationId: getAttendance
@@ -824,6 +847,8 @@ components:
           type: string
         firstName:
           type: string
+        middleName:
+          type: string
         lastName:
           type: string
         className:
@@ -927,6 +952,43 @@ components:
         paymentReference:
           type: string
       required: [firstName, lastName, dateOfBirth, gender, className, stream, guardianName, guardianPhone, enrollmentType, termFee]
+    StudentUpdateInput:
+      type: object
+      properties:
+        firstName:
+          type: string
+          minLength: 1
+        middleName:
+          type: string
+        lastName:
+          type: string
+          minLength: 1
+        dateOfBirth:
+          type: string
+        gender:
+          type: string
+        className:
+          type: string
+        stream:
+          type: string
+        guardianName:
+          type: string
+        guardianPhone:
+          type: string
+        guardianEmail:
+          type: string
+        enrollmentType:
+          type: string
+          enum: [day, boarding]
+        termFee:
+          type: number
+          minimum: 0
+        status:
+          type: string
+          enum: [active, inactive]
+        newPassword:
+          type: string
+          minLength: 8
     StudentProfile:
       allOf:
         - $ref: "#/components/schemas/Student"

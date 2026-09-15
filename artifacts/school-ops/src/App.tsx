@@ -50,6 +50,7 @@ function Router() {
         <Route path="/attendance/create" component={AttendanceCreatePage} />
         <Route path="/attendance" component={AttendancePage} />
         <Route path="/finance" component={FinancePage} />
+        <Route path="/expenses" component={OperationsPage} />
         <Route path="/announcements" component={AnnouncementsPage} />
         <Route path="/timetable" component={TimetablePage} />
         <Route path="/operations" component={OperationsPage} />

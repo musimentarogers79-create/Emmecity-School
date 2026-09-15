@@ -191,6 +191,7 @@ export interface Student {
   registrationNumber: string;
   name: string;
   firstName: string;
+  middleName?: string;
   lastName: string;
   className: string;
   stream: string;
@@ -233,6 +234,43 @@ export interface StudentInput {
   initialPayment?: number;
   paymentMethod?: string;
   paymentReference?: string;
+}
+
+export type StudentUpdateInputEnrollmentType = typeof StudentUpdateInputEnrollmentType[keyof typeof StudentUpdateInputEnrollmentType];
+
+
+export const StudentUpdateInputEnrollmentType = {
+  day: 'day',
+  boarding: 'boarding',
+} as const;
+
+export type StudentUpdateInputStatus = typeof StudentUpdateInputStatus[keyof typeof StudentUpdateInputStatus];
+
+
+export const StudentUpdateInputStatus = {
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export interface StudentUpdateInput {
+  /** @minLength 1 */
+  firstName?: string;
+  middleName?: string;
+  /** @minLength 1 */
+  lastName?: string;
+  dateOfBirth?: string;
+  gender?: string;
+  className?: string;
+  stream?: string;
+  guardianName?: string;
+  guardianPhone?: string;
+  guardianEmail?: string;
+  enrollmentType?: StudentUpdateInputEnrollmentType;
+  /** @minimum 0 */
+  termFee?: number;
+  status?: StudentUpdateInputStatus;
+  /** @minLength 8 */
+  newPassword?: string;
 }
 
 export type StudentProfileAcademicHistoryItem = {
