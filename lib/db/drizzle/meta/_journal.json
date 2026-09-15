@@ -57,6 +57,13 @@
       "when": 1789397532167,
       "tag": "0007_married_magneto",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1789458250145,
+      "tag": "0008_odd_morbius",
+      "breakpoints": true
     }
   ]
 }

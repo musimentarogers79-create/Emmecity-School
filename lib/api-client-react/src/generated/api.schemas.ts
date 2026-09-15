@@ -215,6 +215,7 @@ export interface AdmissionForm {
   termFee: number;
   amountPaid: number;
   feeBalance: number;
+  previousFeeBalance: number;
   generatedAt: string;
 }
 
@@ -235,6 +236,7 @@ export interface Student {
   enrollmentType: StudentEnrollmentType;
   termFee: number;
   amountPaid: number;
+  previousFeeBalance: number;
   receiptNumber?: string;
   admissionForm?: AdmissionForm;
 }
@@ -285,6 +287,8 @@ export interface StudentInput {
   termFee: number;
   /** @minimum 0 */
   initialPayment?: number;
+  /** @minimum 0 */
+  previousFeeBalance?: number;
   paymentMethod?: string;
   paymentReference?: string;
 }
@@ -341,6 +345,8 @@ export interface StudentUpdateInput {
   enrollmentType?: StudentUpdateInputEnrollmentType;
   /** @minimum 0 */
   termFee?: number;
+  /** @minimum 0 */
+  previousFeeBalance?: number;
   status?: StudentUpdateInputStatus;
   /** @minLength 8 */
   newPassword?: string;

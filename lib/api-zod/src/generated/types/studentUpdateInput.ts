@@ -44,6 +44,8 @@ export interface StudentUpdateInput {
   enrollmentType?: StudentUpdateInputEnrollmentType;
   /** @minimum 0 */
   termFee?: number;
+  /** @minimum 0 */
+  previousFeeBalance?: number;
   status?: StudentUpdateInputStatus;
   /** @minLength 8 */
   newPassword?: string;

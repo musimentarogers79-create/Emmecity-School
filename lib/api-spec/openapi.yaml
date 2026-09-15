@@ -919,11 +919,13 @@ components:
           type: number
         amountPaid:
           type: number
+        previousFeeBalance:
+          type: number
         receiptNumber:
           type: string
         admissionForm:
           $ref: "#/components/schemas/AdmissionForm"
-      required: [id, registrationNumber, name, firstName, lastName, className, stream, gender, status, attendancePercentage, feeBalance, avatarTone, enrollmentType, termFee, amountPaid]
+      required: [id, registrationNumber, name, firstName, lastName, className, stream, gender, status, attendancePercentage, feeBalance, previousFeeBalance, avatarTone, enrollmentType, termFee, amountPaid]
     AdmissionForm:
       type: object
       properties:
@@ -1000,9 +1002,11 @@ components:
           type: number
         feeBalance:
           type: number
+        previousFeeBalance:
+          type: number
         generatedAt:
           type: string
-      required: [id, studentId, registrationNumber, pupilName, dateOfBirth, gender, className, stream, guardianName, guardianPhone, admissionDate, enrollmentType, termFee, amountPaid, feeBalance, generatedAt]
+      required: [id, studentId, registrationNumber, pupilName, dateOfBirth, gender, className, stream, guardianName, guardianPhone, admissionDate, enrollmentType, termFee, amountPaid, previousFeeBalance, feeBalance, generatedAt]
     StudentInput:
       type: object
       properties:
@@ -1075,6 +1079,9 @@ components:
           type: number
           minimum: 0
         initialPayment:
+          type: number
+          minimum: 0
+        previousFeeBalance:
           type: number
           minimum: 0
         paymentMethod:
@@ -1151,6 +1158,9 @@ components:
           type: string
           enum: [day, boarding]
         termFee:
+          type: number
+          minimum: 0
+        previousFeeBalance:
           type: number
           minimum: 0
         status:

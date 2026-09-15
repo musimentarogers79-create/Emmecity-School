@@ -23,6 +23,11 @@ function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarati
   onDeclarationChange: (accepted: boolean) => void;
 }) {
   return <div className="space-y-5">
+    <div className="admission-section rounded-2xl border border-[hsl(var(--primary)/.25)] bg-[hsl(var(--secondary)/.45)] p-4">
+      <p className="admission-section-heading mb-2 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Previous fees</p>
+      <p className="mb-4 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Because the school is in Term 3, record any unpaid balance carried forward from Terms 1 and 2. Leave it at zero when there is no previous balance.</p>
+      <Field label="Previous terms balance (UGX)" type="number" value={String(form.previousFeeBalance || '')} onChange={(value) => update('previousFeeBalance', value)} placeholder="0" required={false} />
+    </div>
     <div className="admission-section rounded-2xl border border-[hsl(var(--border))] p-4">
       <p className="admission-section-heading mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Pupil details</p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -333,7 +338,8 @@ async function admissionFormPdf(form: AdmissionForm) {
     `Emergency contact: ${admissionValue(form.emergencyContactName)} · ${admissionValue(form.emergencyContactPhone)} · ${admissionValue(form.emergencyContactRelationship)}`,
     `Admission date: ${admissionValue(form.admissionDate)}`,
     `Pupil type: ${admissionValue(form.enrollmentType)}`,
-    `Term fee: ${money(form.termFee)}`,
+     `Previous terms balance: ${money(form.previousFeeBalance)}`,
+     `Term fee: ${money(form.termFee)}`,
     `Amount paid: ${money(form.amountPaid)}`,
     `Fee balance: ${money(form.feeBalance)}`,
     `Declaration accepted: ${form.declarationAccepted ? 'Yes' : 'No'} · ${admissionValue(form.declarationDate)}`,
@@ -561,7 +567,7 @@ function StudentsPage() {
   const [registrationConfirmation, setRegistrationConfirmation] = useState<{ registrationNumber: string; pupilName: string; className: string; stream: string; guardianName: string; guardianPhone: string; receiptNumber?: string; amount?: number; method?: string; admissionForm?: AdmissionForm } | null>(null);
    const emptyForm = {
      firstName: '', middleName: '', lastName: '', dateOfBirth: '', gender: 'Female', className: 'Primary 1', stream: 'A',
-     guardianName: '', guardianPhone: '', guardianEmail: '', enrollmentType: 'day', termFee: '', initialPayment: '', paymentMethod: 'Cash', paymentReference: '',
+      guardianName: '', guardianPhone: '', guardianEmail: '', enrollmentType: 'day', termFee: '', previousFeeBalance: '', initialPayment: '', paymentMethod: 'Cash', paymentReference: '',
      religion: '', placeOfBirth: '', homeVillage: '', nationality: '', tribe: '', guardianRelationship: '', guardianNationalId: '',
      residentialAddress: '', guardianOccupation: '', alternativeContact: '', previousSchool: '', lastClassCompleted: '',
      medicalConditions: '', specialNeeds: '', knownMedicalNote: '', emergencyContactName: '', emergencyContactPhone: '',
@@ -575,7 +581,7 @@ function StudentsPage() {
   const submit = (event: FormEvent) => {
     event.preventDefault();
     const openingPayment = form.initialPayment ? Number(form.initialPayment) : undefined;
-    const data: StudentInput = { ...form, enrollmentType: form.enrollmentType as 'day' | 'boarding', termFee: Number(form.termFee || 0), initialPayment: openingPayment };
+    const data: StudentInput = { ...form, enrollmentType: form.enrollmentType as 'day' | 'boarding', termFee: Number(form.termFee || 0), previousFeeBalance: Number(form.previousFeeBalance || 0), initialPayment: openingPayment };
     create.mutate({ data }, {
       onSuccess: (pupil) => {
         trackEvent('pupil_registered', { enrollment_type: data.enrollmentType, opening_payment: (data.initialPayment ?? 0) > 0 });
@@ -664,13 +670,14 @@ function StudentProfilePage() {
       guardianEmail: student.guardianEmail,
       enrollmentType: student.enrollmentType,
       termFee: student.termFee,
+       previousFeeBalance: student.previousFeeBalance,
       status: student.status,
       newPassword: '',
     });
   }, [student]);
 
   const updateField = (key: keyof StudentUpdateInput, value: string) => {
-    setEditForm((old) => ({ ...old, [key]: key === 'termFee' ? Number(value) : value }));
+     setEditForm((old) => ({ ...old, [key]: key === 'termFee' || key === 'previousFeeBalance' ? Number(value) : value }));
   };
   const save = (event: FormEvent) => {
     event.preventDefault();
@@ -680,6 +687,7 @@ function StudentProfilePage() {
       guardianEmail: editForm.guardianEmail?.trim() || '',
       stream: editForm.stream?.trim() || '',
       termFee: Number(editForm.termFee || 0),
+       previousFeeBalance: Number(editForm.previousFeeBalance || 0),
       newPassword: editForm.newPassword || undefined,
     } }, {
       onSuccess: () => {

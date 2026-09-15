@@ -45,6 +45,8 @@ export interface StudentInput {
   termFee: number;
   /** @minimum 0 */
   initialPayment?: number;
+  /** @minimum 0 */
+  previousFeeBalance?: number;
   paymentMethod?: string;
   paymentReference?: string;
 }

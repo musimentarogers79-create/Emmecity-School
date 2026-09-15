@@ -44,5 +44,6 @@ export interface AdmissionForm {
   termFee: number;
   amountPaid: number;
   feeBalance: number;
+  previousFeeBalance: number;
   generatedAt: string;
 }

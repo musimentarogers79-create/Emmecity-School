@@ -428,6 +428,7 @@ export const GetDashboardResponse = zod.object({
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
   "amountPaid": zod.number(),
+  "previousFeeBalance": zod.number(),
   "receiptNumber": zod.string().optional(),
   "admissionForm": zod.object({
   "id": zod.string(),
@@ -466,6 +467,7 @@ export const GetDashboardResponse = zod.object({
   "termFee": zod.number(),
   "amountPaid": zod.number(),
   "feeBalance": zod.number(),
+  "previousFeeBalance": zod.number(),
   "generatedAt": zod.string()
 }).optional()
 })),
@@ -494,6 +496,7 @@ export const GetDashboardResponse = zod.object({
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
   "amountPaid": zod.number(),
+  "previousFeeBalance": zod.number(),
   "receiptNumber": zod.string().optional(),
   "admissionForm": zod.object({
   "id": zod.string(),
@@ -532,6 +535,7 @@ export const GetDashboardResponse = zod.object({
   "termFee": zod.number(),
   "amountPaid": zod.number(),
   "feeBalance": zod.number(),
+  "previousFeeBalance": zod.number(),
   "generatedAt": zod.string()
 }).optional()
 })).optional(),
@@ -573,6 +577,7 @@ export const ListStudentsResponseItem = zod.object({
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
   "amountPaid": zod.number(),
+  "previousFeeBalance": zod.number(),
   "receiptNumber": zod.string().optional(),
   "admissionForm": zod.object({
   "id": zod.string(),
@@ -611,6 +616,7 @@ export const ListStudentsResponseItem = zod.object({
   "termFee": zod.number(),
   "amountPaid": zod.number(),
   "feeBalance": zod.number(),
+  "previousFeeBalance": zod.number(),
   "generatedAt": zod.string()
 }).optional()
 })
@@ -625,6 +631,8 @@ export const ListStudentsResponse = zod.array(ListStudentsResponseItem)
 export const createStudentBodyTermFeeMin = 0;
 
 export const createStudentBodyInitialPaymentMin = 0;
+
+export const createStudentBodyPreviousFeeBalanceMin = 0;
 
 
 
@@ -662,6 +670,7 @@ export const CreateStudentBody = zod.object({
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number().min(createStudentBodyTermFeeMin),
   "initialPayment": zod.number().min(createStudentBodyInitialPaymentMin).optional(),
+  "previousFeeBalance": zod.number().min(createStudentBodyPreviousFeeBalanceMin).optional(),
   "paymentMethod": zod.string().optional(),
   "paymentReference": zod.string().optional()
 })
@@ -683,6 +692,7 @@ export const CreateStudentResponse = zod.object({
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
   "amountPaid": zod.number(),
+  "previousFeeBalance": zod.number(),
   "receiptNumber": zod.string().optional(),
   "admissionForm": zod.object({
   "id": zod.string(),
@@ -721,6 +731,7 @@ export const CreateStudentResponse = zod.object({
   "termFee": zod.number(),
   "amountPaid": zod.number(),
   "feeBalance": zod.number(),
+  "previousFeeBalance": zod.number(),
   "generatedAt": zod.string()
 }).optional()
 })
@@ -770,6 +781,7 @@ export const GetAdmissionFormResponse = zod.object({
   "termFee": zod.number(),
   "amountPaid": zod.number(),
   "feeBalance": zod.number(),
+  "previousFeeBalance": zod.number(),
   "generatedAt": zod.string()
 })
 
@@ -798,6 +810,7 @@ export const GetStudentResponse = zod.object({
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
   "amountPaid": zod.number(),
+  "previousFeeBalance": zod.number(),
   "receiptNumber": zod.string().optional(),
   "admissionForm": zod.object({
   "id": zod.string(),
@@ -836,6 +849,7 @@ export const GetStudentResponse = zod.object({
   "termFee": zod.number(),
   "amountPaid": zod.number(),
   "feeBalance": zod.number(),
+  "previousFeeBalance": zod.number(),
   "generatedAt": zod.string()
 }).optional()
 }).and(zod.object({
@@ -862,6 +876,8 @@ export const UpdateStudentParams = zod.object({
 
 
 export const updateStudentBodyTermFeeMin = 0;
+
+export const updateStudentBodyPreviousFeeBalanceMin = 0;
 
 export const updateStudentBodyNewPasswordMin = 8;
 
@@ -900,6 +916,7 @@ export const UpdateStudentBody = zod.object({
   "declarationDate": zod.string().optional(),
   "enrollmentType": zod.enum(['day', 'boarding']).optional(),
   "termFee": zod.number().min(updateStudentBodyTermFeeMin).optional(),
+  "previousFeeBalance": zod.number().min(updateStudentBodyPreviousFeeBalanceMin).optional(),
   "status": zod.enum(['active', 'inactive']).optional(),
   "newPassword": zod.string().min(updateStudentBodyNewPasswordMin).optional()
 })
@@ -921,6 +938,7 @@ export const UpdateStudentResponse = zod.object({
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
   "amountPaid": zod.number(),
+  "previousFeeBalance": zod.number(),
   "receiptNumber": zod.string().optional(),
   "admissionForm": zod.object({
   "id": zod.string(),
@@ -959,6 +977,7 @@ export const UpdateStudentResponse = zod.object({
   "termFee": zod.number(),
   "amountPaid": zod.number(),
   "feeBalance": zod.number(),
+  "previousFeeBalance": zod.number(),
   "generatedAt": zod.string()
 }).optional()
 }).and(zod.object({
@@ -1342,6 +1361,7 @@ export const GetReportCardResponse = zod.object({
   "enrollmentType": zod.enum(['day', 'boarding']),
   "termFee": zod.number(),
   "amountPaid": zod.number(),
+  "previousFeeBalance": zod.number(),
   "receiptNumber": zod.string().optional(),
   "admissionForm": zod.object({
   "id": zod.string(),
@@ -1380,6 +1400,7 @@ export const GetReportCardResponse = zod.object({
   "termFee": zod.number(),
   "amountPaid": zod.number(),
   "feeBalance": zod.number(),
+  "previousFeeBalance": zod.number(),
   "generatedAt": zod.string()
 }).optional()
 }),

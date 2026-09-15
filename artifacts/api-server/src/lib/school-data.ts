@@ -18,7 +18,7 @@ export type SchoolUser = {
 export type SchoolStudent = {
   id: string; registrationNumber: string; name: string; firstName: string; lastName: string; middleName?: string;
   className: string; stream: string; gender: string; status: "active" | "inactive"; attendancePercentage: number;
-  feeBalance: number; avatarTone: string; dateOfBirth: string; guardianName: string; guardianPhone: string;
+  feeBalance: number; previousFeeBalance: number; avatarTone: string; dateOfBirth: string; guardianName: string; guardianPhone: string;
   guardianEmail: string; admissionDate: string; enrollmentType?: "day" | "boarding"; termFee?: number; amountPaid?: number;
 };
 export type AttendanceRecord = { id: string; studentId: string; studentName: string; registrationNumber: string; className: string; date: string; status: AttendanceStatus; arrivalTime?: string | null };
@@ -264,7 +264,7 @@ function studentRow(row: typeof students.$inferSelect): SchoolStudent {
   const result: SchoolStudent = {
     id: row.id, registrationNumber: row.registrationNumber, name: `${row.firstName}${row.middleName ? ` ${row.middleName}` : ""} ${row.lastName}`,
     firstName: row.firstName, lastName: row.lastName, className: row.className, stream: row.stream, gender: row.gender,
-    status: row.status as SchoolStudent["status"], attendancePercentage: row.attendancePercentage, feeBalance: number(row.feeBalance),
+    status: row.status as SchoolStudent["status"], attendancePercentage: row.attendancePercentage, feeBalance: number(row.feeBalance), previousFeeBalance: number(row.previousFeeBalance),
     avatarTone: row.avatarTone, dateOfBirth: row.dateOfBirth, guardianName: row.guardianName, guardianPhone: row.guardianPhone,
     guardianEmail: row.guardianEmail, admissionDate: row.admissionDate,
   };
@@ -288,7 +288,7 @@ export async function getStudent(id: string) {
 export async function updateStudent(id: string, data: {
   firstName?: string; middleName?: string; lastName?: string; dateOfBirth?: string; gender?: string;
   className?: string; stream?: string; guardianName?: string; guardianPhone?: string; guardianEmail?: string;
-  enrollmentType?: "day" | "boarding"; termFee?: number; status?: "active" | "inactive"; newPassword?: string;
+  enrollmentType?: "day" | "boarding"; termFee?: number; previousFeeBalance?: number; status?: "active" | "inactive"; newPassword?: string;
   religion?: string; placeOfBirth?: string; homeVillage?: string; nationality?: string; tribe?: string;
   guardianRelationship?: string; guardianNationalId?: string; residentialAddress?: string; guardianOccupation?: string;
   alternativeContact?: string; previousSchool?: string; lastClassCompleted?: string; medicalConditions?: string;
@@ -307,7 +307,14 @@ export async function updateStudent(id: string, data: {
   }
   if (data.termFee !== undefined) {
     updates.termFee = String(data.termFee);
-    updates.feeBalance = String(Math.max(0, data.termFee - number(current.amountPaid)));
+  }
+  if (data.previousFeeBalance !== undefined) {
+    updates.previousFeeBalance = String(data.previousFeeBalance);
+  }
+  if (data.termFee !== undefined || data.previousFeeBalance !== undefined) {
+    const termFee = data.termFee ?? number(current.termFee);
+    const previousFeeBalance = data.previousFeeBalance ?? number(current.previousFeeBalance);
+    updates.feeBalance = String(Math.max(0, previousFeeBalance + termFee - number(current.amountPaid)));
   }
   const updated = (await db.update(students).set(updates).where(and(eq(students.schoolId, schoolId), eq(students.id, id))).returning())[0];
   if (!updated) return undefined;
@@ -346,6 +353,7 @@ export async function updateStudent(id: string, data: {
         enrollmentType: updated.enrollmentType,
         termFee: number(updated.termFee),
         amountPaid: number(updated.amountPaid),
+        previousFeeBalance: number(updated.previousFeeBalance),
         feeBalance: number(updated.feeBalance),
         updatedAt: new Date().toISOString(),
       },
@@ -362,7 +370,15 @@ export async function getAdmissionForm(id: string) {
   const student = await getStudent(id);
   if (!student) return undefined;
   const row = (await db.select().from(documents).where(and(eq(documents.schoolId, schoolId), sql`${documents.data}->>'studentId' = ${student.id}`, sql`${documents.data}->>'documentType' = 'admission_form'`)).orderBy(desc(documents.createdAt)).limit(1))[0];
-  if (row) return { ...(row.data as Record<string, unknown>), id: row.id };
+  if (row) {
+    const saved = row.data as Record<string, unknown>;
+    return {
+      ...saved,
+      id: row.id,
+      previousFeeBalance: saved.previousFeeBalance === undefined ? student.previousFeeBalance : saved.previousFeeBalance,
+      feeBalance: saved.feeBalance === undefined ? student.feeBalance : saved.feeBalance,
+    };
+  }
   return {
     id: `generated-admission-${student.id}`,
     studentId: student.id,
@@ -378,6 +394,7 @@ export async function getAdmissionForm(id: string) {
     enrollmentType: student.enrollmentType || "day",
     termFee: student.termFee || 0,
     amountPaid: student.amountPaid || 0,
+    previousFeeBalance: student.previousFeeBalance,
     feeBalance: student.feeBalance,
     generatedAt: new Date().toISOString(),
   };
@@ -390,7 +407,7 @@ export async function createStudentWithPayment(data: {
   alternativeContact: string; previousSchool: string; lastClassCompleted: string; medicalConditions: string;
   specialNeeds: string; knownMedicalNote: string; emergencyContactName: string; emergencyContactPhone: string;
   emergencyContactRelationship: string; declarationAccepted: boolean; declarationDate: string;
-  initialPayment?: number; paymentMethod?: string; paymentReference?: string;
+  initialPayment?: number; previousFeeBalance?: number; paymentMethod?: string; paymentReference?: string;
 }) {
   const schoolId = await getSchoolId();
   return db.transaction(async (tx) => {
@@ -405,12 +422,14 @@ export async function createStudentWithPayment(data: {
     if (!registrationSequence) throw new Error("Unable to allocate registration number");
     const registrationNumber = `STU-${year}-${String(registrationSequence.value).padStart(4, "0")}`;
     const initialPayment = data.initialPayment ?? 0;
+    const previousFeeBalance = data.previousFeeBalance ?? 0;
     if (initialPayment < 0 || initialPayment > data.termFee) throw new Error("Opening payment cannot exceed the term fee");
+    if (previousFeeBalance < 0) throw new Error("Previous fee balance cannot be negative");
     const studentRowValue = (await tx.insert(students).values({
       schoolId, registrationNumber, firstName: data.firstName, middleName: data.middleName, lastName: data.lastName,
       className: data.className, stream: data.stream, gender: data.gender, dateOfBirth: data.dateOfBirth,
       guardianName: data.guardianName, guardianPhone: data.guardianPhone, guardianEmail: data.guardianEmail, admissionDate: isoDate(), enrollmentType: data.enrollmentType,
-      termFee: String(data.termFee), amountPaid: String(initialPayment), feeBalance: String(Math.max(0, data.termFee - initialPayment)),
+      termFee: String(data.termFee), amountPaid: String(initialPayment), previousFeeBalance: String(previousFeeBalance), feeBalance: String(Math.max(0, previousFeeBalance + data.termFee - initialPayment)),
     }).returning())[0];
     if (!studentRowValue) throw new Error("Unable to register pupil");
     let payment: Payment | undefined;
@@ -428,7 +447,7 @@ export async function createStudentWithPayment(data: {
         schoolId, studentId: studentRowValue.id, receiptNumber, amount: String(initialPayment), method: data.paymentMethod || "Cash",
         reference: data.paymentReference || "", paidOn: isoDate(), status: "completed",
       }).returning())[0];
-      payment = paymentRow ? { id: paymentRow.id, studentId: studentRowValue.id, receiptNumber, studentName: `${data.firstName}${data.middleName ? ` ${data.middleName}` : ""} ${data.lastName}`, registrationNumber, amount: initialPayment, method: paymentRow.method, date: getDateLabel(), status: "completed", balance: Math.max(0, data.termFee - initialPayment) } : undefined;
+       payment = paymentRow ? { id: paymentRow.id, studentId: studentRowValue.id, receiptNumber, studentName: `${data.firstName}${data.middleName ? ` ${data.middleName}` : ""} ${data.lastName}`, registrationNumber, amount: initialPayment, method: paymentRow.method, date: getDateLabel(), status: "completed", balance: Math.max(0, previousFeeBalance + data.termFee - initialPayment) } : undefined;
     }
     const admissionFormData = {
       documentType: "admission_form",
@@ -467,7 +486,8 @@ export async function createStudentWithPayment(data: {
       enrollmentType: data.enrollmentType,
       termFee: data.termFee,
       amountPaid: initialPayment,
-      feeBalance: Math.max(0, data.termFee - initialPayment),
+      previousFeeBalance,
+      feeBalance: Math.max(0, previousFeeBalance + data.termFee - initialPayment),
       generatedAt: new Date().toISOString(),
     };
     const admissionDocument = (await tx.insert(documents).values({ schoolId, data: admissionFormData }).returning())[0];

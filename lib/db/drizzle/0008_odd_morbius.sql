@@ -1,0 +1,2 @@
+ALTER TABLE "students" ADD COLUMN "previous_fee_balance" numeric(14, 2) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE "students" ADD CONSTRAINT "students_previous_fee_balance_nonnegative" CHECK ("students"."previous_fee_balance" >= 0);

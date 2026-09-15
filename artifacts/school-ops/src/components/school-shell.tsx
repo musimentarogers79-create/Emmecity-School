@@ -91,6 +91,7 @@ function Initials({ name, className = '' }: { name: string; className?: string }
 }
 
 const csvCell = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+const supportedPupilClasses = ['Baby Class', 'Middle Class', 'Top Class', 'Daycare', 'Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6', 'Primary 7'];
 function downloadCsv(filename: string, columns: string[], rows: unknown[][]) {
   const csv = [columns, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n');
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
@@ -110,7 +111,7 @@ function PupilExportToolbar() {
   const [paymentFilter, setPaymentFilter] = useState('all');
   const canExport = session?.user.role === 'administrator' || session?.user.role === 'super_admin';
   if (location !== '/students' || !canExport) return null;
-  const classOptions = Array.from(new Set((students.data || []).map((student) => student.className).filter(Boolean)));
+  const classOptions = Array.from(new Set([...supportedPupilClasses, ...(students.data || []).map((student) => student.className).filter(Boolean)]));
   const paymentRows = payments.data || [];
   const paidByStudent = new Map<string, number>();
   paymentRows.forEach((payment: Payment) => paidByStudent.set(payment.studentId, (paidByStudent.get(payment.studentId) || 0) + payment.amount));
@@ -118,15 +119,15 @@ function PupilExportToolbar() {
     if (classFilter !== 'All classes' && student.className !== classFilter) return false;
     const paid = paidByStudent.get(student.id) ?? student.amountPaid ?? 0;
     const termFee = student.termFee || 0;
-    if (paymentFilter === 'paid') return termFee > 0 ? paid >= termFee : paid > 0;
+    if (paymentFilter === 'paid') return student.feeBalance <= 0;
     if (paymentFilter === 'half') return termFee > 0 && paid >= termFee / 2 && paid < termFee;
     if (paymentFilter === 'unpaid') return paid <= 0;
     return true;
   });
-  const exportPupils = () => downloadCsv(`pupils-${classFilter === 'All classes' ? 'all-classes' : classFilter.replaceAll(' ', '-').toLowerCase()}-${paymentFilter}.csv`, ['Registration number', 'Pupil name', 'Class', 'Stream', 'Gender', 'Guardian', 'Guardian phone', 'Term fee (UGX)', 'Paid (UGX)', 'Balance (UGX)', 'Status'], filtered.map((student) => {
+  const exportPupils = () => downloadCsv(`pupils-${classFilter === 'All classes' ? 'all-classes' : classFilter.replaceAll(' ', '-').toLowerCase()}-${paymentFilter}.csv`, ['Registration number', 'Pupil name', 'Class', 'Stream', 'Gender', 'Guardian', 'Guardian phone', 'Previous balance (UGX)', 'Term fee (UGX)', 'Paid (UGX)', 'Total balance (UGX)', 'Status'], filtered.map((student) => {
     const paid = paidByStudent.get(student.id) ?? student.amountPaid ?? 0;
     const pupil = student as Student & { guardianName?: string; guardianPhone?: string };
-    return [pupil.registrationNumber, pupil.name, pupil.className, pupil.stream, pupil.gender, pupil.guardianName || 'N/A', pupil.guardianPhone || 'N/A', pupil.termFee, paid, pupil.feeBalance, pupil.status];
+    return [pupil.registrationNumber, pupil.name, pupil.className, pupil.stream, pupil.gender, pupil.guardianName || 'N/A', pupil.guardianPhone || 'N/A', pupil.previousFeeBalance, pupil.termFee, paid, pupil.feeBalance, pupil.status];
   }));
   return <Panel className="mb-6 border-[hsl(var(--primary)/.25)] bg-[hsl(var(--secondary)/.2)] p-4" testId="panel-pupil-downloads"><div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"><div><p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.16em] text-[hsl(var(--primary))]">Pupil downloads</p><h2 className="mt-1 font-display text-xl">Download pupil lists</h2><p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Choose all classes or one class, then filter by payment status before downloading.</p></div><div className="grid gap-3 sm:grid-cols-3 xl:min-w-[650px]"><label className="text-xs font-semibold">Class<select value={classFilter} onChange={(event) => setClassFilter(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="select-pupil-download-class"><option>All classes</option>{classOptions.map((option) => <option key={option}>{option}</option>)}</select></label><label className="text-xs font-semibold">Payment status<select value={paymentFilter} onChange={(event) => setPaymentFilter(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="select-pupil-download-payment"><option value="all">All pupils</option><option value="paid">Paid in full</option><option value="half">Paid half / part paid</option><option value="unpaid">Not paid</option></select></label><div className="flex items-end"><Button onClick={exportPupils} disabled={!filtered.length} className="w-full" testId="button-download-pupil-list"><Download className="size-4" /> Download {filtered.length}</Button></div></div></div></Panel>;
 }

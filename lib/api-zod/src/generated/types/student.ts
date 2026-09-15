@@ -26,6 +26,7 @@ export interface Student {
   enrollmentType: StudentEnrollmentType;
   termFee: number;
   amountPaid: number;
+  previousFeeBalance: number;
   receiptNumber?: string;
   admissionForm?: AdmissionForm;
 }
