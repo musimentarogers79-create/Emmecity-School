@@ -6,3 +6,4 @@
 - [Receipt-derived data](receipt-derived-data.md) — receipt responses should include stable identifiers and post-payment balances for complete browser-rendered receipts.
 - [School schema audit](school-schema-audit.md) — preserve existing domain tables; prefer additive integrity checks and indexes over destructive consolidation.
 - [Drizzle JSONB predicates](drizzle-jsonb-predicates.md) — quote JSONB string literals completely inside SQL template predicates or updates fail at runtime.
+- [Mockup build defaults](mockup-build-defaults.md) — mockup Vite builds must provide safe PORT and BASE_PATH defaults while workflows can still override them.
