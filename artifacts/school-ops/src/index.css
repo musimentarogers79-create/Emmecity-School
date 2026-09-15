@@ -395,7 +395,6 @@
 .animate-rise-in { animation: rise-in .45s cubic-bezier(.22,1,.36,1) both; }
 .animate-soft-pulse { animation: soft-pulse 1.8s ease-in-out infinite; }
 .delay-1 { animation-delay: 70ms; } .delay-2 { animation-delay: 140ms; } .delay-3 { animation-delay: 210ms; } .delay-4 { animation-delay: 280ms; }
-.app-grid { background-image: linear-gradient(to right, hsl(var(--border) / .28) 1px, transparent 1px), linear-gradient(to bottom, hsl(var(--border) / .28) 1px, transparent 1px); background-size: 26px 26px; }
 .soft-shadow { box-shadow: 0 14px 34px hsl(161 40% 16% / .07), 0 2px 5px hsl(161 40% 16% / .04); }
 .sidebar-shadow { box-shadow: 16px 0 38px hsl(161 40% 16% / .06); }
 .font-display { font-family: var(--app-font-serif); }
