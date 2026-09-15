@@ -1,0 +1,46 @@
+Update the school management system and fully wire the following features into the existing backend, database, API, authentication, and dashboards. Do not create dummy buttons or disconnected pages.
+
+1. Add “Users & Roles” Button
+
+Add a Users & Roles button to the Admin Dashboard.
+
+It must allow the Super Admin to:
+
+Create, edit, view, activate/deactivate, and delete users.
+Assign roles such as Super Admin, Administrator, Teacher, Accountant, Secretary, Librarian, Nurse, and other staff.
+Assign appropriate permissions to each role.
+Control what each user can view, create, edit, delete, or manage.
+Reset/change user passwords.
+Assign teachers/staff to their departments, classes, or responsibilities where applicable.
+Prevent unauthorized users from accessing restricted pages.
+Show user status and basic account information.
+Record important user/account actions where appropriate.
+2. Add “Subjects” Button
+
+Add a Subjects button to the dashboard.
+
+It must allow teachers to:
+
+Register/add subjects they teach.
+Select the class/stream where the subject is taught.
+Assign the subject to themselves as the teacher.
+Edit or remove subjects they are responsible for, according to their permissions.
+View all subjects assigned to their classes.
+Prevent duplicate subject assignments.
+3. Wire Everything Correctly
+
+Connect everything completely to the existing database, authentication, API, frontend, backend, dashboards, permissions, and navigation.
+
+Make sure:
+
+Data is saved permanently in the database.
+Role-based permissions actually work.
+Teachers only access functions allowed for teachers.
+Super Admin has full management access.
+Newly created users can log in immediately using their assigned credentials.
+Subjects and teacher/class assignments appear everywhere they are needed in the system, including class, teacher, timetable, examination, and academic records where applicable.
+Validate all forms and handle errors properly.
+Make the UI responsive on mobile, tablet, and desktop.
+Test every new button, page, API route, database operation, login flow, and permission before considering the task complete.
+
+Do not break any existing functionality. Reuse the existing project structure and database where possible.
