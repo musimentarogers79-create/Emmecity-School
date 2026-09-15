@@ -554,21 +554,6 @@ function UsersRolesDirectory({ createMode, onBack }: { createMode: boolean; onBa
             <h2 className="mt-1 font-display text-2xl">Users & Roles</h2>
             <p className="mt-1 max-w-2xl text-sm leading-6 text-[hsl(var(--muted-foreground))]">Search staff accounts, confirm their sign-in details, and update access without losing usernames or role assignments.</p>
           </div>
-          <button
-            type="button"
-            onClick={() => setLocation('/operations?view=people&mode=create')}
-            className="group flex min-h-14 shrink-0 items-center gap-3 rounded-2xl border border-[hsl(var(--primary)/.25)] bg-[hsl(var(--secondary)/.55)] px-4 py-3 text-left transition-all hover:-translate-y-0.5 hover:border-[hsl(var(--primary)/.55)] hover:bg-[hsl(var(--secondary))] focus-ring"
-            data-testid="button-create-new-staff"
-          >
-            <span className="flex size-9 items-center justify-center rounded-xl bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))] shadow-sm">
-              <Plus className="size-4" />
-            </span>
-            <span>
-              <span className="block text-sm font-semibold text-[hsl(var(--foreground))]">Create new staff</span>
-              <span className="mt-0.5 block text-[11px] text-[hsl(var(--muted-foreground))]">Add a username and role</span>
-            </span>
-            <ArrowRight className="ml-1 size-4 text-[hsl(var(--primary))] transition-transform group-hover:translate-x-0.5" />
-          </button>
         </div>
         <div className="mt-5 grid gap-3 sm:grid-cols-3">
           <div className="rounded-2xl bg-[hsl(var(--secondary)/.65)] p-3"><p className="text-xs text-[hsl(var(--muted-foreground))]">Staff accounts</p><p className="mt-1 font-display text-2xl">{allStaffUsers.length}</p></div>
@@ -618,15 +603,44 @@ export function OperationsPage() {
   const isAdmin = role === 'administrator' || role === 'super_admin';
   const isFinance = isAdmin || role === 'accountant' || session?.user.permissions.includes('expenses_view');
   const availableActions = query.data?.actions || [];
-  return <AppShell><PageHeader eyebrow={`${role.replace('_', ' ')} · ${view === 'expenses' ? 'Finance' : view === 'people' ? 'Administration' : 'Operations'}`} title={view === 'expenses' ? 'School Expenses' : view === 'people' ? 'Users & Roles' : 'Operations hub'} description={view === 'expenses' ? 'Record, review, approve, and manage every school expense from one dedicated workspace.' : view === 'people' ? 'Manage registered staff accounts, sign-in details, and permissions from one secure workspace.' : 'Work only with the records and actions available to your role.'} action={<Button variant="secondary" onClick={() => query.refetch()} testId="button-refresh-operations"><RefreshCcw className="size-4" /> Refresh</Button>} />{query.isError ? <Panel><ErrorState onRetry={() => query.refetch()} /></Panel> : query.isLoading ? <OperationsSkeleton /> : <div className="space-y-6">
-    {availableActions.length > 0 && <div className="flex flex-wrap gap-2">{availableActions.slice(0, 3).map((action) => <Link href={action.href} key={action.id} className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3.5 py-2 text-xs font-semibold text-[hsl(var(--primary))]" data-testid={`link-operations-action-${action.id}`}>{action.label}<ArrowRight className="size-3.5" /></Link>)}</div>}
-       <div className="grid gap-6 lg:grid-cols-[250px_1fr]"><Panel className="h-fit p-2" testId="panel-operations-switcher"><p className="px-3 pb-2 pt-2 font-mono-ui text-[10px] font-semibold uppercase tracking-[.16em] text-[hsl(var(--muted-foreground))]">Your work areas</p>{visibleViews.map(({ key, label, icon: Icon }) => { const active = key === view; const count = key === 'people' ? (query.data?.modules?.staff.length || 0) + (query.data?.modules?.parents.length || 0) : (query.data?.modules?.[key] || []).length; return <Link href={`/operations?view=${key}`} key={key} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${active ? 'bg-[hsl(var(--secondary))] font-semibold text-[hsl(var(--primary))]' : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]'}`} data-testid={`link-operation-view-${key}`}><Icon className="size-[17px]" /><span className="flex-1">{label}</span><span className="font-mono-ui text-[10px] text-[hsl(var(--muted-foreground)/.7)]">{count}</span></Link>; })}</Panel><div className="min-w-0 space-y-6">{view === 'people' ? <UsersRolesDirectory createMode={createMode} onBack={() => setLocation('/operations?view=people')} /> : <>{view === 'expenses' && <div className="grid gap-3 sm:grid-cols-3"><Panel className="p-4" testId="panel-expense-total"><p className="text-xs text-[hsl(var(--muted-foreground))]">All expenses</p><p className="mt-1 font-display text-2xl">{money(expenseTotals.total, query.data?.currencyCode || 'UGX')}</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">{rows.length} record{rows.length === 1 ? '' : 's'}</p></Panel><Panel className="p-4" testId="panel-expense-approved"><p className="text-xs text-[hsl(var(--muted-foreground))]">Approved spend</p><p className="mt-1 font-display text-2xl">{money(expenseTotals.approvedTotal, query.data?.currencyCode || 'UGX')}</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Ready for reporting</p></Panel><Panel className="p-4" testId="panel-expense-pending"><p className="text-xs text-[hsl(var(--muted-foreground))]">Awaiting approval</p><p className="mt-1 font-display text-2xl">{expenseTotals.pending}</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Review before closing the period</p></Panel></div>}{view === 'expenses' && <Panel className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between" testId="panel-expense-filter"><div><p className="text-sm font-semibold">Expense register</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Record new spending, review approvals, and keep the UGX audit trail complete.</p></div><select value={expenseFilter} onChange={(event) => setExpenseFilter(event.target.value as typeof expenseFilter)} className={`${inputClass} sm:w-48`} aria-label="Filter expenses" data-testid="select-expense-filter"><option value="all">All expenses</option><option value="pending">Awaiting approval</option><option value="approved">Approved</option></select></Panel>}<Panel className="overflow-hidden" testId={`panel-operation-view-${view}`}><div className="flex flex-col justify-between gap-3 border-b border-[hsl(var(--border))] p-5 sm:flex-row sm:items-center"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-[hsl(var(--primary))]">{query.data?.currencyCode || 'UGX'}</p><h2 className="mt-1 font-display text-2xl">{selected.label}</h2><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">{(view === 'expenses' ? expenseRows : rows).length ? `${(view === 'expenses' ? expenseRows : rows).length} record${(view === 'expenses' ? expenseRows : rows).length === 1 ? '' : 's'} available to you` : 'No records have been created yet'}</p></div>{isFinance && view === 'expenses' && <Link href="/finance" className="text-xs font-semibold text-[hsl(var(--primary))]">Open finance <ArrowRight className="ml-1 inline size-3.5" /></Link>}</div><OperationsRows view={view} rows={view === 'expenses' ? expenseRows : rows} currency={query.data?.currencyCode || 'UGX'} canApprove={isAdmin || session?.user.permissions.includes('expense_approve')} canDelete={isAdmin || session?.user.permissions.includes('expense_delete')} /></Panel>
-         {isAdmin && view === 'classes' && <CreateClassPanel />}
-        {isAdmin && view === 'subjects' && <SubjectCreatePanel />}
-          {isAdmin && !createMode && <><UserPermissionsPanel /><TeacherAssignmentPanel /></>}
-      {isFinance && view === 'expenses' && <ExpenseComposer />}
-      {isFinance && view === 'salaries' && <SalaryComposer />}
-       </>}
-    </div></div>
-  </div>}</AppShell>;
+   return (
+     <AppShell>
+       <PageHeader
+         eyebrow={`${role.replace('_', ' ')} · ${view === 'expenses' ? 'Finance' : view === 'people' ? 'Administration' : 'Operations'}`}
+         title={view === 'expenses' ? 'School Expenses' : view === 'people' ? 'Users & Roles' : 'Operations hub'}
+         description={view === 'expenses' ? 'Record, review, approve, and manage every school expense from one dedicated workspace.' : view === 'people' ? 'Manage registered staff accounts, sign-in details, and permissions from one secure workspace.' : 'Work only with the records and actions available to your role.'}
+         action={
+           <div className="flex flex-wrap gap-2">
+             {view === 'people' && isAdmin && !createMode && <Button onClick={() => setLocation('/operations?view=people&mode=create')} testId="button-create-new-staff"><Plus className="size-4" /> Create new staff</Button>}
+             <Button variant="secondary" onClick={() => query.refetch()} testId="button-refresh-operations"><RefreshCcw className="size-4" /> Refresh</Button>
+           </div>
+         }
+       />
+       {query.isError ? <Panel><ErrorState onRetry={() => query.refetch()} /></Panel> : query.isLoading ? <OperationsSkeleton /> : (
+         <div className="space-y-6">
+           {availableActions.length > 0 && <div className="flex flex-wrap gap-2">{availableActions.slice(0, 3).map((action) => <Link href={action.href} key={action.id} className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3.5 py-2 text-xs font-semibold text-[hsl(var(--primary))]" data-testid={`link-operations-action-${action.id}`}>{action.label}<ArrowRight className="size-3.5" /></Link>)}</div>}
+           {visibleViews.length > 1 && !createMode && (
+             <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+               <label htmlFor="operations-work-area" className="text-xs font-semibold text-[hsl(var(--muted-foreground))]">Work area</label>
+               <select id="operations-work-area" value={view} onChange={(event) => setLocation(`/operations?view=${event.target.value}`)} className={`${inputClass} sm:w-64`} data-testid="select-operation-view">
+                 {visibleViews.map((item) => <option key={item.key} value={item.key}>{item.label}</option>)}
+               </select>
+             </div>
+           )}
+           {view === 'people' ? <UsersRolesDirectory createMode={createMode} onBack={() => setLocation('/operations?view=people')} /> : (
+             <>
+               {view === 'expenses' && <div className="grid gap-3 sm:grid-cols-3"><Panel className="p-4" testId="panel-expense-total"><p className="text-xs text-[hsl(var(--muted-foreground))]">All expenses</p><p className="mt-1 font-display text-2xl">{money(expenseTotals.total, query.data?.currencyCode || 'UGX')}</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">{rows.length} record{rows.length === 1 ? '' : 's'}</p></Panel><Panel className="p-4" testId="panel-expense-approved"><p className="text-xs text-[hsl(var(--muted-foreground))]">Approved spend</p><p className="mt-1 font-display text-2xl">{money(expenseTotals.approvedTotal, query.data?.currencyCode || 'UGX')}</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Ready for reporting</p></Panel><Panel className="p-4" testId="panel-expense-pending"><p className="text-xs text-[hsl(var(--muted-foreground))]">Awaiting approval</p><p className="mt-1 font-display text-2xl">{expenseTotals.pending}</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Review before closing the period</p></Panel></div>}
+               {view === 'expenses' && <Panel className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between" testId="panel-expense-filter"><div><p className="text-sm font-semibold">Expense register</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Record new spending, review approvals, and keep the UGX audit trail complete.</p></div><select value={expenseFilter} onChange={(event) => setExpenseFilter(event.target.value as typeof expenseFilter)} className={`${inputClass} sm:w-48`} aria-label="Filter expenses" data-testid="select-expense-filter"><option value="all">All expenses</option><option value="pending">Awaiting approval</option><option value="approved">Approved</option></select></Panel>}
+               <Panel className="overflow-hidden" testId={`panel-operation-view-${view}`}><div className="flex flex-col justify-between gap-3 border-b border-[hsl(var(--border))] p-5 sm:flex-row sm:items-center"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-[hsl(var(--primary))]">{query.data?.currencyCode || 'UGX'}</p><h2 className="mt-1 font-display text-2xl">{selected.label}</h2><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">{(view === 'expenses' ? expenseRows : rows).length ? `${(view === 'expenses' ? expenseRows : rows).length} record${(view === 'expenses' ? expenseRows : rows).length === 1 ? '' : 's'} available to you` : 'No records have been created yet'}</p></div>{isFinance && view === 'expenses' && <Link href="/finance" className="text-xs font-semibold text-[hsl(var(--primary))]">Open finance <ArrowRight className="ml-1 inline size-3.5" /></Link>}</div><OperationsRows view={view} rows={view === 'expenses' ? expenseRows : rows} currency={query.data?.currencyCode || 'UGX'} canApprove={isAdmin || session?.user.permissions.includes('expense_approve')} canDelete={isAdmin || session?.user.permissions.includes('expense_delete')} /></Panel>
+               {isAdmin && view === 'classes' && <CreateClassPanel />}
+               {isAdmin && view === 'subjects' && <SubjectCreatePanel />}
+               {isAdmin && !createMode && <><UserPermissionsPanel /><TeacherAssignmentPanel /></>}
+               {isFinance && view === 'expenses' && <ExpenseComposer />}
+               {isFinance && view === 'salaries' && <SalaryComposer />}
+             </>
+           )}
+         </div>
+       )}
+     </AppShell>
+   );
 }
