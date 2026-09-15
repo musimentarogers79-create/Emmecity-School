@@ -25,6 +25,9 @@ const roleViews: Record<string, ViewKey[]> = {
   accountant: ['expenses', 'salaries', 'reports', 'documents', 'notifications'],
   guardian: ['assignments', 'discipline', 'medical', 'library', 'transport', 'events', 'notifications'],
   student: ['assignments', 'library', 'transport', 'events', 'notifications'],
+  secretary: ['events', 'documents', 'notifications'],
+  librarian: ['library', 'events', 'notifications'],
+  nurse: ['medical', 'events', 'notifications'],
   staff: ['events', 'documents', 'notifications'],
 };
 

@@ -221,9 +221,10 @@ router.patch("/users/:userId/permissions", async (req, res): Promise<void> => {
 router.get("/dashboard", async (req, res): Promise<void> => {
   const user = await requireUser(req);
   if (!user) { errorResponse(res, 401, "Not signed in"); return; }
-  const [allStudents, allAttendance, allPayments, settings, classesRows, subjectsRows, teacherClasses] = await Promise.all([
-    listStudents(), listAttendance(), listPayments(), getSchoolSettings(), listOperation("classes"), listOperation("subjects"), assignedClassNames(user),
+  const [allStudents, allAttendance, allPayments, settings, classesRows, subjectsRows, usersRows, teacherClasses] = await Promise.all([
+    listStudents(), listAttendance(), listPayments(), getSchoolSettings(), listOperation("classes"), listOperation("subjects"), listUsers(), assignedClassNames(user),
   ]);
+  const visibleClasses = user.role === "teacher" ? classesRows.filter((item) => matchesAssignedClass(teacherClasses, String(item.name), String(item.stream ?? ""))) : classesRows;
   const visibleStudents = user.studentId ? allStudents.filter((item) => item.id === user.studentId) : user.role === "teacher" ? allStudents.filter((item) => matchesAssignedClass(teacherClasses, item.className, item.stream)) : allStudents;
   const visibleAttendance = user.studentId ? allAttendance.filter((item) => item.studentId === user.studentId) : user.role === "teacher" ? allAttendance.filter((item) => matchesAssignedClass(teacherClasses, item.className)) : allAttendance;
   const present = visibleAttendance.filter((item) => item.status === "present").length;
@@ -237,11 +238,13 @@ router.get("/dashboard", async (req, res): Promise<void> => {
       absent: Math.round((dayRecords.filter((item) => item.status === "absent").length / total) * 100),
     };
   });
+  const teacherCount = usersRows.filter((item) => item.role === "teacher").length;
+  const staffCount = usersRows.filter((item) => item.userType === "staff" && !administratorRoles.includes(item.role)).length;
   const payload = {
     role: user.role, greeting: roleGreeting(user.name),
-    summary: { students: visibleStudents.length, teachers: classesRows.length, staff: 0, classes: classesRows.length, attendance: visibleAttendance.length ? Math.round((present / visibleAttendance.length) * 100) : 0, absent: visibleAttendance.filter((item) => item.status === "absent").length, feesCollected: isAdministrator(user) || user.role === "accountant" ? allPayments.reduce((sum, item) => sum + item.amount, 0) : 0, outstandingFees: visibleStudents.reduce((sum, item) => sum + item.feeBalance, 0) },
+    summary: { students: visibleStudents.length, teachers: teacherCount, staff: staffCount, classes: visibleClasses.length, attendance: visibleAttendance.length ? Math.round((present / visibleAttendance.length) * 100) : 0, absent: visibleAttendance.filter((item) => item.status === "absent").length, feesCollected: isAdministrator(user) || user.role === "accountant" ? allPayments.reduce((sum, item) => sum + item.amount, 0) : 0, outstandingFees: visibleStudents.reduce((sum, item) => sum + item.feeBalance, 0) },
     attendanceTrend, performance: [], recentAdmissions: visibleStudents.slice(0, 4), upcomingEvents: [], quickActions: ["Register pupil", "Take attendance", "Send announcement", "View reports"],
-    assignedClasses: user.role === "teacher" ? teacherClasses : undefined, assignedSubjects: user.role === "teacher" ? subjectsRows.filter((item) => item.teacherId === user.id).map((item) => String(item.name)) : undefined,
+    assignedClasses: user.role === "teacher" ? teacherClasses : undefined, assignedSubjects: user.role === "teacher" ? subjectsRows.filter((item) => item.teacherId === user.id || matchesAssignedClass(teacherClasses, String(item.className), String(item.stream ?? ""))).map((item) => String(item.name)) : undefined,
     children: user.role === "guardian" ? visibleStudents : undefined, feeBalance: user.role === "guardian" || user.role === "student" ? visibleStudents[0]?.feeBalance ?? 0 : undefined, latestResult: user.role === "guardian" || user.role === "student" ? 0 : undefined,
     roleActions: roleActions(user.role, user.studentId), currencyCode: settings.currencyCode, currencySymbol: settings.currencySymbol,
   };
@@ -274,6 +277,9 @@ router.post("/students", async (req, res): Promise<void> => {
 router.get("/students/:studentId/admission-form", async (req, res): Promise<void> => {
   const user = await requireUser(req);
   if (!user) { errorResponse(res, 401, "Not signed in"); return; }
+  const student = await getStudent(req.params.studentId);
+  if (!student) { errorResponse(res, 404, "Admission form not found."); return; }
+  if (!isAdministrator(user) && user.studentId !== student.id) { errorResponse(res, 403, "You do not have access to this admission form."); return; }
   const form = await getAdmissionForm(req.params.studentId);
   if (!form) { errorResponse(res, 404, "Admission form not found."); return; }
   res.json(GetAdmissionFormResponse.parse(form));
@@ -443,7 +449,7 @@ router.get("/academics/timetable", async (req, res): Promise<void> => {
   const rows = await listOperation("timetable");
   const student = user.studentId ? await getStudent(user.studentId) : undefined;
   const assigned = await assignedClassNames(user);
-  const visible = user.role === "teacher" ? rows.filter((item) => matchesAssignedClass(assigned, String(item.className)) && item.teacher === user.name) : student ? rows.filter((item) => item.className === `${student.className} ${student.stream}`) : isAdministrator(user) || user.role === "staff" || user.role === "accountant" ? rows : [];
+  const visible = user.role === "teacher" ? rows.filter((item) => matchesAssignedClass(assigned, String(item.className))) : student ? rows.filter((item) => item.className === `${student.className} ${student.stream}`) : isAdministrator(user) || user.role === "staff" || user.role === "accountant" ? rows : [];
   res.json(GetTimetableResponse.parse(visible));
 });
 router.post("/academics/timetable", async (req, res): Promise<void> => {
@@ -451,7 +457,16 @@ router.post("/academics/timetable", async (req, res): Promise<void> => {
   if (!isAdministrator(user)) { errorResponse(res, 403, "Only administrators can create timetable entries."); return; }
   const parsed = CreateTimetableEntryBody.safeParse(req.body);
   if (!parsed.success) { errorResponse(res, 400, "Complete the day, time, subject, teacher, class, and room."); return; }
-  const item = await createOperation("timetable", { ...parsed.data, accent: parsed.data.accent || "hsl(var(--primary))" });
+  const classesRows = await listOperation("classes");
+  const classRow = classesRows.find((item) => classAssignmentKey(String(item.name), String(item.stream ?? "")) === parsed.data.className.trim());
+  if (!classRow) { errorResponse(res, 400, "Choose an existing class and stream."); return; }
+  const subjectRows = await listOperation("subjects");
+  if (!subjectRows.some((item) => String(item.name).trim().toLowerCase() === parsed.data.subject.trim().toLowerCase() && classAssignmentKey(String(item.className), String(item.stream ?? "")) === parsed.data.className.trim())) {
+    errorResponse(res, 400, "Choose a subject assigned to this class."); return;
+  }
+  const teacher = (await listUsers()).find((item) => item.role === "teacher" && item.name.trim().toLowerCase() === parsed.data.teacher.trim().toLowerCase());
+  if (!teacher) { errorResponse(res, 400, "Choose a registered teacher."); return; }
+  const item = await createOperation("timetable", { ...parsed.data, className: classAssignmentKey(String(classRow.name), String(classRow.stream ?? "")), teacher: teacher.name, accent: parsed.data.accent || "hsl(var(--primary))" });
   res.status(201).json(CreateTimetableEntryResponse.parse(item));
 });
 router.get("/academics/report-cards/:studentId", async (req, res): Promise<void> => {
@@ -602,9 +617,9 @@ router.get("/operations", async (req, res): Promise<void> => {
     classes: visibleClasses, subjects: isAdministrator(user) ? data.subjects : data.subjects.filter((item) => matchesAssignedClass(assigned, String(item.className))), assignments: isAdministrator(user) ? data.assignments : data.assignments.filter((item) => matchesAssignedClass(assigned, String(item.className))),
     staff: isAdministrator(user) ? data.staff : [], parents: isAdministrator(user) ? data.parents : [],
     expenses: isAdministrator(user) || user.role === "accountant" || hasPermission(user, "expenses_view") ? data.expenses : [], salaries: isAdministrator(user) || user.role === "accountant" ? data.salaryPayments : [],
-    discipline: data.discipline.filter((item) => studentIds.has(String(item.studentId))), medical: data.medical.filter((item) => studentIds.has(String(item.studentId))),
-    library: data.library, transport: data.transport, inventory: isAdministrator(user) || user.role === "staff" ? data.inventory : [], events: data.events,
-    documents: isAdministrator(user) || user.role === "staff" ? documentRows : [], reports: isAdministrator(user) || user.role === "accountant" ? data.reports : [], notifications: data.notifications,
+     discipline: data.discipline.filter((item) => studentIds.has(String(item.studentId))), medical: isAdministrator(user) || user.role === "nurse" ? data.medical : data.medical.filter((item) => studentIds.has(String(item.studentId))),
+     library: data.library, transport: data.transport, inventory: isAdministrator(user) || user.role === "staff" || user.role === "librarian" ? data.inventory : [], events: data.events,
+     documents: isAdministrator(user) || user.role === "staff" || user.role === "secretary" ? documentRows : [], reports: isAdministrator(user) || user.role === "accountant" ? data.reports : [], notifications: data.notifications,
   };
   res.json(GetOperationsResponse.parse({ role: user.role, currencyCode: settings.currencyCode, currencyName: settings.currencyName, currencySymbol: settings.currencySymbol, actions: roleActions(user.role, user.studentId), modules }));
 });

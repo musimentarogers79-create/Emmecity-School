@@ -76,6 +76,27 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/operations?view=transport', label: 'Transport', icon: ReceiptText },
     { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
   ],
+  secretary: [
+    { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
+    { href: '/operations?view=documents', label: 'Documents', icon: FileBarChart },
+    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
+    { href: '/timetable', label: 'Timetable', icon: BookOpen },
+  ],
+  librarian: [
+    { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/operations?view=library', label: 'Library', icon: BookOpen },
+    { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
+    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
+    { href: '/timetable', label: 'Timetable', icon: BookOpen },
+  ],
+  nurse: [
+    { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/operations?view=medical', label: 'Medical', icon: ShieldCheck },
+    { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
+    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
+    { href: '/timetable', label: 'Timetable', icon: BookOpen },
+  ],
   staff: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
