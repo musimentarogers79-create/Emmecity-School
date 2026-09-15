@@ -455,7 +455,7 @@ router.post("/academics/report-cards/:studentId", async (req, res): Promise<void
 
 router.post("/operations/subjects", async (req, res): Promise<void> => {
   const user = await requireUser(req);
-  if (!isAdministrator(user)) { errorResponse(res, 403, "Only administrators can register subjects."); return; }
+  if (!isAdministrator(user)) { errorResponse(res, 403, "Only administrators can create subjects."); return; }
   const name = String(req.body?.name || "").trim();
   const className = String(req.body?.className || "").trim();
   const teacherName = String(req.body?.teacherName || "").trim();
