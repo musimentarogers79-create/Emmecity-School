@@ -23,8 +23,8 @@ function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarati
   onDeclarationChange: (accepted: boolean) => void;
 }) {
   return <div className="space-y-5">
-    <div className="rounded-2xl border border-[hsl(var(--border))] p-4">
-      <p className="mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Pupil details</p>
+    <div className="admission-section rounded-2xl border border-[hsl(var(--border))] p-4">
+      <p className="admission-section-heading mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Pupil details</p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <Field label="Religion" value={String(form.religion || '')} onChange={(value) => update('religion', value)} placeholder="Religion" />
         <Field label="Place of birth" value={String(form.placeOfBirth || '')} onChange={(value) => update('placeOfBirth', value)} placeholder="Town, district, or country" />
@@ -33,8 +33,8 @@ function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarati
         <Field label="Tribe" value={String(form.tribe || '')} onChange={(value) => update('tribe', value)} placeholder="Tribe" />
       </div>
     </div>
-    <div className="rounded-2xl border border-[hsl(var(--border))] p-4">
-      <p className="mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Parent or guardian details</p>
+    <div className="admission-section rounded-2xl border border-[hsl(var(--border))] p-4">
+      <p className="admission-section-heading mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Parent or guardian details</p>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Email address" type="email" value={String(form.guardianEmail || '')} onChange={(value) => update('guardianEmail', value)} placeholder="guardian@example.com" />
         <Field label="Relationship to pupil" value={String(form.guardianRelationship || '')} onChange={(value) => update('guardianRelationship', value)} placeholder="Parent, aunt, uncle..." />
@@ -44,8 +44,8 @@ function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarati
         <Field label="Alternative contact" value={String(form.alternativeContact || '')} onChange={(value) => update('alternativeContact', value)} placeholder="Name and phone" />
       </div>
     </div>
-    <div className="rounded-2xl border border-[hsl(var(--border))] p-4">
-      <p className="mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Previous school and health information</p>
+    <div className="admission-section rounded-2xl border border-[hsl(var(--border))] p-4">
+      <p className="admission-section-heading mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Previous school and health information</p>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Previous school" value={String(form.previousSchool || '')} onChange={(value) => update('previousSchool', value)} placeholder="Write None if not applicable" />
         <Field label="Last class completed" value={String(form.lastClassCompleted || '')} onChange={(value) => update('lastClassCompleted', value)} placeholder="For example, Primary 2" />
@@ -54,16 +54,16 @@ function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarati
         <Field label="Known medical notes" value={String(form.knownMedicalNote || '')} onChange={(value) => update('knownMedicalNote', value)} placeholder="Medication or other notes" />
       </div>
     </div>
-    <div className="rounded-2xl border border-[hsl(var(--border))] p-4">
-      <p className="mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Emergency contact</p>
+    <div className="admission-section rounded-2xl border border-[hsl(var(--border))] p-4">
+      <p className="admission-section-heading mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Emergency contact</p>
       <div className="grid gap-4 sm:grid-cols-3">
         <Field label="Emergency contact name" value={String(form.emergencyContactName || '')} onChange={(value) => update('emergencyContactName', value)} placeholder="Full name" />
         <Field label="Emergency contact phone" value={String(form.emergencyContactPhone || '')} onChange={(value) => update('emergencyContactPhone', value)} placeholder="+256 7..." />
         <Field label="Emergency contact relationship" value={String(form.emergencyContactRelationship || '')} onChange={(value) => update('emergencyContactRelationship', value)} placeholder="Relationship" />
       </div>
     </div>
-    <div className="rounded-2xl bg-[hsl(var(--secondary)/.6)] p-4">
-      <p className="text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Declaration</p>
+    <div className="admission-section rounded-2xl bg-[hsl(var(--secondary)/.6)] p-4">
+      <p className="admission-section-heading text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Declaration</p>
       <p className="mt-2 text-sm leading-6 text-[hsl(var(--muted-foreground))]">I confirm that the information supplied on this admission form is correct and that I will notify the school of any changes.</p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
         <Field label="Declaration date" type="date" value={String(form.declarationDate || '')} onChange={(value) => update('declarationDate', value)} />
@@ -77,7 +77,8 @@ function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarati
 }
 
 function Modal({ title, description, onClose, children, wide = false }: { title: string; description?: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
-  return <div className="fixed inset-0 z-50 flex items-end justify-center bg-[hsl(var(--foreground)/.35)] p-0 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" data-testid="modal-dialog"><div className={`max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-2xl sm:rounded-3xl ${wide ? 'max-w-2xl' : 'max-w-lg'}`}><div className="mb-6 flex items-start justify-between gap-4"><div><h2 className="font-display text-2xl">{title}</h2>{description && <p className="mt-1 text-sm leading-5 text-[hsl(var(--muted-foreground))]">{description}</p>}</div><button onClick={onClose} className="rounded-lg p-2 hover:bg-[hsl(var(--muted))]" data-testid="button-close-modal"><X className="size-4" /></button></div>{children}</div></div>;
+  const modalTone = title === 'Register a student' ? ' admission-registration-form' : '';
+  return <div className="fixed inset-0 z-50 flex items-end justify-center bg-[hsl(var(--foreground)/.35)] p-0 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" data-testid="modal-dialog"><div className={`max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-2xl sm:rounded-3xl${modalTone} ${wide ? 'max-w-2xl' : 'max-w-lg'}`}><div className="mb-6 flex items-start justify-between gap-4"><div><h2 className="font-display text-2xl">{title}</h2>{description && <p className="mt-1 text-sm leading-5 text-[hsl(var(--muted-foreground))]">{description}</p>}</div><button onClick={onClose} className="rounded-lg p-2 hover:bg-[hsl(var(--muted))]" data-testid="button-close-modal"><X className="size-4" /></button></div>{children}</div></div>;
 }
 
 function Field({ label, value, onChange, placeholder, type = 'text', required = true, autoComplete }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; type?: string; required?: boolean; autoComplete?: string }) {
@@ -286,7 +287,11 @@ function addPrintLogo(printWindow: Window) {
   logo.style.cssText = 'width:84px;height:86px;object-fit:contain;float:right;margin-left:20px';
   header.prepend(logo);
 }
-const htmlEscape = (value: unknown) => String(value ?? '—').replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character] || character);
+const admissionValue = (value: unknown) => {
+  const text = String(value ?? '').trim();
+  return text || 'N/A';
+};
+const htmlEscape = (value: unknown) => admissionValue(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character] || character);
 const schoolPrintHeader = (subtitle: string) => `<header><img src="/school-logo.jpg" alt="${htmlEscape(SCHOOL_NAME)} crest"><div><h1>${htmlEscape(SCHOOL_NAME)}</h1><p>${htmlEscape(SCHOOL_POSTAL_ADDRESS)} · Tel: ${htmlEscape(SCHOOL_PHONE)}</p><p>${htmlEscape(SCHOOL_LOCATION)}</p><strong>${htmlEscape(subtitle)}</strong></div></header>`;
 function receiptPrintPage(item: Payment, history: Payment[] = []) {
   const printWindow = window.open('', '_blank');
@@ -303,41 +308,42 @@ async function admissionFormPdf(form: AdmissionForm) {
     'OFFICIAL PUPIL ADMISSION FORM',
     `Registration number: ${form.registrationNumber}`,
     `Pupil: ${form.pupilName}`,
-    `Date of birth: ${form.dateOfBirth}`,
-    `Gender: ${form.gender}`,
-    `Class: ${form.className}${form.stream ? ` · ${form.stream}` : ''}`,
-    `Religion: ${form.religion || '—'}`,
-    `Place of birth: ${form.placeOfBirth || '—'}`,
-    `Home village: ${form.homeVillage || '—'}`,
-    `Nationality: ${form.nationality || '—'}`,
-    `Tribe: ${form.tribe || '—'}`,
-    `Guardian: ${form.guardianName}`,
-    `Guardian contact: ${form.guardianPhone}`,
-    `Guardian email: ${form.guardianEmail || '—'}`,
-    `Relationship: ${form.guardianRelationship || '—'}`,
-    `National ID: ${form.guardianNationalId || '—'}`,
-    `Residential address: ${form.residentialAddress || '—'}`,
-    `Occupation: ${form.guardianOccupation || '—'}`,
-    `Alternative contact: ${form.alternativeContact || '—'}`,
-    `Previous school: ${form.previousSchool || '—'}`,
-    `Last class completed: ${form.lastClassCompleted || '—'}`,
-    `Medical conditions/allergies: ${form.medicalConditions || '—'}`,
-    `Special needs/disabilities: ${form.specialNeeds || '—'}`,
-    `Known medical notes: ${form.knownMedicalNote || '—'}`,
-    `Emergency contact: ${form.emergencyContactName || '—'} · ${form.emergencyContactPhone || '—'} · ${form.emergencyContactRelationship || '—'}`,
-    `Admission date: ${form.admissionDate}`,
-    `Pupil type: ${form.enrollmentType}`,
+    `Date of birth: ${admissionValue(form.dateOfBirth)}`,
+    `Gender: ${admissionValue(form.gender)}`,
+    `Class: ${admissionValue(form.className)}${form.stream ? ` · ${form.stream}` : ''}`,
+    'Passport photo holder: 3 cm x 4 cm',
+    `Religion: ${admissionValue(form.religion)}`,
+    `Place of birth: ${admissionValue(form.placeOfBirth)}`,
+    `Home village: ${admissionValue(form.homeVillage)}`,
+    `Nationality: ${admissionValue(form.nationality)}`,
+    `Tribe: ${admissionValue(form.tribe)}`,
+    `Guardian: ${admissionValue(form.guardianName)}`,
+    `Guardian contact: ${admissionValue(form.guardianPhone)}`,
+    `Guardian email: ${admissionValue(form.guardianEmail)}`,
+    `Relationship: ${admissionValue(form.guardianRelationship)}`,
+    `National ID: ${admissionValue(form.guardianNationalId)}`,
+    `Residential address: ${admissionValue(form.residentialAddress)}`,
+    `Occupation: ${admissionValue(form.guardianOccupation)}`,
+    `Alternative contact: ${admissionValue(form.alternativeContact)}`,
+    `Previous school: ${admissionValue(form.previousSchool)}`,
+    `Last class completed: ${admissionValue(form.lastClassCompleted)}`,
+    `Medical conditions/allergies: ${admissionValue(form.medicalConditions)}`,
+    `Special needs/disabilities: ${admissionValue(form.specialNeeds)}`,
+    `Known medical notes: ${admissionValue(form.knownMedicalNote)}`,
+    `Emergency contact: ${admissionValue(form.emergencyContactName)} · ${admissionValue(form.emergencyContactPhone)} · ${admissionValue(form.emergencyContactRelationship)}`,
+    `Admission date: ${admissionValue(form.admissionDate)}`,
+    `Pupil type: ${admissionValue(form.enrollmentType)}`,
     `Term fee: ${money(form.termFee)}`,
     `Amount paid: ${money(form.amountPaid)}`,
     `Fee balance: ${money(form.feeBalance)}`,
-    `Declaration accepted: ${form.declarationAccepted ? 'Yes' : 'No'} · ${form.declarationDate || '—'}`,
+    `Declaration accepted: ${form.declarationAccepted ? 'Yes' : 'No'} · ${admissionValue(form.declarationDate)}`,
     'This is an official EMMECTY school admission record.',
   ]);
 }
 
 function admissionPrintContent(form: AdmissionForm) {
-  const field = (label: string, value: unknown) => `<div><dt>${htmlEscape(label)}</dt><dd>${htmlEscape(value || '—')}</dd></div>`;
-  return `<div class="section"><h2>Pupil information</h2><dl>${field('Pupil full name', form.pupilName)}${field('Registration number', form.registrationNumber)}${field('Date of birth', form.dateOfBirth)}${field('Gender', form.gender)}${field('Religion', form.religion)}${field('Place of birth', form.placeOfBirth)}${field('Home village', form.homeVillage)}${field('Nationality', form.nationality)}${field('Tribe', form.tribe)}${field('Class applying for', `${form.className}${form.stream ? ` · ${form.stream}` : ''}`)}${field('Day or boarding', form.enrollmentType)}</dl></div><div class="section"><h2>Parent or guardian information</h2><dl>${field('Name', form.guardianName)}${field('Relationship', form.guardianRelationship)}${field('Phone number', form.guardianPhone)}${field('Email address', form.guardianEmail)}${field('National ID number', form.guardianNationalId)}${field('Residential address', form.residentialAddress)}${field('Occupation', form.guardianOccupation)}${field('Alternative contact', form.alternativeContact)}</dl></div><div class="section"><h2>Previous school and health</h2><dl>${field('Previous school', form.previousSchool)}${field('Last class completed', form.lastClassCompleted)}${field('Medical conditions or allergies', form.medicalConditions)}${field('Special needs or disabilities', form.specialNeeds)}${field('Known medical notes', form.knownMedicalNote)}</dl></div><div class="section"><h2>Emergency contact</h2><dl>${field('Name', form.emergencyContactName)}${field('Phone number', form.emergencyContactPhone)}${field('Relationship', form.emergencyContactRelationship)}</dl></div><div class="section"><h2>Fees and declaration</h2><dl>${field('Admission date', form.admissionDate)}${field('Termly fee', money(form.termFee))}${field('Opening payment', money(form.amountPaid))}${field('Fee balance', money(form.feeBalance))}${field('Declaration accepted', form.declarationAccepted ? 'Yes' : 'No')}${field('Declaration date', form.declarationDate)}</dl><p class="declaration">I confirm that the information supplied on this admission form is correct.</p></div>`;
+  const field = (label: string, value: unknown) => `<div><dt>${htmlEscape(label)}</dt><dd>${htmlEscape(value)}</dd></div>`;
+  return `<style>.admission-identity{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin:0 0 22px;padding:14px 0 18px;border-bottom:1px solid #d9e2dc}.identity-label{margin:0;color:#1d7056;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}.identity-note{max-width:470px;margin:7px 0 0;color:#63756e;font-size:12px}.photo-box{width:3cm;height:4cm;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1.5px solid #1d7056;background:#fffdf4;color:#1d7056;font-size:10px;font-weight:700;letter-spacing:.1em;text-align:center}.photo-box span{display:block;margin-top:8px;color:#63756e;font-size:8px;font-weight:400;letter-spacing:0}.section h2{position:relative;padding:0 0 10px;border-bottom:3px solid #1d7056;color:#1d7056}.section h2::after{content:"";position:absolute;left:0;right:0;bottom:3px;border-bottom:1px solid #e7b84b}.section dd{min-height:20px;padding:0 2px 5px;border-bottom:1px solid #1d7056}@media print{.admission-identity{break-inside:avoid}.section h2{break-after:avoid}}</style><div class="admission-identity"><div><p class="identity-label">Official pupil record</p><p class="identity-note">Please attach a recent passport-size photograph in the holder provided.</p></div><div class="photo-box">PASSPORT<br>PHOTO<span>3 cm × 4 cm</span></div></div><div class="section"><h2>Pupil information</h2><dl>${field('Pupil full name', form.pupilName)}${field('Registration number', form.registrationNumber)}${field('Date of birth', form.dateOfBirth)}${field('Gender', form.gender)}${field('Religion', form.religion)}${field('Place of birth', form.placeOfBirth)}${field('Home village', form.homeVillage)}${field('Nationality', form.nationality)}${field('Tribe', form.tribe)}${field('Class applying for', `${form.className}${form.stream ? ` · ${form.stream}` : ''}`)}${field('Day or boarding', form.enrollmentType)}</dl></div><div class="section"><h2>Parent or guardian information</h2><dl>${field('Name', form.guardianName)}${field('Relationship', form.guardianRelationship)}${field('Phone number', form.guardianPhone)}${field('Email address', form.guardianEmail)}${field('National ID number', form.guardianNationalId)}${field('Residential address', form.residentialAddress)}${field('Occupation', form.guardianOccupation)}${field('Alternative contact', form.alternativeContact)}</dl></div><div class="section"><h2>Previous school and health</h2><dl>${field('Previous school', form.previousSchool)}${field('Last class completed', form.lastClassCompleted)}${field('Medical conditions or allergies', form.medicalConditions)}${field('Special needs or disabilities', form.specialNeeds)}${field('Known medical notes', form.knownMedicalNote)}</dl></div><div class="section"><h2>Emergency contact</h2><dl>${field('Name', form.emergencyContactName)}${field('Phone number', form.emergencyContactPhone)}${field('Relationship', form.emergencyContactRelationship)}</dl></div><div class="section"><h2>Fees and declaration</h2><dl>${field('Admission date', form.admissionDate)}${field('Termly fee', money(form.termFee))}${field('Opening payment', money(form.amountPaid))}${field('Fee balance', money(form.feeBalance))}${field('Declaration accepted', form.declarationAccepted ? 'Yes' : 'No')}${field('Declaration date', form.declarationDate)}</dl><p class="declaration">I confirm that the information supplied on this admission form is correct.</p></div>`;
 }
 
 async function downloadAdmissionForm(form: AdmissionForm) {
