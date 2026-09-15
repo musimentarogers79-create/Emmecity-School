@@ -1,8 +1,9 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
-import { getGetCurrentUserQueryKey, useGetCurrentUser, useLogout } from '@workspace/api-client-react';
-import { BookOpen, CalendarDays, CircleDollarSign, ClipboardList, FileBarChart, LayoutDashboard, LogOut, Menu, Megaphone, PanelLeftClose, PanelLeftOpen, ReceiptText, Search, Settings, ShieldCheck, UserRound, Users, X } from 'lucide-react';
+import type { AttendanceRecord, OperationExpense, Payment, Student } from '@workspace/api-client-react';
+import { getGetAttendanceQueryKey, getGetCurrentUserQueryKey, getGetOperationsQueryKey, getListPaymentsQueryKey, getListStudentsQueryKey, useGetAttendance, useGetCurrentUser, useGetOperations, useListPayments, useListStudents, useLogout } from '@workspace/api-client-react';
+import { BookOpen, CalendarDays, CircleDollarSign, ClipboardList, Download, FileBarChart, LayoutDashboard, LogOut, Menu, Megaphone, PanelLeftClose, PanelLeftOpen, ReceiptText, Search, Settings, ShieldCheck, UserRound, Users, X } from 'lucide-react';
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
 export const SCHOOL_NAME = 'EMMECTY NURSERY & PRIMARY SCHOOL';
@@ -87,6 +88,83 @@ const roleNavigation: Record<string, NavItem[]> = {
 function Initials({ name, className = '' }: { name: string; className?: string }) {
   const initials = name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase() || 'EN';
   return <span className={`inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--accent))] text-xs font-bold text-[hsl(var(--accent-foreground))] ${className}`} data-testid="avatar-user">{initials}</span>;
+}
+
+const csvCell = (value: unknown) => `"${String(value ?? '').replaceAll('"', '""')}"`;
+function downloadCsv(filename: string, columns: string[], rows: unknown[][]) {
+  const csv = [columns, ...rows].map((row) => row.map(csvCell).join(',')).join('\r\n');
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = filename;
+  anchor.click();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function PupilExportToolbar() {
+  const [location] = useLocation();
+  const { data: session } = useGetCurrentUser();
+  const students = useListStudents({}, { query: { enabled: location === '/students', queryKey: getListStudentsQueryKey({}) } });
+  const payments = useListPayments({ query: { enabled: location === '/students', queryKey: getListPaymentsQueryKey() } });
+  const [classFilter, setClassFilter] = useState('All classes');
+  const [paymentFilter, setPaymentFilter] = useState('all');
+  const canExport = session?.user.role === 'administrator' || session?.user.role === 'super_admin';
+  if (location !== '/students' || !canExport) return null;
+  const classOptions = Array.from(new Set((students.data || []).map((student) => student.className).filter(Boolean)));
+  const paymentRows = payments.data || [];
+  const paidByStudent = new Map<string, number>();
+  paymentRows.forEach((payment: Payment) => paidByStudent.set(payment.studentId, (paidByStudent.get(payment.studentId) || 0) + payment.amount));
+  const filtered = (students.data || []).filter((student: Student) => {
+    if (classFilter !== 'All classes' && student.className !== classFilter) return false;
+    const paid = paidByStudent.get(student.id) ?? student.amountPaid ?? 0;
+    const termFee = student.termFee || 0;
+    if (paymentFilter === 'paid') return termFee > 0 ? paid >= termFee : paid > 0;
+    if (paymentFilter === 'half') return termFee > 0 && paid >= termFee / 2 && paid < termFee;
+    if (paymentFilter === 'unpaid') return paid <= 0;
+    return true;
+  });
+  const exportPupils = () => downloadCsv(`pupils-${classFilter === 'All classes' ? 'all-classes' : classFilter.replaceAll(' ', '-').toLowerCase()}-${paymentFilter}.csv`, ['Registration number', 'Pupil name', 'Class', 'Stream', 'Gender', 'Guardian', 'Guardian phone', 'Term fee (UGX)', 'Paid (UGX)', 'Balance (UGX)', 'Status'], filtered.map((student) => {
+    const paid = paidByStudent.get(student.id) ?? student.amountPaid ?? 0;
+    const pupil = student as Student & { guardianName?: string; guardianPhone?: string };
+    return [pupil.registrationNumber, pupil.name, pupil.className, pupil.stream, pupil.gender, pupil.guardianName || 'N/A', pupil.guardianPhone || 'N/A', pupil.termFee, paid, pupil.feeBalance, pupil.status];
+  }));
+  return <Panel className="mb-6 border-[hsl(var(--primary)/.25)] bg-[hsl(var(--secondary)/.2)] p-4" testId="panel-pupil-downloads"><div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"><div><p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.16em] text-[hsl(var(--primary))]">Pupil downloads</p><h2 className="mt-1 font-display text-xl">Download pupil lists</h2><p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Choose all classes or one class, then filter by payment status before downloading.</p></div><div className="grid gap-3 sm:grid-cols-3 xl:min-w-[650px]"><label className="text-xs font-semibold">Class<select value={classFilter} onChange={(event) => setClassFilter(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="select-pupil-download-class"><option>All classes</option>{classOptions.map((option) => <option key={option}>{option}</option>)}</select></label><label className="text-xs font-semibold">Payment status<select value={paymentFilter} onChange={(event) => setPaymentFilter(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="select-pupil-download-payment"><option value="all">All pupils</option><option value="paid">Paid in full</option><option value="half">Paid half / part paid</option><option value="unpaid">Not paid</option></select></label><div className="flex items-end"><Button onClick={exportPupils} disabled={!filtered.length} className="w-full" testId="button-download-pupil-list"><Download className="size-4" /> Download {filtered.length}</Button></div></div></div></Panel>;
+}
+
+function AttendanceRegisterHistory() {
+  const [location] = useLocation();
+  const { data: session } = useGetCurrentUser();
+  const attendance = useGetAttendance({}, { query: { enabled: location.split('?')[0] === '/attendance', queryKey: getGetAttendanceQueryKey({}) } });
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [classFilter, setClassFilter] = useState('All classes');
+  if (location.split('?')[0] !== '/attendance' || !session?.user) return null;
+  const records = attendance.data || [];
+  const classOptions = Array.from(new Set(records.map((record) => record.className))).sort();
+  const filteredRecords = records.filter((record) => (!fromDate || record.date >= fromDate) && (!toDate || record.date <= toDate) && (classFilter === 'All classes' || record.className === classFilter));
+  const groups = Array.from(filteredRecords.reduce((map, record) => {
+    const key = `${record.date}|${record.className}`;
+    const current = map.get(key) || [];
+    current.push(record);
+    map.set(key, current);
+    return map;
+  }, new Map<string, AttendanceRecord[]>()).entries()).sort(([a], [b]) => b.localeCompare(a));
+  const exportGroup = (group: AttendanceRecord[], filename: string) => downloadCsv(filename, ['Date', 'Class', 'Registration number', 'Pupil name', 'Status', 'Arrival time'], group.map((record) => [record.date, record.className, record.registrationNumber, record.studentName, record.status, record.arrivalTime || 'N/A']));
+  const exportRange = () => exportGroup(filteredRecords, `attendance-${fromDate || 'all'}-to-${toDate || 'all'}.csv`);
+  return <Panel className="mb-6 border-[hsl(var(--primary)/.25)] bg-[hsl(var(--secondary)/.14)] p-4" testId="panel-saved-attendance-registers"><div className="flex flex-col gap-4"><div className="flex flex-col justify-between gap-3 md:flex-row md:items-start"><div><p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.16em] text-[hsl(var(--primary))]">Saved attendance lists</p><h2 className="mt-1 font-display text-xl">Attendance registers</h2><p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Registers are grouped by the date and class they were created for. Open one to edit it or download it.</p></div><Button variant="secondary" onClick={exportRange} disabled={!filteredRecords.length} testId="button-download-attendance-range"><Download className="size-4" /> Download selection</Button></div><div className="grid gap-3 sm:grid-cols-3"><label className="text-xs font-semibold">From date<input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="input-attendance-download-from" /></label><label className="text-xs font-semibold">To date<input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="input-attendance-download-to" /></label><label className="text-xs font-semibold">Class<select value={classFilter} onChange={(event) => setClassFilter(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="select-attendance-download-class"><option>All classes</option>{classOptions.map((option) => <option key={option}>{option}</option>)}</select></label></div>{attendance.isError ? <p className="text-sm text-[hsl(var(--destructive))]">Saved attendance lists could not be loaded.</p> : !groups.length ? <p className="rounded-xl border border-dashed border-[hsl(var(--border))] p-4 text-sm text-[hsl(var(--muted-foreground))]">No saved attendance lists match these filters.</p> : <div className="grid gap-2 md:grid-cols-2">{groups.slice(0, 12).map(([key, group]) => { const [date, className] = key.split('|'); return <div key={key} className="flex items-center justify-between gap-3 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3"><div><p className="text-sm font-semibold">Attendance list of {date}</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">{className} · {group.length} pupils</p></div><div className="flex shrink-0 gap-2"><Link href={`/attendance?date=${encodeURIComponent(date)}&className=${encodeURIComponent(className)}`} className="text-xs font-semibold text-[hsl(var(--primary))] hover:underline" data-testid={`link-attendance-register-${date}-${className}`}>Edit</Link><button type="button" onClick={() => exportGroup(group, `attendance-${date}-${className.replaceAll(' ', '-')}.csv`)} className="text-xs font-semibold text-[hsl(var(--primary))] hover:underline" data-testid={`button-download-attendance-${date}-${className}`}>Download</button></div></div>; })}</div>}</div></Panel>;
+}
+
+function ExpenseReportToolbar() {
+  const [location] = useLocation();
+  const operations = useGetOperations({ query: { enabled: location === '/expenses', queryKey: getGetOperationsQueryKey() } });
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  if (location !== '/expenses') return null;
+  const rows = (operations.data?.modules?.expenses || []) as OperationExpense[];
+  const filtered = rows.filter((row) => (!fromDate || row.date >= fromDate) && (!toDate || row.date <= toDate));
+  const total = filtered.reduce((sum, row) => sum + row.amount, 0);
+  const exportExpenses = () => downloadCsv(`expenses-${fromDate || 'all'}-to-${toDate || 'all'}.csv`, ['Date', 'Category', 'Description', 'Amount (UGX)', 'Reference', 'Status'], filtered.map((row) => [row.date, row.category, row.description, row.amount, (row as OperationExpense & { reference?: string }).reference || 'N/A', row.status]));
+  return <Panel className="mb-6 border-[hsl(var(--primary)/.25)] bg-[hsl(var(--secondary)/.14)] p-4" testId="panel-expense-downloads"><div className="flex flex-col gap-4"><div className="flex flex-col justify-between gap-3 md:flex-row md:items-start"><div><p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.16em] text-[hsl(var(--primary))]">Expense reports</p><h2 className="mt-1 font-display text-xl">Download expenses by date</h2><p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">{filtered.length} records · Total {new Intl.NumberFormat('en-UG', { style: 'currency', currency: operations.data?.currencyCode || 'UGX', maximumFractionDigits: 0 }).format(total)}</p></div><div className="flex flex-wrap gap-2"><Link href="/expenses/create"><Button testId="button-open-create-expense"><ReceiptText className="size-4" /> Create new expense</Button></Link><Button variant="secondary" onClick={exportExpenses} disabled={!filtered.length} testId="button-download-expense-report"><Download className="size-4" /> Download report</Button></div></div><div className="grid gap-3 sm:grid-cols-2"><label className="text-xs font-semibold">From date<input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="input-expense-report-from" /></label><label className="text-xs font-semibold">To date<input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="input-expense-report-to" /></label></div></div></Panel>;
 }
 
 export function SchoolMark({ compact = false }: { compact?: boolean }) {
@@ -195,7 +273,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                </div>}
              </div>
         </header>
-        <main className="app-grid flex-1 overflow-x-hidden"><div className="hidden print:block print:px-8 print:pt-6"><SchoolLetterhead /></div><div className="mx-auto w-full max-w-[1480px] p-5 md:p-8">{children}</div></main>
+         <main className="app-grid flex-1 overflow-x-hidden"><div className="hidden print:block print:px-8 print:pt-6"><SchoolLetterhead /></div><div className="mx-auto w-full max-w-[1480px] p-5 md:p-8"><PupilExportToolbar /><AttendanceRegisterHistory /><ExpenseReportToolbar />{children}</div></main>
       </div>
     </div>
   );

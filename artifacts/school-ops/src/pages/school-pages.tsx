@@ -798,6 +798,13 @@ function AttendancePage() {
     setArrivalTimes(Object.fromEntries(records.map((record) => [record.studentId, record.arrivalTime || ''])));
   }, [date, className, records.length]);
   useEffect(() => {
+    const params = new URLSearchParams(location.split('?')[1] || '');
+    const requestedDate = params.get('date');
+    const requestedClass = params.get('className');
+    if (requestedDate) setDate(requestedDate);
+    if (requestedClass) setClassName(requestedClass);
+  }, [location]);
+  useEffect(() => {
     if (className && classOptions.includes(className)) return;
     if (classOptions.length) setClassName(classOptions[0]);
   }, [className, classOptions]);

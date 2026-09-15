@@ -92,7 +92,7 @@ function CreateAccountPanel() {
   const client = useQueryClient();
   const create = useCreateUser();
   const operations = useGetOperations();
-  const [form, setForm] = useState({ name: '', identifier: '', password: '', role: 'teacher', studentId: '', email: '', phone: '', address: '', nextOfKin: '', hireDate: '', employmentType: 'Full-time', monthlySalary: '', permissions: [] as PermissionKey[], assignedClasses: [] as string[] });
+  const [form, setForm] = useState({ name: '', identifier: '', password: '', role: 'staff', studentId: '', email: '', phone: '', address: '', nextOfKin: '', hireDate: '', employmentType: 'Full-time', monthlySalary: '', permissions: [] as PermissionKey[], assignedClasses: [] as string[] });
   const [assignmentError, setAssignmentError] = useState('');
   const [teacherConfirmation, setTeacherConfirmation] = useState<TeacherRegistrationForm | null>(null);
   const update = (key: keyof typeof form, value: string) => setForm((old) => ({ ...old, [key]: value }));
@@ -114,7 +114,7 @@ function CreateAccountPanel() {
        onSuccess: (account) => {
         trackEvent('account_created', { role: data.role, user_type: data.userType });
          if (data.role === 'teacher' && account.registrationForm) setTeacherConfirmation(account.registrationForm);
-          setForm({ name: '', identifier: '', password: '', role: 'teacher', studentId: '', email: '', phone: '', address: '', nextOfKin: '', hireDate: '', employmentType: 'Full-time', monthlySalary: '', permissions: [], assignedClasses: [] });
+           setForm({ name: '', identifier: '', password: '', role: 'staff', studentId: '', email: '', phone: '', address: '', nextOfKin: '', hireDate: '', employmentType: 'Full-time', monthlySalary: '', permissions: [], assignedClasses: [] });
         setAssignmentError('');
         client.invalidateQueries({ queryKey: getGetOperationsQueryKey() });
       },
@@ -267,6 +267,10 @@ function ExpenseComposer() {
   return <Panel className="border-dashed p-5" testId="panel-create-expense"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-[hsl(var(--primary))]">School Expenses</p><h2 className="mt-1 font-display text-xl">Record a school expense</h2><p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Choose a category from the school expense register. Salary categories open the correct teacher or non-teaching staff payment workflow.</p></div><form onSubmit={submit} className="mt-4 grid gap-3 md:grid-cols-4"><select required value={customCategory ? customExpenseCategory : form.category} onChange={(event) => { const value = event.target.value; const isCustom = value === customExpenseCategory; setCustomCategory(isCustom); setSalaryStaffId(''); setSalaryPeriod(''); update('category', isCustom ? '' : value); }} className={inputClass} data-testid="select-expense-category"><option value="" disabled>Choose expense category</option>{expenseCategoryGroups.map((group) => <optgroup key={group.label} label={group.label}>{group.options.map((option) => <option key={option} value={option}>{option}</option>)}</optgroup>)}<option value={customExpenseCategory}>Custom expense category</option></select>{customCategory && <input required value={form.category} onChange={(event) => update('category', event.target.value)} placeholder="Enter custom expense category" className={inputClass} data-testid="input-expense-category" />}{isSalaryCategory && <><select required value={salaryStaffId} onChange={(event) => { const id = event.target.value; const staff = availableSalaryStaff.find((item) => item.id === id); setSalaryStaffId(id); setForm((old) => ({ ...old, amount: staff?.monthlySalary || 0, description: staff ? `Salary payment for ${staff.name}` : '' })); }} className={inputClass} data-testid="select-expense-salary-staff"><option value="" disabled>{form.category === "Teachers' salaries" ? 'Choose teacher' : 'Choose non-teaching staff member'}</option>{availableSalaryStaff.map((staff) => <option key={staff.id} value={staff.id}>{staff.name} · {staff.role} · {money(staff.monthlySalary)}</option>)}</select><input required value={salaryPeriod} onChange={(event) => setSalaryPeriod(event.target.value)} placeholder="Salary period e.g. Sep 2026" className={inputClass} data-testid="input-expense-salary-period" /><select value={salaryMethod} onChange={(event) => setSalaryMethod(event.target.value)} className={inputClass} data-testid="select-expense-salary-method"><option>Bank transfer</option><option>Mobile money</option><option>Cash</option></select></>}<input required value={form.description} onChange={(event) => update('description', event.target.value)} placeholder={isSalaryCategory ? 'Salary reason' : 'Reason / description'} className={inputClass} data-testid="input-expense-description" /><input required min={1} type="number" value={form.amount || ''} onChange={(event) => update('amount', event.target.value)} placeholder="Amount" className={inputClass} data-testid="input-expense-amount" /><input value={form.reference || ''} onChange={(event) => update('reference', event.target.value)} placeholder="Payment reference (optional)" className={inputClass} data-testid="input-expense-reference" /><input required type="date" value={form.date} onChange={(event) => update('date', event.target.value)} className={inputClass} data-testid="input-expense-date" /><div className="md:col-span-3 flex justify-end"><Button type="submit" disabled={create.isPending || salaryCreate.isPending} testId="button-create-expense">{create.isPending || salaryCreate.isPending ? 'Saving…' : isSalaryCategory ? 'Pay salary & issue receipt' : 'Save expense'}</Button></div></form>{(create.isError || salaryCreate.isError) && <p className="mt-3 text-sm text-[hsl(var(--destructive))]">{isSalaryCategory ? 'Salary payment could not be recorded. Check the registered salary balance and selected staff member.' : 'Expense could not be saved.'}</p>}</Panel>;
 }
 
+export function ExpenseCreatePage() {
+  return <AppShell><Link href="/expenses" className="mb-6 inline-flex items-center gap-2 text-xs font-semibold text-[hsl(var(--primary))] hover:underline"><ArrowRight className="size-4 rotate-180" /> Back to expenses</Link><PageHeader eyebrow="Finance" title="Record a school expense" description="Capture the category, reason, amount, date, and payment reference for a complete school expense record." /><ExpenseComposer /></AppShell>;
+}
+
 function SalaryComposer() {
   const client = useQueryClient();
   const create = useCreateSalaryPayment();
@@ -284,6 +288,7 @@ function SalaryComposer() {
         trackEvent('salary_payment_recorded', { payment_method: form.method });
         setForm({ staffId: '', period: '', amount: 0, method: 'Bank transfer', reference: '' });
          client.invalidateQueries({ queryKey: getGetOperationsQueryKey() });
+         client.invalidateQueries({ queryKey: getListUsersQueryKey() });
          client.invalidateQueries({ queryKey: getListSalariesQueryKey() });
          client.invalidateQueries({ queryKey: getListSalaryStaffQueryKey() });
       },

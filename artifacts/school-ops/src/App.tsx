@@ -4,7 +4,7 @@ import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import { OperationsPage } from '@/pages/operations-page';
+import { ExpenseCreatePage, OperationsPage } from '@/pages/operations-page';
 import { ProfilePage } from '@/pages/profile-page';
 import {
   AnnouncementsPage,
@@ -50,6 +50,7 @@ function Router() {
         <Route path="/attendance/create" component={AttendanceCreatePage} />
         <Route path="/attendance" component={AttendancePage} />
         <Route path="/finance" component={FinancePage} />
+        <Route path="/expenses/create" component={ExpenseCreatePage} />
         <Route path="/expenses" component={OperationsPage} />
         <Route path="/announcements" component={AnnouncementsPage} />
         <Route path="/timetable" component={TimetablePage} />
