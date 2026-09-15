@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { type AuthUser, type ClassInput, type ExpenseInput, type PermissionKey, type SalaryPaymentInput, type TeacherRegistrationForm, type UserAccountInput, type UserAdminProfileUpdate, useApproveExpense, useCreateClass, useCreateExpense, useCreateSalaryPayment, useCreateUser, useDeleteExpense, useGetCurrentUser, useGetOperations, getGetOperationsQueryKey, useListSalaryStaff, useListSalaries, useListUsers, useUpdateUserPermissions, useUpdateUserProfileByAdmin, getListUsersQueryKey, getListSalaryStaffQueryKey, getListSalariesQueryKey } from '@workspace/api-client-react';
-import { Archive, ArrowRight, BarChart3, Bell, BookOpen, BusFront, CalendarDays, Check, ClipboardList, Download, FileText, HeartPulse, Library, Package, Pencil, Plus, Printer, Receipt, RefreshCcw, ShieldAlert, UserRound, Users, WalletCards, X } from 'lucide-react';
+import { Archive, ArrowRight, BarChart3, Bell, BookOpen, BusFront, CalendarDays, Check, ClipboardList, Download, FileText, HeartPulse, KeyRound, Library, Package, Pencil, Plus, Printer, Receipt, RefreshCcw, Search, ShieldAlert, UserRound, Users, WalletCards, X } from 'lucide-react';
 import { AppShell, Button, EmptyState, ErrorState, PageHeader, Panel, Skeleton } from '@/components/school-shell';
 import { trackEvent } from '@/lib/analytics';
 import { brandedPdf } from './school-pages';
@@ -130,7 +130,7 @@ function CreateAccountPanel() {
   return <Panel className="border-dashed p-5" testId="panel-create-account"><div className="flex items-start gap-3"><span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--secondary))] text-[hsl(var(--primary))]"><Plus className="size-4" /></span><div><h2 className="font-display text-xl">Create user account & permissions</h2><p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Staff and teachers sign in with usernames. Register the monthly salary now so salary balances remain accurate.</p></div></div><form onSubmit={submit} className="mt-5 grid gap-3 md:grid-cols-2"><input required value={form.name} onChange={(event) => update('name', event.target.value)} placeholder="Full names" className={inputClass} data-testid="input-account-name" /><input required value={form.identifier} onChange={(event) => update('identifier', event.target.value)} placeholder={form.role === 'student' ? 'Permanent registration number' : 'Username'} className={inputClass} data-testid="input-account-identifier" /><select value={form.role} onChange={(event) => { const role = event.target.value; setForm((old) => ({ ...old, role, assignedClasses: role === 'teacher' ? old.assignedClasses : [] })); setAssignmentError(''); }} className={inputClass} data-testid="select-account-role">{['teacher', 'accountant', 'staff', 'guardian', 'student'].map((role) => <option key={role} value={role}>{role === 'student' ? 'Pupil' : role[0].toUpperCase() + role.slice(1)}</option>)}</select><input required minLength={8} type="password" value={form.password} onChange={(event) => update('password', event.target.value)} placeholder="Temporary password (8+ characters)" className={inputClass} data-testid="input-account-password" /><input type="tel" value={form.phone} onChange={(event) => update('phone', event.target.value)} placeholder="Contact number" className={inputClass} data-testid="input-account-phone" /><input type="email" value={form.email} onChange={(event) => update('email', event.target.value)} placeholder="Email address" className={inputClass} data-testid="input-account-email" /><input value={form.address} onChange={(event) => update('address', event.target.value)} placeholder="Home address" className={inputClass} data-testid="input-account-address" /><input value={form.nextOfKin} onChange={(event) => update('nextOfKin', event.target.value)} placeholder="Next of kin / emergency contact" className={inputClass} data-testid="input-account-next-of-kin" /><input type="date" value={form.hireDate} onChange={(event) => update('hireDate', event.target.value)} className={inputClass} data-testid="input-account-hire-date" /><select value={form.employmentType} onChange={(event) => update('employmentType', event.target.value)} className={inputClass} data-testid="select-account-employment-type"><option>Full-time</option><option>Part-time</option><option>Contract</option><option>Volunteer</option></select>{(form.role === 'teacher' || form.role === 'staff') && <input required min={0} type="number" value={form.monthlySalary} onChange={(event) => update('monthlySalary', event.target.value)} placeholder="Monthly salary (UGX)" className={inputClass} data-testid="input-account-monthly-salary" />}{(form.role === 'guardian' || form.role === 'student') && <input required value={form.studentId} onChange={(event) => update('studentId', event.target.value)} placeholder="Linked pupil ID or registration number" className={`${inputClass} md:col-span-2`} data-testid="input-account-student-id" />}{form.role === 'teacher' && <fieldset className={`md:col-span-2 rounded-2xl bg-[hsl(var(--muted)/.55)] p-4 ${assignmentError ? 'border border-[hsl(var(--destructive)/.45)]' : ''}`}><legend className="px-1 text-xs font-semibold">Assigned classes <span className="text-[hsl(var(--destructive))]">*</span></legend><p className="mt-1 text-[11px] text-[hsl(var(--muted-foreground))]">Choose one or more classes. Use Ctrl/Cmd-click or tap to select multiple.</p><select required multiple value={form.assignedClasses} onChange={(event) => { setForm((old) => ({ ...old, assignedClasses: Array.from(event.target.selectedOptions, (option) => option.value) })); setAssignmentError(''); }} className={`${inputClass} h-auto min-h-24 py-2`} data-testid="select-account-classes">{classRows.map((item) => <option key={item.id} value={item.name}>{item.name}{item.stream ? ` · ${item.stream}` : ''}</option>)}</select>{!classRows.length && <p className="mt-2 text-xs text-[hsl(var(--destructive))]">Create at least one class before registering a teacher.</p>}{assignmentError && <p className="mt-2 text-xs text-[hsl(var(--destructive))]" role="alert" data-testid="status-account-class-error">{assignmentError}</p>}</fieldset>}<div className="md:col-span-2 rounded-2xl bg-[hsl(var(--muted)/.55)] p-4"><p className="text-xs font-semibold">Action permissions</p><div className="mt-3 grid gap-2 sm:grid-cols-2">{permissionOptions.map((permission) => <label key={permission.key} className="flex items-center gap-2 text-xs"><input type="checkbox" checked={form.permissions.includes(permission.key)} onChange={() => setForm((old) => ({ ...old, permissions: old.permissions.includes(permission.key) ? old.permissions.filter((item) => item !== permission.key) : [...old.permissions, permission.key] }))} />{permission.label}</label>)}</div></div><div className="md:col-span-2 flex items-center justify-between gap-3">{create.isError && <p className="text-xs text-[hsl(var(--destructive))]">Account could not be created. Check the identifier, linked pupil, and assigned class.</p>}<Button type="submit" disabled={create.isPending || (form.role === 'teacher' && (!classRows.length || !form.assignedClasses.length))} testId="button-create-account">{create.isPending ? 'Creating…' : 'Create account'}</Button></div></form></Panel>;
 }
 
-function UsersRolesDirectory({ createMode, onBack }: { createMode: boolean; onBack: () => void }) {
+function UsersRolesDirectoryLegacy({ createMode, onBack }: { createMode: boolean; onBack: () => void }) {
   const client = useQueryClient();
   const [, setLocation] = useLocation();
   const users = useListUsers();
@@ -341,6 +341,199 @@ function SubjectRegisterPanel() {
     }
   };
   return <Panel className="p-6" testId="panel-register-subject"><div className="mb-5"><p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.16em] text-[hsl(var(--primary))]">Curriculum setup</p><h2 className="mt-1 font-display text-2xl">Register a subject</h2><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Every subject must be tied to the class that studies it.</p></div><form onSubmit={submit} className="grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end"><label className="space-y-1.5"><span className="text-xs font-semibold">Subject name</span><input required value={name} onChange={(event) => setName(event.target.value)} placeholder="Mathematics" className={inputClass} /></label><label className="space-y-1.5"><span className="text-xs font-semibold">Class</span><select required value={className} onChange={(event) => setClassName(event.target.value)} className={inputClass}><option value="">Choose class</option>{classes.map((item) => <option key={item.id} value={item.name}>{item.name}{item.stream ? ` · ${item.stream}` : ''}</option>)}</select></label><label className="space-y-1.5"><span className="text-xs font-semibold">Teacher (optional)</span><input value={teacherName} onChange={(event) => setTeacherName(event.target.value)} placeholder="Assigned teacher" className={inputClass} /></label><Button type="submit"><Plus className="size-4" /> Register subject</Button></form>{error && <p className="mt-4 text-sm text-[hsl(var(--destructive))]" role="alert">{error}</p>}{saved && <p className="mt-4 text-sm text-[hsl(var(--primary))]" role="status">Subject registered successfully.</p>}</Panel>;
+}
+
+type AccountFormState = {
+  name: string;
+  identifier: string;
+  password: string;
+  role: string;
+  studentId: string;
+  email: string;
+  phone: string;
+  address: string;
+  nextOfKin: string;
+  hireDate: string;
+  employmentType: string;
+  monthlySalary: string;
+  permissions: PermissionKey[];
+  assignedClasses: string[];
+};
+
+const emptyAccountForm: AccountFormState = {
+  name: '',
+  identifier: '',
+  password: '',
+  role: 'staff',
+  studentId: '',
+  email: '',
+  phone: '',
+  address: '',
+  nextOfKin: '',
+  hireDate: '',
+  employmentType: 'Full-time',
+  monthlySalary: '',
+  permissions: [],
+  assignedClasses: [],
+};
+
+function AccountConfirmation({ account, onAgain, onBack }: { account: AuthUser; onAgain: () => void; onBack: () => void }) {
+  const registrationForm = account.registrationForm;
+  return <Panel className="overflow-hidden border-[hsl(var(--primary)/.3)]" testId="panel-account-creation-confirmation">
+    <div className="border-b border-[hsl(var(--border))] bg-[hsl(var(--secondary)/.55)] p-5 sm:p-6">
+      <div className="flex items-start gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"><Check className="size-5" /></span>
+        <div><p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.16em] text-[hsl(var(--primary))]">Account saved</p><h2 className="mt-1 font-display text-2xl">Access is ready</h2><p className="mt-1 text-sm leading-6 text-[hsl(var(--muted-foreground))]">The account is now available in Users & Roles. Keep the username and temporary password with the staff member securely.</p></div>
+      </div>
+    </div>
+    <dl className="grid gap-4 p-5 sm:grid-cols-2 sm:p-6">
+      <div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Full name</dt><dd className="mt-1 text-sm font-semibold">{account.name}</dd></div>
+      <div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Role</dt><dd className="mt-1 text-sm font-semibold capitalize">{account.role.replace('_', ' ')}</dd></div>
+      <div className="rounded-2xl bg-[hsl(var(--primary)/.08)] p-4"><dt className="text-xs text-[hsl(var(--muted-foreground))]">Username</dt><dd className="mt-1 font-mono-ui text-base font-semibold text-[hsl(var(--primary))]" data-testid="text-created-account-username">{account.identifier}</dd></div>
+      <div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Contact</dt><dd className="mt-1 text-sm font-semibold">{account.phone || account.email || 'No contact supplied'}</dd></div>
+      {registrationForm && <div className="sm:col-span-2 rounded-2xl border border-dashed border-[hsl(var(--border))] p-4"><p className="text-xs font-semibold text-[hsl(var(--primary))]">Teacher registration record</p><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Assigned classes: <span className="font-semibold text-[hsl(var(--foreground))]">{registrationForm.assignedClasses.join(', ') || 'None'}</span></p><div className="mt-3 flex flex-wrap gap-2"><Button variant="secondary" onClick={() => void downloadTeacherRegistration(registrationForm)} testId="button-download-created-teacher-form"><Download className="size-4" /> Download PDF</Button><Button variant="secondary" onClick={() => printTeacherRegistration(registrationForm)} testId="button-print-created-teacher-form"><Printer className="size-4" /> Print registration</Button></div></div>}
+    </dl>
+    <div className="flex flex-wrap justify-end gap-3 border-t border-[hsl(var(--border))] p-5 sm:p-6"><Button variant="secondary" onClick={onBack} testId="button-return-users-after-create">Return to Users & Roles</Button><Button onClick={onAgain} testId="button-register-another-account"><Plus className="size-4" /> Register another account</Button></div>
+  </Panel>;
+}
+
+function CreateAccountPanelEnhanced({ onBack }: { onBack: () => void }) {
+  const client = useQueryClient();
+  const create = useCreateUser();
+  const operations = useGetOperations();
+  const [form, setForm] = useState<AccountFormState>(emptyAccountForm);
+  const [showDetails, setShowDetails] = useState(false);
+  const [showPermissions, setShowPermissions] = useState(false);
+  const [assignmentError, setAssignmentError] = useState('');
+  const [createdAccount, setCreatedAccount] = useState<AuthUser | null>(null);
+  const update = (key: keyof AccountFormState, value: string) => setForm((old) => ({ ...old, [key]: value }));
+  const classRows = operations.data?.modules?.classes || [];
+  const permissionOptions: { key: PermissionKey; label: string }[] = [
+    { key: 'expense_approve', label: 'Approve expenses' },
+    { key: 'expense_delete', label: 'Delete expenses' },
+    { key: 'transactions_view', label: 'View transactions' },
+    { key: 'transactions_print', label: 'Print/download/share receipts' },
+    { key: 'finance_view', label: 'Access finance & payments' },
+    { key: 'expenses_view', label: 'Access expenses' },
+    { key: 'manage_users', label: 'Manage users and roles' },
+  ];
+  const reset = () => {
+    setForm(emptyAccountForm);
+    setAssignmentError('');
+    setShowDetails(false);
+    setShowPermissions(false);
+    setCreatedAccount(null);
+  };
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (form.role === 'teacher' && form.assignedClasses.length === 0) {
+      setAssignmentError('Assign at least one class before registering a teacher.');
+      setShowDetails(true);
+      return;
+    }
+    setAssignmentError('');
+    const data: UserAccountInput = {
+      name: form.name.trim(),
+      identifier: form.identifier.trim(),
+      password: form.password,
+      role: form.role as UserAccountInput['role'],
+      userType: form.role === 'student' || form.role === 'guardian' ? 'learner' : 'staff',
+      studentId: form.role === 'guardian' || form.role === 'student' ? form.studentId.trim() : null,
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      address: form.address.trim(),
+      nextOfKin: form.nextOfKin.trim(),
+      hireDate: form.hireDate,
+      employmentType: form.employmentType,
+      monthlySalary: form.monthlySalary ? Number(form.monthlySalary) : undefined,
+      permissions: form.permissions,
+      assignedClasses: form.role === 'teacher' ? form.assignedClasses : [],
+    };
+    create.mutate({ data }, {
+      onSuccess: (account) => {
+        trackEvent('account_created', { role: data.role, user_type: data.userType });
+        setCreatedAccount(account);
+        client.invalidateQueries({ queryKey: getGetOperationsQueryKey() });
+        client.invalidateQueries({ queryKey: getListUsersQueryKey() });
+        client.invalidateQueries({ queryKey: getListSalaryStaffQueryKey() });
+      },
+    });
+  };
+  if (createdAccount) return <AccountConfirmation account={createdAccount} onAgain={reset} onBack={onBack} />;
+  return <Panel className="border-dashed p-5 sm:p-6" testId="panel-create-account">
+    <div className="flex items-start gap-3"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--secondary))] text-[hsl(var(--primary))]"><KeyRound className="size-5" /></span><div><p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.16em] text-[hsl(var(--primary))]">New access</p><h2 className="mt-1 font-display text-2xl">Create user account</h2><p className="mt-1 max-w-2xl text-sm leading-6 text-[hsl(var(--muted-foreground))]">Start with the sign-in details. Add employment information, class assignments, and action permissions only when they apply.</p></div></div>
+    <form onSubmit={submit} className="mt-6 space-y-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <label className="text-xs font-semibold">Full name<input required value={form.name} onChange={(event) => update('name', event.target.value)} placeholder="Full names" className={`${inputClass} mt-1`} data-testid="input-account-name" /></label>
+        <label className="text-xs font-semibold">Username or identifier<input required value={form.identifier} onChange={(event) => update('identifier', event.target.value)} placeholder={form.role === 'student' ? 'Permanent registration number' : 'Username'} className={`${inputClass} mt-1`} data-testid="input-account-identifier" /></label>
+        <label className="text-xs font-semibold">Account role<select value={form.role} onChange={(event) => { const role = event.target.value; setForm((old) => ({ ...old, role, assignedClasses: role === 'teacher' ? old.assignedClasses : [] })); setAssignmentError(''); }} className={`${inputClass} mt-1`} data-testid="select-account-role">{['teacher', 'accountant', 'staff', 'guardian', 'student'].map((role) => <option key={role} value={role}>{role === 'student' ? 'Pupil' : role[0].toUpperCase() + role.slice(1)}</option>)}</select></label>
+        <label className="text-xs font-semibold">Temporary password<input required minLength={8} type="password" value={form.password} onChange={(event) => update('password', event.target.value)} placeholder="At least 8 characters" className={`${inputClass} mt-1`} data-testid="input-account-password" /></label>
+      </div>
+      {(form.role === 'guardian' || form.role === 'student') && <label className="block text-xs font-semibold">Linked pupil ID or registration number<input required value={form.studentId} onChange={(event) => update('studentId', event.target.value)} placeholder="Paste the pupil ID or registration number" className={`${inputClass} mt-1`} data-testid="input-account-student-id" /></label>}
+      {(form.role === 'teacher' || form.role === 'staff') && <label className="block text-xs font-semibold">Monthly salary (UGX)<input required min={0} type="number" value={form.monthlySalary} onChange={(event) => update('monthlySalary', event.target.value)} placeholder="0" className={`${inputClass} mt-1`} data-testid="input-account-monthly-salary" /></label>}
+      <button type="button" onClick={() => setShowDetails((open) => !open)} className="flex w-full items-center justify-between rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--muted)/.45)] px-4 py-3 text-left text-sm font-semibold hover:bg-[hsl(var(--secondary)/.55)]" aria-expanded={showDetails} data-testid="button-toggle-account-details"><span>Contact and employment details <span className="ml-1 text-xs font-normal text-[hsl(var(--muted-foreground))]">Optional</span></span><ArrowRight className={`size-4 transition-transform ${showDetails ? 'rotate-90' : ''}`} /></button>
+      {showDetails && <div className="grid gap-4 rounded-2xl border border-[hsl(var(--border))] p-4 sm:grid-cols-2">
+        <label className="text-xs font-semibold">Phone<input type="tel" value={form.phone} onChange={(event) => update('phone', event.target.value)} placeholder="Contact number" className={`${inputClass} mt-1`} data-testid="input-account-phone" /></label>
+        <label className="text-xs font-semibold">Email<input type="email" value={form.email} onChange={(event) => update('email', event.target.value)} placeholder="Email address" className={`${inputClass} mt-1`} data-testid="input-account-email" /></label>
+        <label className="text-xs font-semibold">Home address<input value={form.address} onChange={(event) => update('address', event.target.value)} placeholder="Home address" className={`${inputClass} mt-1`} data-testid="input-account-address" /></label>
+        <label className="text-xs font-semibold">Next of kin<input value={form.nextOfKin} onChange={(event) => update('nextOfKin', event.target.value)} placeholder="Emergency contact" className={`${inputClass} mt-1`} data-testid="input-account-next-of-kin" /></label>
+        <label className="text-xs font-semibold">Hire date<input type="date" value={form.hireDate} onChange={(event) => update('hireDate', event.target.value)} className={`${inputClass} mt-1`} data-testid="input-account-hire-date" /></label>
+        <label className="text-xs font-semibold">Employment type<select value={form.employmentType} onChange={(event) => update('employmentType', event.target.value)} className={`${inputClass} mt-1`} data-testid="select-account-employment-type"><option>Full-time</option><option>Part-time</option><option>Contract</option><option>Volunteer</option></select></label>
+      </div>}
+      {form.role === 'teacher' && <fieldset className={`rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--muted)/.45)] p-4 ${assignmentError ? 'border-[hsl(var(--destructive)/.55)]' : ''}`}><legend className="px-1 text-xs font-semibold">Assigned classes <span className="text-[hsl(var(--destructive))]">*</span></legend><p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Choose every class this teacher can work with. The exact saved class name is retained.</p><select required multiple value={form.assignedClasses} onChange={(event) => { setForm((old) => ({ ...old, assignedClasses: Array.from(event.target.selectedOptions, (option) => option.value) })); setAssignmentError(''); }} className={`${inputClass} mt-3 h-auto min-h-28 py-2`} data-testid="select-account-classes">{classRows.map((item) => <option key={item.id} value={item.name}>{item.name}{item.stream ? ` · ${item.stream}` : ''}</option>)}</select>{!classRows.length && <p className="mt-2 text-xs text-[hsl(var(--destructive))]">Create at least one class before registering a teacher.</p>}{assignmentError && <p className="mt-2 text-xs text-[hsl(var(--destructive))]" role="alert" data-testid="status-account-class-error">{assignmentError}</p>}</fieldset>}
+      <button type="button" onClick={() => setShowPermissions((open) => !open)} className="flex w-full items-center justify-between rounded-2xl border border-[hsl(var(--border))] px-4 py-3 text-left text-sm font-semibold hover:bg-[hsl(var(--muted)/.55)]" aria-expanded={showPermissions} data-testid="button-toggle-account-permissions"><span>Action permissions <span className="ml-1 text-xs font-normal text-[hsl(var(--muted-foreground))]">{form.permissions.length ? `${form.permissions.length} selected` : 'None selected'}</span></span><ArrowRight className={`size-4 transition-transform ${showPermissions ? 'rotate-90' : ''}`} /></button>
+      {showPermissions && <div className="grid gap-3 rounded-2xl bg-[hsl(var(--muted)/.55)] p-4 sm:grid-cols-2">{permissionOptions.map((permission) => <label key={permission.key} className="flex items-center gap-2 text-xs"><input type="checkbox" checked={form.permissions.includes(permission.key)} onChange={() => setForm((old) => ({ ...old, permissions: old.permissions.includes(permission.key) ? old.permissions.filter((item) => item !== permission.key) : [...old.permissions, permission.key] }))} />{permission.label}</label>)}</div>}
+      {create.isError && <p className="rounded-xl border border-[hsl(var(--destructive)/.3)] bg-[hsl(var(--destructive)/.07)] p-3 text-sm text-[hsl(var(--destructive))]" role="alert" data-testid="status-account-error">Account could not be created. Check the identifier, linked pupil, and required details.</p>}
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[hsl(var(--border))] pt-4"><p className="text-xs text-[hsl(var(--muted-foreground))]">The account will appear in the directory after it is saved.</p><Button type="submit" disabled={create.isPending || (form.role === 'teacher' && (!classRows.length || !form.assignedClasses.length))} testId="button-create-account">{create.isPending ? 'Creating account…' : 'Create account'}<ArrowRight className="size-4" /></Button></div>
+    </form>
+  </Panel>;
+}
+
+function UsersRolesDirectory({ createMode, onBack }: { createMode: boolean; onBack: () => void }) {
+  const client = useQueryClient();
+  const [, setLocation] = useLocation();
+  const users = useListUsers();
+  const update = useUpdateUserProfileByAdmin();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
+  const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
+  const [form, setForm] = useState({ name: '', identifier: '', email: '', phone: '', newPassword: '' });
+  const allStaffUsers = (users.data || []).filter((user) => ['super_admin', 'administrator', 'teacher', 'accountant', 'staff'].includes(user.role));
+  const staffUsers = allStaffUsers.filter((user) => {
+    const term = search.trim().toLowerCase();
+    const matchesSearch = !term || [user.name, user.identifier, user.email, user.phone].some((value) => value.toLowerCase().includes(term));
+    return matchesSearch && (roleFilter === 'all' || user.role === roleFilter);
+  });
+  const selectedUser = allStaffUsers.find((user) => user.id === selectedId);
+  const chooseUser = (user: AuthUser) => {
+    setSelectedId(user.id);
+    setSaved(false);
+    setForm({ name: user.name, identifier: user.identifier, email: user.email, phone: user.phone, newPassword: '' });
+  };
+  const updateField = (key: keyof typeof form, value: string) => setForm((current) => ({ ...current, [key]: value }));
+  const submit = (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedUser) return;
+    const data: UserAdminProfileUpdate = { name: form.name.trim(), identifier: form.identifier.trim(), email: form.email.trim(), phone: form.phone.trim(), ...(form.newPassword.trim() ? { newPassword: form.newPassword } : {}) };
+    setSaved(false);
+    update.mutate({ userId: selectedUser.id, data }, {
+      onSuccess: (updated) => {
+        setForm({ name: updated.name, identifier: updated.identifier, email: updated.email, phone: updated.phone, newPassword: '' });
+        setSaved(true);
+        client.invalidateQueries({ queryKey: getListUsersQueryKey() });
+      },
+    });
+  };
+  if (createMode) return <div className="space-y-4"><Button variant="quiet" onClick={onBack} testId="button-back-to-users"><ArrowRight className="size-4 rotate-180" /> Back to Users & Roles</Button><CreateAccountPanelEnhanced onBack={onBack} /></div>;
+  const roleOptions = Array.from(new Set(allStaffUsers.map((user) => user.role)));
+  return <div className="space-y-6">
+    <Panel className="overflow-hidden" testId="panel-registered-staff">
+      <div className="border-b border-[hsl(var(--border))] p-5 sm:p-6"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-[hsl(var(--primary))]">Access directory</p><h2 className="mt-1 font-display text-2xl">Users & Roles</h2><p className="mt-1 max-w-2xl text-sm leading-6 text-[hsl(var(--muted-foreground))]">Search staff accounts, confirm their sign-in details, and update access without losing usernames or role assignments.</p></div><Button onClick={() => setLocation('/operations?view=people&mode=create')} testId="button-create-new-staff"><Plus className="size-4" /> Create new staff</Button></div><div className="mt-5 grid gap-3 sm:grid-cols-3"><div className="rounded-2xl bg-[hsl(var(--secondary)/.65)] p-3"><p className="text-xs text-[hsl(var(--muted-foreground))]">Staff accounts</p><p className="mt-1 font-display text-2xl">{allStaffUsers.length}</p></div><div className="rounded-2xl bg-[hsl(var(--secondary)/.65)] p-3"><p className="text-xs text-[hsl(var(--muted-foreground))]">Teachers</p><p className="mt-1 font-display text-2xl">{allStaffUsers.filter((user) => user.role === 'teacher').length}</p></div><div className="rounded-2xl bg-[hsl(var(--secondary)/.65)] p-3"><p className="text-xs text-[hsl(var(--muted-foreground))]">Showing</p><p className="mt-1 font-display text-2xl">{staffUsers.length}</p></div></div><div className="mt-5 flex flex-col gap-3 sm:flex-row"><label className="relative flex-1"><Search className="pointer-events-none absolute left-3 top-3 size-4 text-[hsl(var(--muted-foreground))]" /><input type="search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search name, username, email, or phone" className={`${inputClass} pl-9`} aria-label="Search staff accounts" data-testid="input-search-staff" /></label><select value={roleFilter} onChange={(event) => setRoleFilter(event.target.value)} className={`${inputClass} sm:w-44`} aria-label="Filter staff by role" data-testid="select-staff-role-filter"><option value="all">All roles</option>{roleOptions.map((role) => <option key={role} value={role}>{role.replace('_', ' ')}</option>)}</select></div></div>
+      {users.isLoading ? <div className="space-y-3 p-5">{[1, 2, 3].map((item) => <Skeleton key={item} className="h-16 w-full" />)}</div> : users.isError ? <div className="p-5"><ErrorState onRetry={() => users.refetch()} message="Registered staff accounts could not be loaded." /></div> : !staffUsers.length ? <div className="p-5"><EmptyState icon={Users} title={allStaffUsers.length ? 'No matching staff accounts' : 'No staff accounts yet'} description={allStaffUsers.length ? 'Try a different search or role filter.' : 'Create the first teacher or staff account to start managing school access.'} action={<Button onClick={() => setLocation('/operations?view=people&mode=create')}><Plus className="size-4" /> Create new staff</Button>} /></div> : <div className="divide-y divide-[hsl(var(--border))]">{staffUsers.map((user) => <button type="button" key={user.id} onClick={() => chooseUser(user)} className={`flex w-full items-center gap-4 p-4 text-left transition-colors hover:bg-[hsl(var(--muted)/.45)] ${selectedId === user.id ? 'bg-[hsl(var(--secondary)/.5)]' : ''}`} data-testid={`button-staff-user-${user.id}`}><span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-[hsl(var(--secondary))] text-sm font-bold text-[hsl(var(--primary))]">{user.initials}</span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{user.name}</span><span className="mt-1 block truncate text-xs capitalize text-[hsl(var(--muted-foreground))]">{user.identifier} · {user.role.replace('_', ' ')}</span></span><span className="hidden text-right text-xs text-[hsl(var(--muted-foreground))] sm:block">{user.email || 'No email'}<br />{user.phone || 'No phone'}</span><Pencil className="size-4 shrink-0 text-[hsl(var(--muted-foreground))]" /></button>)}</div>}
+    </Panel>
+    {selectedUser && <Panel className="p-5 sm:p-6" testId="panel-edit-staff"><div className="flex items-start justify-between gap-3"><div><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-[hsl(var(--primary))]">Edit account</p><h2 className="mt-1 font-display text-2xl">{selectedUser.name}</h2><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Changes apply to the account used to sign in. Role, class assignments, and permissions remain unchanged here.</p></div><button type="button" onClick={() => setSelectedId(null)} className="rounded-lg p-2 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]" aria-label="Close edit account" data-testid="button-close-edit-staff"><X className="size-4" /></button></div><form onSubmit={submit} className="mt-5 grid gap-4 md:grid-cols-2"><label className="text-xs font-semibold">Full name<input required value={form.name} onChange={(event) => updateField('name', event.target.value)} className={`${inputClass} mt-1`} data-testid="input-edit-staff-name" /></label><label className="text-xs font-semibold">Username<input required value={form.identifier} onChange={(event) => updateField('identifier', event.target.value)} className={`${inputClass} mt-1`} data-testid="input-edit-staff-username" /></label><label className="text-xs font-semibold">Email<input type="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} className={`${inputClass} mt-1`} data-testid="input-edit-staff-email" /></label><label className="text-xs font-semibold">Phone number<input type="tel" value={form.phone} onChange={(event) => updateField('phone', event.target.value)} className={`${inputClass} mt-1`} data-testid="input-edit-staff-phone" /></label><label className="text-xs font-semibold md:col-span-2">New password <span className="font-normal text-[hsl(var(--muted-foreground))]">(leave blank to keep the current password)</span><input minLength={8} type="password" value={form.newPassword} onChange={(event) => updateField('newPassword', event.target.value)} placeholder="Enter a new password (8+ characters)" className={`${inputClass} mt-1`} data-testid="input-edit-staff-password" /></label><div className="flex flex-wrap items-center justify-between gap-3 md:col-span-2">{update.isError && <p className="text-sm text-[hsl(var(--destructive))]" role="alert" data-testid="status-edit-staff-error">This account could not be updated. Check the username and try again.</p>}{saved && <p className="flex items-center gap-1.5 text-sm text-[hsl(var(--primary))]" data-testid="status-edit-staff-saved"><Check className="size-4" /> Account updated</p>}<Button type="submit" disabled={update.isPending} testId="button-save-staff-account">{update.isPending ? 'Saving account…' : 'Save account changes'}<Check className="size-4" /></Button></div></form></Panel>}
+  </div>;
 }
 
 export function OperationsPage() {

@@ -22,7 +22,13 @@ function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarati
   declarationAccepted: boolean;
   onDeclarationChange: (accepted: boolean) => void;
 }) {
-  return <div className="space-y-5">
+  const [open, setOpen] = useState(true);
+  return <details open={open} onToggle={(event) => setOpen(event.currentTarget.open)} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card)/.7)]" data-testid="details-additional-admission">
+    <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3.5 text-sm font-semibold marker:hidden">
+      <span><span className="block">Additional admission details</span><span className="mt-0.5 block text-xs font-normal text-[hsl(var(--muted-foreground))]">Guardian, health, emergency contact, and declaration information</span></span>
+      <ChevronDown className={`size-4 shrink-0 text-[hsl(var(--primary))] transition-transform ${open ? 'rotate-180' : ''}`} />
+    </summary>
+    <div className="space-y-5 border-t border-[hsl(var(--border))] p-4">
     <div className="admission-section rounded-2xl border border-[hsl(var(--primary)/.25)] bg-[hsl(var(--secondary)/.45)] p-4">
       <p className="admission-section-heading mb-2 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Previous fees</p>
       <p className="mb-4 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Because the school is in Term 3, record any unpaid balance carried forward from Terms 1 and 2. Leave it at zero when there is no previous balance.</p>
@@ -78,7 +84,8 @@ function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarati
         </label>
       </div>
     </div>
-  </div>;
+    </div>
+  </details>;
 }
 
 function Modal({ title, description, onClose, children, wide = false }: { title: string; description?: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
