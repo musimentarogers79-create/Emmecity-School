@@ -11,5 +11,8 @@ export interface SubjectInput {
   name: string;
   /** @minLength 1 */
   className: string;
+  classId?: string;
+  stream?: string;
+  teacherId?: string;
   teacherName?: string;
 }

@@ -21,6 +21,9 @@ export const Role = {
   administrator: 'administrator',
   teacher: 'teacher',
   accountant: 'accountant',
+  secretary: 'secretary',
+  librarian: 'librarian',
+  nurse: 'nurse',
   guardian: 'guardian',
   student: 'student',
   staff: 'staff',
@@ -42,6 +45,14 @@ export interface LoginInput {
   password: string;
 }
 
+export type AuthUserStatus = typeof AuthUserStatus[keyof typeof AuthUserStatus];
+
+
+export const AuthUserStatus = {
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
 export type PermissionKey = typeof PermissionKey[keyof typeof PermissionKey];
 
 
@@ -52,6 +63,11 @@ export const PermissionKey = {
   transactions_print: 'transactions_print',
   finance_view: 'finance_view',
   expenses_view: 'expenses_view',
+  users_view: 'users_view',
+  users_manage: 'users_manage',
+  subjects_view: 'subjects_view',
+  subjects_manage: 'subjects_manage',
+  subjects_delete: 'subjects_delete',
 } as const;
 
 export interface AuthUser {
@@ -60,6 +76,8 @@ export interface AuthUser {
   identifier: string;
   email: string;
   phone: string;
+  status: AuthUserStatus;
+  department?: string;
   permissions: PermissionKey[];
   assignedClasses?: string[];
   /** @minimum 0 */
@@ -78,9 +96,70 @@ export interface UserProfileUpdate {
   identifier?: string;
   email?: string;
   phone?: string;
+  department?: string;
   currentPassword?: string;
   /** @minLength 8 */
   newPassword?: string;
+}
+
+export type UserAccountInputUserType = typeof UserAccountInputUserType[keyof typeof UserAccountInputUserType];
+
+
+export const UserAccountInputUserType = {
+  staff: 'staff',
+  learner: 'learner',
+} as const;
+
+export interface UserAccountInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  identifier: string;
+  /** @minLength 8 */
+  password: string;
+  role: Role;
+  userType: UserAccountInputUserType;
+  /** @nullable */
+  studentId?: string | null;
+  email?: string;
+  phone?: string;
+  department?: string;
+  /** @minimum 0 */
+  monthlySalary?: number;
+  permissions?: PermissionKey[];
+}
+
+export type UserAdminProfileUpdateStatus = typeof UserAdminProfileUpdateStatus[keyof typeof UserAdminProfileUpdateStatus];
+
+
+export const UserAdminProfileUpdateStatus = {
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export interface UserAdminProfileUpdate {
+  /** @minLength 1 */
+  name?: string;
+  /** @minLength 1 */
+  identifier?: string;
+  email?: string;
+  phone?: string;
+  /** @minLength 8 */
+  newPassword?: string;
+  role?: Role;
+  status?: UserAdminProfileUpdateStatus;
+  department?: string;
+  /** @nullable */
+  studentId?: string | null;
+  /** @minimum 0 */
+  monthlySalary?: number;
+  permissions?: PermissionKey[];
+  assignedClasses?: string[];
+}
+
+export interface UserPermissionsInput {
+  permissions: PermissionKey[];
+  assignedClasses?: string[];
 }
 
 export interface AuthSession {
@@ -614,7 +693,11 @@ export interface OperationSubject {
   id: string;
   name: string;
   className: string;
+  classId?: string;
+  stream?: string;
+  teacherId?: string;
   teacherName: string;
+  createdBy?: string;
   status: string;
 }
 
@@ -623,6 +706,9 @@ export interface SubjectInput {
   name: string;
   /** @minLength 1 */
   className: string;
+  classId?: string;
+  stream?: string;
+  teacherId?: string;
   teacherName?: string;
 }
 

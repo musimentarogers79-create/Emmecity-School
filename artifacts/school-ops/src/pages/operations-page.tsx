@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
- import { type ClassInput, type ExpenseInput, type SalaryPaymentInput, useApproveExpense, useCreateClass, useCreateExpense, useCreateSalaryPayment, useDeleteExpense, useGetCurrentUser, useGetOperations, getGetOperationsQueryKey, useListSalaryStaff, useListSalaries, getListSalaryStaffQueryKey, getListSalariesQueryKey } from '@workspace/api-client-react';
+ import { type ClassInput, type ExpenseInput, type SalaryPaymentInput, useApproveExpense, useCreateClass, useCreateExpense, useCreateSalaryPayment, useCreateSubject, useDeleteExpense, useGetCurrentUser, useGetOperations, getGetOperationsQueryKey, useListSalaryStaff, useListSalaries, getListSalaryStaffQueryKey, getListSalariesQueryKey } from '@workspace/api-client-react';
 import { Archive, ArrowRight, BarChart3, Bell, BookOpen, BusFront, CalendarDays, Check, ClipboardList, Download, FileText, HeartPulse, KeyRound, Library, Package, Pencil, Plus, Printer, Receipt, RefreshCcw, Search, ShieldAlert, UserRound, Users, WalletCards, X } from 'lucide-react';
 import { AppShell, Button, EmptyState, ErrorState, PageHeader, Panel, Skeleton } from '@/components/school-shell';
 import { trackEvent } from '@/lib/analytics';
@@ -297,6 +297,7 @@ function SubjectCreatePanel() {
   const [error, setError] = useState('');
   const [saved, setSaved] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const createSubject = useCreateSubject();
   const submit = async (event: React.FormEvent) => {
     event.preventDefault();
     const trimmedName = name.trim();
@@ -313,19 +314,10 @@ function SubjectCreatePanel() {
       return;
     }
     setIsSubmitting(true);
-    try {
-      const response = await fetch('/api/operations/subjects', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: trimmedName, className: trimmedClassName, teacherName: trimmedTeacherName }) });
-      const body = await response.json().catch(() => ({})) as { error?: string };
-      if (!response.ok) throw new Error(body.error || 'Subject could not be created');
-      setName('');
-      setTeacherName('');
-      setSaved(true);
-      await client.invalidateQueries({ queryKey: getGetOperationsQueryKey() });
-    } catch (submissionError) {
-      setError(submissionError instanceof Error ? submissionError.message : 'Subject could not be created. Check the subject and class, then try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    createSubject.mutate({ data: { name: trimmedName, className: trimmedClassName, classId: classes.find((item) => item.name === trimmedClassName)?.id, stream: classes.find((item) => item.name === trimmedClassName)?.stream, teacherName: trimmedTeacherName } }, {
+      onSuccess: async () => { setName(''); setTeacherName(''); setSaved(true); await client.invalidateQueries({ queryKey: getGetOperationsQueryKey() }); setIsSubmitting(false); },
+      onError: (submissionError) => { setError(submissionError instanceof Error ? submissionError.message : 'Subject could not be created. Check the subject and class, then try again.'); setIsSubmitting(false); },
+    });
   };
   return <Panel className="p-6" testId="panel-create-subject"><div className="mb-5"><p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.16em] text-[hsl(var(--primary))]">Curriculum setup</p><h2 className="mt-1 font-display text-2xl">Create subject</h2><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Create a subject and attach it to the exact class that will study it. The class is required so attendance, assignments, and reports stay aligned.</p></div><form onSubmit={submit} className="grid gap-4 md:grid-cols-[1fr_1fr_1fr_auto] md:items-end"><label className="space-y-1.5"><span className="text-xs font-semibold">Subject name <span className="text-[hsl(var(--destructive))]">*</span></span><input required value={name} onChange={(event) => { setName(event.target.value); setSaved(false); }} placeholder="Mathematics" className={inputClass} data-testid="input-subject-name" /></label><label className="space-y-1.5"><span className="text-xs font-semibold">Specific class <span className="text-[hsl(var(--destructive))]">*</span></span><select required value={className} onChange={(event) => { setClassName(event.target.value); setSaved(false); }} className={inputClass} data-testid="select-subject-class"><option value="">Choose a class</option>{classes.map((item) => <option key={item.id} value={item.name}>{item.name}{item.stream ? ` · ${item.stream}` : ''}</option>)}</select></label><label className="space-y-1.5"><span className="space-x-1 text-xs font-semibold">Teacher <span className="font-normal text-[hsl(var(--muted-foreground))]">(optional)</span></span>{teachers.length ? <select value={teacherName} onChange={(event) => setTeacherName(event.target.value)} className={inputClass} data-testid="select-subject-teacher"><option value="">No teacher assigned</option>{teachers.map((teacher) => <option key={teacher.id} value={teacher.name}>{teacher.name}</option>)}</select> : <input value={teacherName} onChange={(event) => setTeacherName(event.target.value)} placeholder="No teachers registered yet" className={inputClass} data-testid="input-subject-teacher" />}</label><Button type="submit" disabled={isSubmitting || operations.isLoading || !classes.length} testId="button-create-subject"><Plus className="size-4" /> {isSubmitting ? 'Creating…' : 'Create subject'}</Button></form>{!operations.isLoading && !classes.length && <p className="mt-4 rounded-xl bg-[hsl(var(--muted)/.55)] p-3 text-sm text-[hsl(var(--muted-foreground))]" role="status">Create a class first, then return here to attach subjects to it.</p>}{error && <p className="mt-4 text-sm text-[hsl(var(--destructive))]" role="alert">{error}</p>}{saved && <p className="mt-4 text-sm text-[hsl(var(--primary))]" role="status">Subject created successfully for {className}.</p>}</Panel>;
 }

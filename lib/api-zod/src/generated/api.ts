@@ -41,10 +41,12 @@ export const LoginResponse = zod.object({
   "identifier": zod.string(),
   "email": zod.string(),
   "phone": zod.string(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view'])),
+  "status": zod.enum(['active', 'inactive']),
+  "department": zod.string().optional(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
   "assignedClasses": zod.array(zod.string()).optional(),
   "monthlySalary": zod.number().min(loginResponseUserMonthlySalaryMin).optional(),
-  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
   "studentId": zod.string().nullish()
@@ -75,10 +77,12 @@ export const GetCurrentUserResponse = zod.object({
   "identifier": zod.string(),
   "email": zod.string(),
   "phone": zod.string(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view'])),
+  "status": zod.enum(['active', 'inactive']),
+  "department": zod.string().optional(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
   "assignedClasses": zod.array(zod.string()).optional(),
   "monthlySalary": zod.number().min(getCurrentUserResponseUserMonthlySalaryMin).optional(),
-  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
   "studentId": zod.string().nullish()
@@ -101,6 +105,7 @@ export const UpdateCurrentUserBody = zod.object({
   "identifier": zod.string().min(1).optional(),
   "email": zod.string().optional(),
   "phone": zod.string().optional(),
+  "department": zod.string().optional(),
   "currentPassword": zod.string().optional(),
   "newPassword": zod.string().min(updateCurrentUserBodyNewPasswordMin).optional()
 })
@@ -116,10 +121,12 @@ export const UpdateCurrentUserResponse = zod.object({
   "identifier": zod.string(),
   "email": zod.string(),
   "phone": zod.string(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view'])),
+  "status": zod.enum(['active', 'inactive']),
+  "department": zod.string().optional(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
   "assignedClasses": zod.array(zod.string()).optional(),
   "monthlySalary": zod.number().min(updateCurrentUserResponseUserMonthlySalaryMin).optional(),
-  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
   "studentId": zod.string().nullish()
@@ -129,10 +136,181 @@ export const UpdateCurrentUserResponse = zod.object({
 
 
 /**
+ * @summary List school user accounts for authorized administrators
+ */
+export const listUsersResponseMonthlySalaryMin = 0;
+
+
+
+export const ListUsersResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "identifier": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string(),
+  "status": zod.enum(['active', 'inactive']),
+  "department": zod.string().optional(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
+  "assignedClasses": zod.array(zod.string()).optional(),
+  "monthlySalary": zod.number().min(listUsersResponseMonthlySalaryMin).optional(),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
+  "initials": zod.string(),
+  "schoolName": zod.string(),
+  "studentId": zod.string().nullish()
+})
+export const ListUsersResponse = zod.array(ListUsersResponseItem)
+
+
+/**
+ * @summary Create a school user account
+ */
+
+
+export const createUserBodyPasswordMin = 8;
+
+export const createUserBodyMonthlySalaryMin = 0;
+
+
+
+export const CreateUserBody = zod.object({
+  "name": zod.string().min(1),
+  "identifier": zod.string().min(1),
+  "password": zod.string().min(createUserBodyPasswordMin),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
+  "userType": zod.enum(['staff', 'learner']),
+  "studentId": zod.string().nullish(),
+  "email": zod.string().optional(),
+  "phone": zod.string().optional(),
+  "department": zod.string().optional(),
+  "monthlySalary": zod.number().min(createUserBodyMonthlySalaryMin).optional(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])).optional()
+})
+
+export const createUserResponseMonthlySalaryMin = 0;
+
+
+
+export const CreateUserResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "identifier": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string(),
+  "status": zod.enum(['active', 'inactive']),
+  "department": zod.string().optional(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
+  "assignedClasses": zod.array(zod.string()).optional(),
+  "monthlySalary": zod.number().min(createUserResponseMonthlySalaryMin).optional(),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
+  "initials": zod.string(),
+  "schoolName": zod.string(),
+  "studentId": zod.string().nullish()
+})
+
+
+/**
+ * @summary Update a school user account
+ */
+export const UpdateUserProfileByAdminParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+
+
+export const updateUserProfileByAdminBodyNewPasswordMin = 8;
+
+export const updateUserProfileByAdminBodyMonthlySalaryMin = 0;
+
+
+
+export const UpdateUserProfileByAdminBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "identifier": zod.string().min(1).optional(),
+  "email": zod.string().optional(),
+  "phone": zod.string().optional(),
+  "newPassword": zod.string().min(updateUserProfileByAdminBodyNewPasswordMin).optional(),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']).optional(),
+  "status": zod.enum(['active', 'inactive']).optional(),
+  "department": zod.string().optional(),
+  "studentId": zod.string().nullish(),
+  "monthlySalary": zod.number().min(updateUserProfileByAdminBodyMonthlySalaryMin).optional(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])).optional(),
+  "assignedClasses": zod.array(zod.string()).optional()
+})
+
+export const updateUserProfileByAdminResponseMonthlySalaryMin = 0;
+
+
+
+export const UpdateUserProfileByAdminResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "identifier": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string(),
+  "status": zod.enum(['active', 'inactive']),
+  "department": zod.string().optional(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
+  "assignedClasses": zod.array(zod.string()).optional(),
+  "monthlySalary": zod.number().min(updateUserProfileByAdminResponseMonthlySalaryMin).optional(),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
+  "initials": zod.string(),
+  "schoolName": zod.string(),
+  "studentId": zod.string().nullish()
+})
+
+
+/**
+ * @summary Delete a school user account
+ */
+export const DeleteUserParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const DeleteUserResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Update user permissions and class assignments
+ */
+export const UpdateUserPermissionsParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const UpdateUserPermissionsBody = zod.object({
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
+  "assignedClasses": zod.array(zod.string()).optional()
+})
+
+export const updateUserPermissionsResponseMonthlySalaryMin = 0;
+
+
+
+export const UpdateUserPermissionsResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "identifier": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string(),
+  "status": zod.enum(['active', 'inactive']),
+  "department": zod.string().optional(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
+  "assignedClasses": zod.array(zod.string()).optional(),
+  "monthlySalary": zod.number().min(updateUserPermissionsResponseMonthlySalaryMin).optional(),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
+  "initials": zod.string(),
+  "schoolName": zod.string(),
+  "studentId": zod.string().nullish()
+})
+
+
+/**
  * @summary Get role-aware dashboard data
  */
 export const GetDashboardResponse = zod.object({
-  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
   "greeting": zod.string(),
   "summary": zod.object({
   "students": zod.number(),
@@ -997,7 +1175,7 @@ export const CreateSalaryPaymentResponse = zod.object({
 export const ListSalaryStaffResponseItem = zod.object({
   "id": zod.string(),
   "name": zod.string(),
-  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
   "monthlySalary": zod.number()
 })
 export const ListSalaryStaffResponse = zod.array(ListSalaryStaffResponseItem)
@@ -1340,7 +1518,7 @@ export const CreateClassResponse = zod.object({
  * @summary Get role-filtered school operations
  */
 export const GetOperationsResponse = zod.object({
-  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
   "currencyCode": zod.string(),
   "currencyName": zod.string(),
   "currencySymbol": zod.string(),
@@ -1366,7 +1544,11 @@ export const GetOperationsResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "className": zod.string(),
+  "classId": zod.string().optional(),
+  "stream": zod.string().optional(),
+  "teacherId": zod.string().optional(),
   "teacherName": zod.string(),
+  "createdBy": zod.string().optional(),
   "status": zod.string()
 })),
   "assignments": zod.array(zod.object({
@@ -1484,6 +1666,97 @@ export const GetOperationsResponse = zod.object({
   "date": zod.string()
 }))
 })
+})
+
+
+/**
+ * @summary List subjects visible to the current user
+ */
+export const ListSubjectsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "classId": zod.string().optional(),
+  "stream": zod.string().optional(),
+  "teacherId": zod.string().optional(),
+  "teacherName": zod.string(),
+  "createdBy": zod.string().optional(),
+  "status": zod.string()
+})
+export const ListSubjectsResponse = zod.array(ListSubjectsResponseItem)
+
+
+/**
+ * @summary Create a subject for a class and teacher
+ */
+
+
+
+
+export const CreateSubjectBody = zod.object({
+  "name": zod.string().min(1),
+  "className": zod.string().min(1),
+  "classId": zod.string().optional(),
+  "stream": zod.string().optional(),
+  "teacherId": zod.string().optional(),
+  "teacherName": zod.string().optional()
+})
+
+export const CreateSubjectResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "classId": zod.string().optional(),
+  "stream": zod.string().optional(),
+  "teacherId": zod.string().optional(),
+  "teacherName": zod.string(),
+  "createdBy": zod.string().optional(),
+  "status": zod.string()
+})
+
+
+/**
+ * @summary Update a subject assignment
+ */
+export const UpdateSubjectParams = zod.object({
+  "subjectId": zod.coerce.string()
+})
+
+
+
+
+
+export const UpdateSubjectBody = zod.object({
+  "name": zod.string().min(1),
+  "className": zod.string().min(1),
+  "classId": zod.string().optional(),
+  "stream": zod.string().optional(),
+  "teacherId": zod.string().optional(),
+  "teacherName": zod.string().optional()
+})
+
+export const UpdateSubjectResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "classId": zod.string().optional(),
+  "stream": zod.string().optional(),
+  "teacherId": zod.string().optional(),
+  "teacherName": zod.string(),
+  "createdBy": zod.string().optional(),
+  "status": zod.string()
+})
+
+
+/**
+ * @summary Remove a subject assignment
+ */
+export const DeleteSubjectParams = zod.object({
+  "subjectId": zod.coerce.string()
+})
+
+export const DeleteSubjectResponse = zod.object({
+  "message": zod.string()
 })
 
 

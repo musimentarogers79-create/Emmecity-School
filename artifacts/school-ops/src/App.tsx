@@ -6,6 +6,8 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
 import { ExpenseCreatePage, OperationsPage } from '@/pages/operations-page';
 import { ProfilePage } from '@/pages/profile-page';
+import { SubjectsPage } from '@/pages/subjects-page';
+import { UsersPage } from '@/pages/users-page';
 import {
   AnnouncementsPage,
   AttendanceCreatePage,
@@ -56,6 +58,8 @@ function Router() {
         <Route path="/expenses" component={OperationsPage} />
         <Route path="/announcements" component={AnnouncementsPage} />
         <Route path="/timetable" component={TimetablePage} />
+        <Route path="/subjects" component={SubjectsPage} />
+        <Route path="/users" component={UsersPage} />
         <Route path="/operations" component={OperationsPage} />
         <Route path="/settings" component={SettingsPage} />
         <Route path="/profile" component={ProfilePage} />

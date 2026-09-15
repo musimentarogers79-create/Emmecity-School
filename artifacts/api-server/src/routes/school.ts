@@ -8,12 +8,16 @@ import {
   ListSalariesResponse, ListStudentsQueryParams, ListStudentsResponse, LoginBody, LoginResponse, LogoutResponse,
   RecordPaymentBody, RecordPaymentResponse, SaveAttendanceBody, SaveAttendanceResponse, GetSettingsResponse,
   UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse, UpdateStudentBody, UpdateStudentResponse,
+  CreateUserBody, CreateUserResponse, ListUsersResponse, UpdateUserProfileByAdminBody, UpdateUserProfileByAdminResponse,
+  UpdateUserPermissionsBody, UpdateUserPermissionsResponse, DeleteUserResponse,
+  ListSubjectsResponse, CreateSubjectBody, CreateSubjectResponse, UpdateSubjectParams, UpdateSubjectBody, UpdateSubjectResponse,
+  DeleteSubjectParams, DeleteSubjectResponse,
 } from "@workspace/api-zod";
 import {
   AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, currentUserFromToken, getAdmissionForm,
-  clearLoginFailures, deleteSession, findUser, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
-  listAttendance, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance, updateStudent,
-  deleteOperation, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
+  clearLoginFailures, deleteSession, findUser, findUserById, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
+  listAttendance, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance, updateStudent,
+  createUser, deleteOperation, deleteUser, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserAdmin, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
 } from "../lib/school-data";
 
 const router: IRouter = Router();
@@ -25,6 +29,16 @@ const requireUser = (req: Parameters<Parameters<IRouter["get"]>[1]>[0]) => curre
 const administratorRoles: SchoolRole[] = ["super_admin", "administrator"];
 const isAdministrator = (user?: SchoolUser) => !!user && administratorRoles.includes(user.role);
 const hasPermission = (user: SchoolUser | undefined, permission: PermissionKey) => !!user && (isAdministrator(user) || user.permissions.includes(permission));
+const canManageUsers = (user?: SchoolUser) => !!user && (user.role === "super_admin" || user.role === "administrator" || user.permissions.includes("users_manage"));
+const canViewUsers = (user?: SchoolUser) => !!user && (canManageUsers(user) || user.permissions.includes("users_view"));
+const canManageSubjects = (user?: SchoolUser) => !!user && (isAdministrator(user) || user.role === "teacher" || user.permissions.includes("subjects_manage"));
+const canDeleteSubjects = (user?: SchoolUser) => !!user && (isAdministrator(user) || user.permissions.includes("subjects_delete"));
+const recordAccountAudit = async (actor: SchoolUser, action: string, targetId: string, details: Record<string, unknown> = {}) => {
+  await createOperation("documents", {
+    type: "audit", category: "user_account", title: `Account ${action}`, description: `${actor.name} ${action} account ${targetId}`,
+    actorId: actor.id, targetId, action, details, occurredAt: new Date().toISOString(), visibility: "administrator",
+  });
+};
 const roleGreeting = (name: string) => `Good morning, ${name.split(" ")[0]}`;
 const roleActions = (role: SchoolRole, studentId?: string) => role === "teacher"
   ? [{ id: "attendance", label: "Record attendance", description: "Mark today's register for your assigned classes.", href: "/attendance", tone: "green" }, { id: "assignments", label: "Manage assignments", description: "Create and follow up work for your classes.", href: "/operations?view=assignments", tone: "blue" }, { id: "classes", label: "Open my classes", description: "See only the classes and subjects assigned to you.", href: "/operations?view=classes", tone: "violet" }]
@@ -83,7 +97,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
   const user = await findUser(parsed.data.identifier, parsed.data.userType);
-  if (!user || !verifyPassword(parsed.data.password, user.password)) {
+  if (!user || user.status !== "active" || !verifyPassword(parsed.data.password, user.password)) {
     errorResponse(res, 401, "Those details do not match an active account.");
     return;
   }
@@ -121,6 +135,83 @@ router.patch("/auth/me", async (req, res): Promise<void> => {
     res.json(UpdateCurrentUserResponse.parse({ user: publicUser(updated), expiresAt: new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString() }));
   } catch {
     errorResponse(res, 409, "The profile could not be updated. Check the username and try again.");
+  }
+});
+
+router.get("/users", async (req, res): Promise<void> => {
+  const actor = await requireUser(req);
+  if (!actor) { errorResponse(res, 401, "Not signed in"); return; }
+  if (!canViewUsers(actor)) { errorResponse(res, 403, "Administrator access required."); return; }
+  res.json(ListUsersResponse.parse(await listUsers()));
+});
+
+router.post("/users", async (req, res): Promise<void> => {
+  const actor = await requireUser(req);
+  if (!canManageUsers(actor)) { errorResponse(res, 403, "Administrator access required."); return; }
+  const parsed = CreateUserBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Complete the account name, identifier, role, and password."); return; }
+  try {
+    const created = await createUser(parsed.data);
+    req.log.info({ actorId: actor?.id, accountId: created.id, role: created.role }, "School account created");
+    if (actor) await recordAccountAudit(actor, "created", created.id, { role: created.role, identifier: created.identifier });
+    res.status(201).json(CreateUserResponse.parse(publicUser(created)));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The account could not be created.";
+    errorResponse(res, message.includes("already in use") ? 409 : 400, message);
+  }
+});
+
+router.patch("/users/:userId", async (req, res): Promise<void> => {
+  const actor = await requireUser(req);
+  if (!canManageUsers(actor)) { errorResponse(res, 403, "Administrator access required."); return; }
+  if (actor?.id === req.params.userId && req.body?.status === "inactive") { errorResponse(res, 400, "You cannot deactivate your own account."); return; }
+  const parsed = UpdateUserProfileByAdminBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Enter valid account details."); return; }
+  if (parsed.data.role && actor?.role !== "super_admin" && parsed.data.role !== (await findUserById(req.params.userId))?.role) {
+    errorResponse(res, 403, "Only the Super Admin can change account roles."); return;
+  }
+  try {
+    const updated = await updateUserAdmin(req.params.userId, parsed.data);
+    if (!updated) { errorResponse(res, 404, "Account not found."); return; }
+    req.log.info({ actorId: actor?.id, accountId: updated.id }, "School account updated");
+    if (actor) await recordAccountAudit(actor, "updated", updated.id, { status: updated.status, role: updated.role });
+    res.json(UpdateUserProfileByAdminResponse.parse(publicUser(updated)));
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The account could not be updated.";
+    errorResponse(res, message.includes("already") ? 409 : 400, message);
+  }
+});
+
+router.delete("/users/:userId", async (req, res): Promise<void> => {
+  const actor = await requireUser(req);
+  if (actor?.role !== "super_admin") { errorResponse(res, 403, "Only the Super Admin can delete accounts."); return; }
+  if (actor.id === req.params.userId) { errorResponse(res, 400, "You cannot delete your own account."); return; }
+  const deleted = await deleteUser(req.params.userId);
+  if (!deleted) { errorResponse(res, 404, "Account not found."); return; }
+  req.log.info({ actorId: actor.id, accountId: req.params.userId }, "School account deleted");
+  await recordAccountAudit(actor, "deleted", req.params.userId);
+  res.json(DeleteUserResponse.parse({ message: "Account deleted successfully." }));
+});
+
+router.patch("/users/:userId/permissions", async (req, res): Promise<void> => {
+  const actor = await requireUser(req);
+  if (!canManageUsers(actor)) { errorResponse(res, 403, "Administrator access required."); return; }
+  const parsed = UpdateUserPermissionsBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Choose valid permissions and class assignments."); return; }
+  try {
+    const existing = await findUserById(req.params.userId);
+    if (!existing) { errorResponse(res, 404, "Account not found."); return; }
+    const updated = await updateUserAdmin(req.params.userId, { permissions: parsed.data.permissions });
+    if (!updated) { errorResponse(res, 404, "Account not found."); return; }
+    const requestedClasses = parsed.data.assignedClasses || [];
+    const classRows = await listOperation("classes");
+    await Promise.all(classRows.filter((item) => item.teacherId === existing.id && !requestedClasses.includes(classAssignmentKey(String(item.name), String(item.stream ?? "")))).map((item) => updateOperation("classes", item.id, { ...item, teacherId: null, teacherName: "Unassigned" })));
+    await Promise.all(classRows.filter((item) => existing.role === "teacher" && requestedClasses.includes(classAssignmentKey(String(item.name), String(item.stream ?? "")))).map((item) => updateOperation("classes", item.id, { ...item, teacherId: existing.id, teacherName: existing.name })));
+    const refreshed = await findUserById(req.params.userId);
+    if (actor) await recordAccountAudit(actor, "permissions updated", req.params.userId, { permissions: parsed.data.permissions, assignedClasses: requestedClasses });
+    res.json(UpdateUserPermissionsResponse.parse(publicUser(refreshed || updated)));
+  } catch (error) {
+    errorResponse(res, 400, error instanceof Error ? error.message : "Permissions could not be updated.");
   }
 });
 
@@ -393,17 +484,79 @@ router.post("/academics/report-cards/:studentId", async (req, res): Promise<void
   res.status(201).json(CreateReportCardResponse.parse(reportCardFor(student, saved, reports.filter((item) => item.id !== previous?.id).concat(saved))));
 });
 
+router.get("/operations/subjects", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!user) { errorResponse(res, 401, "Not signed in"); return; }
+  const rows = await listOperation("subjects");
+  const visible = isAdministrator(user) || user.permissions.includes("subjects_view") || user.permissions.includes("subjects_manage")
+    ? rows
+    : user.role === "teacher"
+      ? rows.filter((item) => item.teacherId === user.id || item.createdBy === user.id)
+      : [];
+  res.json(ListSubjectsResponse.parse(visible));
+});
+
 router.post("/operations/subjects", async (req, res): Promise<void> => {
   const user = await requireUser(req);
-  if (!isAdministrator(user)) { errorResponse(res, 403, "Only administrators can create subjects."); return; }
-  const name = String(req.body?.name || "").trim();
-  const className = String(req.body?.className || "").trim();
-  const teacherName = String(req.body?.teacherName || "").trim();
-  if (!name || !className) { errorResponse(res, 400, "Enter a subject name and choose the class."); return; }
+  if (!user) { errorResponse(res, 401, "Not signed in"); return; }
+  if (!canManageSubjects(user)) { errorResponse(res, 403, "You do not have permission to manage subjects."); return; }
+  const parsed = CreateSubjectBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Enter a subject name and choose the class."); return; }
+  const data = parsed.data;
+  const classesRows = await listOperation("classes");
+  const classRow = data.classId
+    ? classesRows.find((item) => item.id === data.classId)
+    : classesRows.find((item) => classAssignmentKey(String(item.name), String(item.stream ?? "")) === classAssignmentKey(data.className, data.stream));
+  if (!classRow) { errorResponse(res, 400, "Choose an existing class and stream."); return; }
+  const teacher = data.teacherId ? await findUserById(data.teacherId) : data.teacherName ? (await listUsers()).find((item) => item.role === "teacher" && item.name.toLowerCase() === data.teacherName?.toLowerCase()) : user.role === "teacher" ? user : undefined;
+  if (data.teacherId && (!teacher || teacher.role !== "teacher")) { errorResponse(res, 400, "Choose a registered teacher."); return; }
+  if (user.role === "teacher" && (classRow.teacherId !== user.id || (teacher && teacher.id !== user.id))) { errorResponse(res, 403, "Teachers can only add subjects to their assigned classes."); return; }
   const existing = await listOperation("subjects");
-  if (existing.some((item) => String(item.name).toLowerCase() === name.toLowerCase() && String(item.className).toLowerCase() === className.toLowerCase())) { errorResponse(res, 409, "That subject is already registered for this class."); return; }
-  const created = await createOperation("subjects", { name, className, teacherName, status: "Active" });
-  res.status(201).json(created);
+  if (existing.some((item) => String(item.name).toLowerCase() === data.name.trim().toLowerCase() && (String(item.classId || "") === classRow.id || classAssignmentKey(String(item.className), String(item.stream ?? "")) === classAssignmentKey(String(classRow.name), String(classRow.stream ?? ""))))) {
+    errorResponse(res, 409, "That subject is already registered for this class."); return;
+  }
+  const created = await createOperation("subjects", {
+    name: data.name.trim(), classId: classRow.id, className: String(classRow.name), stream: String(classRow.stream ?? ""),
+    teacherId: teacher?.id || null, teacherName: teacher?.name || "Unassigned", createdBy: user.id, status: "Active",
+  });
+  if (!created) { errorResponse(res, 500, "The subject could not be created."); return; }
+  res.status(201).json(CreateSubjectResponse.parse(created));
+});
+
+router.patch("/operations/subjects/:subjectId", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!user) { errorResponse(res, 401, "Not signed in"); return; }
+  if (!canManageSubjects(user)) { errorResponse(res, 403, "You do not have permission to manage subjects."); return; }
+  const params = UpdateSubjectParams.safeParse(req.params);
+  const parsed = UpdateSubjectBody.safeParse(req.body);
+  if (!params.success || !parsed.success) { errorResponse(res, 400, "Enter valid subject details."); return; }
+  const existing = (await listOperation("subjects")).find((item) => item.id === params.data.subjectId);
+  if (!existing) { errorResponse(res, 404, "Subject not found."); return; }
+  if (!isAdministrator(user) && existing.teacherId !== user.id && existing.createdBy !== user.id) { errorResponse(res, 403, "You can only edit subjects assigned to you."); return; }
+  const classesRows = await listOperation("classes");
+  const data = parsed.data;
+  const classRow = data.classId ? classesRows.find((item) => item.id === data.classId) : classesRows.find((item) => classAssignmentKey(String(item.name), String(item.stream ?? "")) === classAssignmentKey(data.className, data.stream));
+  if (!classRow) { errorResponse(res, 400, "Choose an existing class and stream."); return; }
+  const teacher = data.teacherId ? await findUserById(data.teacherId) : data.teacherName ? (await listUsers()).find((item) => item.role === "teacher" && item.name.toLowerCase() === data.teacherName?.toLowerCase()) : existing.teacherId ? await findUserById(String(existing.teacherId)) : undefined;
+  if (data.teacherId && (!teacher || teacher.role !== "teacher")) { errorResponse(res, 400, "Choose a registered teacher."); return; }
+  const duplicate = (await listOperation("subjects")).some((item) => item.id !== existing.id && String(item.name).toLowerCase() === data.name.trim().toLowerCase() && (String(item.classId || "") === classRow.id || classAssignmentKey(String(item.className), String(item.stream ?? "")) === classAssignmentKey(String(classRow.name), String(classRow.stream ?? ""))));
+  if (duplicate) { errorResponse(res, 409, "That subject is already registered for this class."); return; }
+  const updated = await updateOperation("subjects", existing.id, { ...existing, name: data.name.trim(), classId: classRow.id, className: String(classRow.name), stream: String(classRow.stream ?? ""), teacherId: teacher?.id || null, teacherName: teacher?.name || "Unassigned", updatedAt: new Date().toISOString() });
+  if (!updated) { errorResponse(res, 404, "Subject not found."); return; }
+  res.json(UpdateSubjectResponse.parse(updated));
+});
+
+router.delete("/operations/subjects/:subjectId", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!user) { errorResponse(res, 401, "Not signed in"); return; }
+  if (!canDeleteSubjects(user)) { errorResponse(res, 403, "You do not have permission to delete subjects."); return; }
+  const params = DeleteSubjectParams.safeParse(req.params);
+  if (!params.success) { errorResponse(res, 400, "Invalid subject id."); return; }
+  const existing = (await listOperation("subjects")).find((item) => item.id === params.data.subjectId);
+  if (!existing) { errorResponse(res, 404, "Subject not found."); return; }
+  if (!isAdministrator(user) && existing.teacherId !== user.id && existing.createdBy !== user.id) { errorResponse(res, 403, "You can only delete subjects assigned to you."); return; }
+  if (!await deleteOperation("subjects", existing.id)) { errorResponse(res, 404, "Subject not found."); return; }
+  res.json(DeleteSubjectResponse.parse({ message: "Subject removed successfully." }));
 });
 router.post("/operations", async (req, res): Promise<void> => {
   const user = await requireUser(req);

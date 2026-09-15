@@ -13,6 +13,7 @@ export interface UserProfileUpdate {
   identifier?: string;
   email?: string;
   phone?: string;
+  department?: string;
   currentPassword?: string;
   /** @minLength 8 */
   newPassword?: string;

@@ -111,6 +111,112 @@ paths:
           description: Not signed in
         "409":
           description: Username already in use
+  /users:
+    get:
+      operationId: listUsers
+      tags: [auth]
+      summary: List school user accounts for authorized administrators
+      responses:
+        "200":
+          description: User accounts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuthUser"
+        "403":
+          description: Administrator access required
+    post:
+      operationId: createUser
+      tags: [auth]
+      summary: Create a school user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserAccountInput"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "400":
+          description: Invalid account details
+        "403":
+          description: Administrator access required
+        "409":
+          description: Identifier already in use
+  /users/{userId}:
+    patch:
+      operationId: updateUserProfileByAdmin
+      tags: [auth]
+      summary: Update a school user account
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserAdminProfileUpdate"
+      responses:
+        "200":
+          description: Account updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "403":
+          description: Administrator access required
+        "404":
+          description: Account not found
+        "409":
+          description: Account update conflict
+    delete:
+      operationId: deleteUser
+      tags: [auth]
+      summary: Delete a school user account
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: Account deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "403":
+          description: Super Admin access required
+        "404":
+          description: Account not found
+  /users/{userId}/permissions:
+    patch:
+      operationId: updateUserPermissions
+      tags: [auth]
+      summary: Update user permissions and class assignments
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserPermissionsInput"
+      responses:
+        "200":
+          description: Permissions updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "403":
+          description: Administrator access required
+        "404":
+          description: Account not found
   /dashboard:
     get:
       operationId: getDashboard
@@ -572,6 +678,88 @@ paths:
                 $ref: "#/components/schemas/OperationsOverview"
         "401":
           description: Not signed in
+  /operations/subjects:
+    get:
+      operationId: listSubjects
+      tags: [operations]
+      summary: List subjects visible to the current user
+      responses:
+        "200":
+          description: Subjects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OperationSubject"
+        "401":
+          description: Not signed in
+    post:
+      operationId: createSubject
+      tags: [operations]
+      summary: Create a subject for a class and teacher
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubjectInput"
+      responses:
+        "201":
+          description: Subject created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationSubject"
+        "400":
+          description: Invalid subject
+        "403":
+          description: Subject management access required
+        "409":
+          description: Duplicate subject assignment
+  /operations/subjects/{subjectId}:
+    patch:
+      operationId: updateSubject
+      tags: [operations]
+      summary: Update a subject assignment
+      parameters:
+        - $ref: "#/components/parameters/SubjectId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubjectInput"
+      responses:
+        "200":
+          description: Subject updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OperationSubject"
+        "403":
+          description: Subject management access required
+        "404":
+          description: Subject not found
+        "409":
+          description: Duplicate subject assignment
+    delete:
+      operationId: deleteSubject
+      tags: [operations]
+      summary: Remove a subject assignment
+      parameters:
+        - $ref: "#/components/parameters/SubjectId"
+      responses:
+        "200":
+          description: Subject removed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "403":
+          description: Subject management access required
+        "404":
+          description: Subject not found
   /settings:
     get:
       operationId: getSettings
@@ -611,6 +799,18 @@ components:
       required: true
       schema:
         type: string
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema:
+        type: string
+    SubjectId:
+      name: subjectId
+      in: path
+      required: true
+      schema:
+        type: string
   schemas:
     HealthStatus:
       type: object
@@ -627,7 +827,7 @@ components:
       required: [message]
     Role:
       type: string
-      enum: [super_admin, administrator, teacher, accountant, guardian, student, staff]
+      enum: [super_admin, administrator, teacher, accountant, secretary, librarian, nurse, guardian, student, staff]
     LoginInput:
       type: object
       properties:
@@ -654,6 +854,11 @@ components:
           type: string
         phone:
           type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        department:
+          type: string
         permissions:
           type: array
           items:
@@ -673,7 +878,7 @@ components:
           type: string
         studentId:
           type: ["string", "null"]
-      required: [id, name, identifier, email, phone, role, permissions, initials, schoolName]
+      required: [id, name, identifier, email, phone, status, role, permissions, initials, schoolName]
     UserProfileUpdate:
       type: object
       properties:
@@ -687,14 +892,97 @@ components:
           type: string
         phone:
           type: string
+        department:
+          type: string
         currentPassword:
           type: string
         newPassword:
           type: string
           minLength: 8
+    UserAccountInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        identifier:
+          type: string
+          minLength: 1
+        password:
+          type: string
+          minLength: 8
+        role:
+          $ref: "#/components/schemas/Role"
+        userType:
+          type: string
+          enum: [staff, learner]
+        studentId:
+          type: ["string", "null"]
+        email:
+          type: string
+        phone:
+          type: string
+        department:
+          type: string
+        monthlySalary:
+          type: number
+          minimum: 0
+        permissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PermissionKey"
+      required: [name, identifier, password, role, userType]
+    UserAdminProfileUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        identifier:
+          type: string
+          minLength: 1
+        email:
+          type: string
+        phone:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
+        role:
+          $ref: "#/components/schemas/Role"
+        status:
+          type: string
+          enum: [active, inactive]
+        department:
+          type: string
+        studentId:
+          type: ["string", "null"]
+        monthlySalary:
+          type: number
+          minimum: 0
+        permissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PermissionKey"
+        assignedClasses:
+          type: array
+          items:
+            type: string
+    UserPermissionsInput:
+      type: object
+      properties:
+        permissions:
+          type: array
+          items:
+            $ref: "#/components/schemas/PermissionKey"
+        assignedClasses:
+          type: array
+          items:
+            type: string
+      required: [permissions]
     PermissionKey:
       type: string
-      enum: [expense_approve, expense_delete, transactions_view, transactions_print, finance_view, expenses_view]
+      enum: [expense_approve, expense_delete, transactions_view, transactions_print, finance_view, expenses_view, users_view, users_manage, subjects_view, subjects_manage, subjects_delete]
     AuthSession:
       type: object
       properties:
@@ -1495,7 +1783,15 @@ components:
           type: string
         className:
           type: string
+        classId:
+          type: string
+        stream:
+          type: string
+        teacherId:
+          type: string
         teacherName:
+          type: string
+        createdBy:
           type: string
         status:
           type: string
@@ -1509,6 +1805,12 @@ components:
         className:
           type: string
           minLength: 1
+        classId:
+          type: string
+        stream:
+          type: string
+        teacherId:
+          type: string
         teacherName:
           type: string
       required: [name, className]

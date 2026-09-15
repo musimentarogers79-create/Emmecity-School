@@ -70,6 +70,8 @@ export const users = pgTable("school_users", {
   passwordHash: text("password_hash").notNull(),
   userType: text("user_type").notNull(),
   role: text("role").notNull(),
+  status: text("status").notNull().default("active"),
+  department: text("department"),
   permissions: jsonb("permissions").$type<string[]>().notNull().default([]),
   initials: text("initials").notNull(),
   studentId: uuid("student_id"),
@@ -82,7 +84,8 @@ export const users = pgTable("school_users", {
   index("school_users_role_idx").on(table.schoolId, table.role),
   check("school_users_identifier_nonblank", sql`length(btrim(${table.identifier})) > 0`),
   check("school_users_user_type_valid", sql`${table.userType} in ('staff', 'guardian', 'learner')`),
-  check("school_users_role_valid", sql`${table.role} in ('super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff')`),
+  check("school_users_role_valid", sql`${table.role} in ('super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff')`),
+  check("school_users_status_valid", sql`${table.status} in ('active', 'inactive')`),
   foreignKey({
     name: "school_users_school_student_fk",
     columns: [table.schoolId, table.studentId],

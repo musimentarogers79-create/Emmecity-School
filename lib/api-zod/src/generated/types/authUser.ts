@@ -5,6 +5,7 @@
  * EMMECTY Nursery & Primary School management API
  * OpenAPI spec version: 0.2.0
  */
+import type { AuthUserStatus } from './authUserStatus';
 import type { PermissionKey } from './permissionKey';
 import type { Role } from './role';
 
@@ -14,6 +15,8 @@ export interface AuthUser {
   identifier: string;
   email: string;
   phone: string;
+  status: AuthUserStatus;
+  department?: string;
   permissions: PermissionKey[];
   assignedClasses?: string[];
   /** @minimum 0 */

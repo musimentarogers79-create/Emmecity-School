@@ -8,12 +8,12 @@ import {
 } from "@workspace/db";
 import type { SchoolSettings, User } from "@workspace/db";
 
-export type SchoolRole = "super_admin" | "administrator" | "teacher" | "accountant" | "guardian" | "student" | "staff";
-export type PermissionKey = "expense_approve" | "expense_delete" | "transactions_view" | "transactions_print" | "finance_view" | "expenses_view";
+export type SchoolRole = "super_admin" | "administrator" | "teacher" | "accountant" | "secretary" | "librarian" | "nurse" | "guardian" | "student" | "staff";
+export type PermissionKey = "expense_approve" | "expense_delete" | "transactions_view" | "transactions_print" | "finance_view" | "expenses_view" | "users_view" | "users_manage" | "subjects_view" | "subjects_manage" | "subjects_delete";
 export type AttendanceStatus = "present" | "absent" | "late" | "excused";
 export type SchoolUser = {
   id: string; name: string; identifier: string; email: string; phone: string; password: string; userType: "staff" | "guardian" | "learner";
-  role: SchoolRole; permissions: PermissionKey[]; initials: string; schoolName: string; studentId?: string; assignedClasses?: string[]; monthlySalary?: number;
+  role: SchoolRole; status: "active" | "inactive"; department?: string; permissions: PermissionKey[]; initials: string; schoolName: string; studentId?: string; assignedClasses?: string[]; monthlySalary?: number;
 };
 export type SchoolStudent = {
   id: string; registrationNumber: string; name: string; firstName: string; lastName: string; middleName?: string;
@@ -78,7 +78,7 @@ export async function initializeSchoolData() {
     if (!admins[0]) {
       await db.insert(users).values({
         schoolId: setting.id, name: "School administrator", identifier: "admin", passwordHash: hashPassword(configuredPassword || "admin123"),
-        userType: "staff", role: "administrator", initials: "SA",
+        userType: "staff", role: "administrator", status: "active", initials: "SA",
       }).onConflictDoNothing({ target: [users.schoolId, users.identifier] });
     } else if (production && configuredPassword && verifyPassword("admin123", admins[0].passwordHash)) {
       await db.update(users).set({ passwordHash: hashPassword(configuredPassword), updatedAt: new Date() }).where(eq(users.id, admins[0].id));
@@ -90,11 +90,11 @@ export async function initializeSchoolData() {
 export async function getSchoolId() { return initializeSchoolData(); }
 
 function publicRow(row: User, setting: SchoolSettings): SchoolUser {
-  const permissions = Array.isArray(row.permissions) ? row.permissions.filter((item): item is PermissionKey => ["expense_approve", "expense_delete", "transactions_view", "transactions_print", "finance_view", "expenses_view"].includes(item)) : [];
-  return { id: row.id, name: row.name, identifier: row.identifier, email: row.email, phone: row.phone, password: row.passwordHash, userType: row.userType as SchoolUser["userType"], role: row.role as SchoolRole, permissions, initials: row.initials, schoolName: setting.schoolName, ...(row.studentId ? { studentId: row.studentId } : {}), ...(row.monthlySalary !== null ? { monthlySalary: number(row.monthlySalary) } : {}) };
+  const permissions = Array.isArray(row.permissions) ? row.permissions.filter((item): item is PermissionKey => ["expense_approve", "expense_delete", "transactions_view", "transactions_print", "finance_view", "expenses_view", "users_view", "users_manage", "subjects_view", "subjects_manage", "subjects_delete"].includes(item)) : [];
+  return { id: row.id, name: row.name, identifier: row.identifier, email: row.email, phone: row.phone, password: row.passwordHash, userType: row.userType as SchoolUser["userType"], role: row.role as SchoolRole, status: (row.status || "active") as SchoolUser["status"], ...(row.department ? { department: row.department } : {}), permissions, initials: row.initials, schoolName: setting.schoolName, ...(row.studentId ? { studentId: row.studentId } : {}), ...(row.monthlySalary !== null ? { monthlySalary: number(row.monthlySalary) } : {}) };
 }
 export function publicUser(user: SchoolUser) {
-  return { id: user.id, name: user.name, identifier: user.identifier, email: user.email, phone: user.phone, role: user.role, permissions: user.permissions, initials: user.initials, schoolName: user.schoolName, studentId: user.studentId ?? null, ...(user.assignedClasses ? { assignedClasses: user.assignedClasses } : {}), ...(user.monthlySalary !== undefined ? { monthlySalary: user.monthlySalary } : {}) };
+  return { id: user.id, name: user.name, identifier: user.identifier, email: user.email, phone: user.phone, role: user.role, status: user.status, ...(user.department ? { department: user.department } : {}), permissions: user.permissions, initials: user.initials, schoolName: user.schoolName, studentId: user.studentId ?? null, ...(user.assignedClasses ? { assignedClasses: user.assignedClasses } : {}), ...(user.monthlySalary !== undefined ? { monthlySalary: user.monthlySalary } : {}) };
 }
 export async function getSchoolSettings() {
   const id = await getSchoolId();
@@ -159,6 +159,96 @@ export async function updateUserProfile(user: SchoolUser, data: {
   return publicRow(row, await getSchoolSettings());
 }
 
+export async function createUser(data: {
+  name: string;
+  identifier: string;
+  password: string;
+  role: SchoolRole;
+  userType: "staff" | "learner";
+  studentId?: string | null;
+  email?: string;
+  phone?: string;
+  monthlySalary?: number | null;
+  department?: string;
+  permissions?: PermissionKey[];
+}) {
+  const schoolId = await getSchoolId();
+  const setting = await getSchoolSettings();
+  const identifier = data.identifier.trim();
+  const existing = await db.select({ id: users.id }).from(users).where(and(eq(users.schoolId, schoolId), ilike(users.identifier, identifier))).limit(1);
+  if (existing[0]) throw new Error("That username or registration number is already in use.");
+  const linkedStudent = data.studentId ? await getStudent(data.studentId) : undefined;
+  if ((data.role === "student" || data.role === "guardian") && !linkedStudent) throw new Error("Link pupil and guardian accounts to a student record.");
+  if (data.studentId && !linkedStudent) throw new Error("The linked pupil record was not found.");
+  const row = (await db.insert(users).values({
+    schoolId,
+    name: data.name.trim(),
+    identifier,
+    email: data.email?.trim() || "",
+    phone: data.phone?.trim() || "",
+    passwordHash: hashPassword(data.password),
+    userType: data.userType,
+    role: data.role,
+    status: "active",
+    permissions: data.permissions || [],
+    initials: initials(data.name),
+    studentId: linkedStudent?.id || null,
+    monthlySalary: data.monthlySalary == null ? null : String(data.monthlySalary),
+    department: data.department?.trim() || null,
+  }).returning())[0];
+  if (!row) throw new Error("The account could not be created.");
+  if (data.userType === "staff") {
+    await createOperation("staff", { userId: row.id, name: row.name, role: row.role.replace("_", " "), username: row.identifier, phone: row.phone || "Not provided", status: "Active" });
+  }
+  return publicRow(row, setting);
+}
+
+export async function updateUserAdmin(id: string, data: {
+  name?: string; identifier?: string; email?: string; phone?: string; newPassword?: string;
+  role?: SchoolRole; status?: "active" | "inactive"; permissions?: PermissionKey[];
+  studentId?: string | null; monthlySalary?: number | null; department?: string;
+}) {
+  const schoolId = await getSchoolId();
+  const current = (await db.select().from(users).where(and(eq(users.schoolId, schoolId), eq(users.id, id))).limit(1))[0];
+  if (!current) return undefined;
+  const updates: Partial<User> = { updatedAt: new Date() };
+  if (data.name !== undefined) { updates.name = data.name.trim(); updates.initials = initials(data.name); }
+  if (data.identifier !== undefined) updates.identifier = data.identifier.trim();
+  if (data.email !== undefined) updates.email = data.email.trim();
+  if (data.phone !== undefined) updates.phone = data.phone.trim();
+  if (data.newPassword !== undefined) updates.passwordHash = hashPassword(data.newPassword);
+  if (data.role !== undefined) updates.role = data.role;
+  if (data.status !== undefined) updates.status = data.status;
+  if (data.permissions !== undefined) updates.permissions = data.permissions;
+  if (data.studentId !== undefined) {
+    const linkedStudent = data.studentId ? await getStudent(data.studentId) : undefined;
+    if (data.studentId && !linkedStudent) throw new Error("The linked pupil record was not found.");
+    updates.studentId = linkedStudent?.id || null;
+  }
+  if (data.monthlySalary !== undefined) updates.monthlySalary = data.monthlySalary == null ? null : String(data.monthlySalary);
+  if (data.department !== undefined) updates.department = data.department.trim() || null;
+  const row = (await db.update(users).set(updates).where(and(eq(users.schoolId, schoolId), eq(users.id, id))).returning())[0];
+  if (!row) return undefined;
+  const staffRecord = (await listOperation("staff")).find((item) => String(item.userId || "") === id);
+  if (row.userType === "staff") {
+    const staffData = { ...(staffRecord || {}), userId: row.id, name: row.name, role: row.role.replace("_", " "), username: row.identifier, phone: row.phone || "Not provided", status: row.status === "active" ? "Active" : "Inactive", updatedAt: new Date().toISOString() };
+    if (staffRecord) await updateOperation("staff", staffRecord.id, staffData);
+    else await createOperation("staff", staffData);
+  } else if (staffRecord) {
+    await deleteOperation("staff", staffRecord.id);
+  }
+  return publicRow(row, await getSchoolSettings());
+}
+
+export async function deleteUser(id: string) {
+  const schoolId = await getSchoolId();
+  const row = (await db.delete(users).where(and(eq(users.schoolId, schoolId), eq(users.id, id))).returning({ id: users.id }))[0];
+  if (!row) return false;
+  const staffRecord = (await listOperation("staff")).find((item) => String(item.userId || "") === id);
+  if (staffRecord) await deleteOperation("staff", staffRecord.id);
+  return true;
+}
+
 const tokenDigest = (token: string) => createHash("sha256").update(token).digest("hex");
 export async function makeSession(userId: string) {
   const token = randomUUID();
@@ -169,7 +259,8 @@ export async function deleteSession(token: string) { await db.delete(sessions).w
 export async function currentUserFromToken(token: string | undefined) {
   if (!token) return undefined;
   const row = (await db.select().from(sessions).where(and(eq(sessions.tokenHash, tokenDigest(token)), gt(sessions.expiresAt, new Date()))).limit(1))[0];
-  return row ? findUserById(row.userId) : undefined;
+  const user = row ? await findUserById(row.userId) : undefined;
+  return user?.status === "active" ? user : undefined;
 }
 
 const loginAttemptDigest = (key: string) => createHash("sha256").update(key).digest("hex");

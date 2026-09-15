@@ -3,7 +3,7 @@ import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import type { AttendanceRecord, OperationExpense, Payment, Student } from '@workspace/api-client-react';
 import { getGetAttendanceQueryKey, getGetCurrentUserQueryKey, getGetOperationsQueryKey, getListPaymentsQueryKey, getListStudentsQueryKey, useGetAttendance, useGetCurrentUser, useGetOperations, useListPayments, useListStudents, useLogout } from '@workspace/api-client-react';
-import { BookOpen, CalendarDays, CircleDollarSign, ClipboardList, Download, FileBarChart, LayoutDashboard, LogOut, Menu, Megaphone, PanelLeftClose, PanelLeftOpen, ReceiptText, Search, Settings, ShieldCheck, UserRound, Users, X } from 'lucide-react';
+import { BookOpen, CalendarDays, CircleDollarSign, ClipboardList, Download, FileBarChart, KeyRound, LayoutDashboard, LogOut, Menu, Megaphone, PanelLeftClose, PanelLeftOpen, ReceiptText, Search, Settings, ShieldCheck, UserRound, Users, X } from 'lucide-react';
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
 export const SCHOOL_NAME = 'EMMECTY NURSERY & PRIMARY SCHOOL';
@@ -18,6 +18,8 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
     { href: '/expenses', label: 'Expenses', icon: ReceiptText },
     { href: '/transactions', label: 'Transactions', icon: ReceiptText },
+    { href: '/subjects', label: 'Subjects', icon: BookOpen },
+    { href: '/users', label: 'Users & Roles', icon: KeyRound },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
   ],
@@ -27,6 +29,8 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/attendance', label: 'Attendance', icon: CalendarDays },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
     { href: '/expenses', label: 'Expenses', icon: ReceiptText },
+    { href: '/subjects', label: 'Subjects', icon: BookOpen },
+    { href: '/users', label: 'Users & Roles', icon: KeyRound },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
   ],
@@ -38,6 +42,7 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/expenses', label: 'Expenses', icon: ReceiptText },
     { href: '/transactions', label: 'Transactions', icon: ReceiptText },
     { href: '/operations?view=assignments', label: 'Assignments', icon: ClipboardList },
+    { href: '/subjects', label: 'Subjects', icon: BookOpen },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
   ],

@@ -10,6 +10,10 @@ export interface OperationSubject {
   id: string;
   name: string;
   className: string;
+  classId?: string;
+  stream?: string;
+  teacherId?: string;
   teacherName: string;
+  createdBy?: string;
   status: string;
 }
