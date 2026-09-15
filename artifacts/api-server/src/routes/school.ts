@@ -43,6 +43,17 @@ const matchesAssignedClass = (assigned: string[], className: string, stream?: st
   const fullName = stream ? `${className} ${stream}` : className;
   return assigned.some((candidate) => candidate === fullName || candidate === className || candidate.startsWith(`${className} `) || fullName.startsWith(`${candidate} `));
 };
+const textValue = (value: unknown, fallback: string) => typeof value === "string" && value.trim() ? value : fallback;
+const operationDocumentRow = (item: OperationRecord, pupilName?: string) => {
+  const title = textValue(item.title, pupilName ? `Pupil admission form · ${pupilName}` : "School document");
+  return {
+    id: item.id,
+    name: textValue(item.name, title),
+    type: textValue(item.type, textValue(item.documentType, "school_document")),
+    updatedAt: textValue(item.updatedAt, textValue(item.generatedAt, textValue(item.registeredAt, "Not recorded"))),
+    visibility: textValue(item.visibility, "School administration"),
+  };
+};
 
 router.post("/auth/login", async (req, res): Promise<void> => {
   const parsed = LoginBody.safeParse(req.body);
@@ -403,7 +414,7 @@ router.get("/operations", async (req, res): Promise<void> => {
   const linkedClasses = new Set(linked.map((item) => `${item.className} ${item.stream}`));
   const documentRows = data.documents.map((item) => {
     const pupil = students.find((student) => student.id === item.studentId);
-    return pupil ? { ...item, pupilName: pupil.name, registrationNumber: pupil.registrationNumber } : item;
+    return operationDocumentRow(item, pupil?.name);
   });
   const modules = {
     classes: visibleClasses, assignments: isAdministrator(user) ? data.assignments : data.assignments.filter((item) => matchesAssignedClass(assigned, String(item.className))),
