@@ -257,18 +257,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     document.addEventListener('mousedown', closeMenu);
     return () => document.removeEventListener('mousedown', closeMenu);
   }, [profileOpen]);
-  useEffect(() => {
-    const handleShortcutClick = (event: MouseEvent) => {
-      const target = event.target as Element | null;
-      if (target?.closest('[data-testid="link-create-subject"]')) {
-        event.preventDefault();
-        setLocation('/operations?view=subjects');
-      }
-    };
-    document.addEventListener('click', handleShortcutClick);
-    return () => document.removeEventListener('click', handleShortcutClick);
-  }, [setLocation]);
-
   return (
     <div className="flex min-h-[100dvh] bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
       {mobileOpen && <button aria-label="Close navigation" data-testid="button-close-mobile-nav" onClick={() => setMobileOpen(false)} className="fixed inset-0 z-30 bg-[hsl(var(--foreground)/.32)] md:hidden" />}
@@ -312,7 +300,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                </div>}
              </div>
         </header>
-          <main className="app-grid flex-1 overflow-x-hidden"><div className="hidden print:block print:px-8 print:pt-6"><SchoolLetterhead /></div><div className="mx-auto w-full max-w-[1480px] p-5 md:p-8">{user && (user.role === 'administrator' || user.role === 'super_admin') && ((location === '/students' && <div className="mb-5 flex flex-wrap justify-end gap-2 print:hidden"><Link href="/operations?view=subjects" className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-semibold text-[hsl(var(--primary-foreground))] hover:brightness-110" data-testid="link-create-subject"><BookOpen className="size-4" /> Create subject</Link></div>) || (location.startsWith('/students/') && !location.endsWith('/report') && <div className="mb-5 flex flex-wrap justify-end gap-2 print:hidden"><Link href={`${location}/report`} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-semibold text-[hsl(var(--primary-foreground))] hover:brightness-110" data-testid="link-create-report-card"><FileBarChart className="size-4" /> Create report card</Link></div>))}<PupilExportToolbar /><AttendanceRegisterHistory /><ExpenseReportToolbar />{children}</div></main>
+          <main className="app-grid flex-1 overflow-x-hidden"><div className="hidden print:block print:px-8 print:pt-6"><SchoolLetterhead /></div><div className="mx-auto w-full max-w-[1480px] p-5 md:p-8">{user && (user.role === 'administrator' || user.role === 'super_admin') && location.startsWith('/students/') && !location.endsWith('/report') && <div className="mb-5 flex flex-wrap justify-end gap-2 print:hidden"><Link href={`${location}/report`} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-semibold text-[hsl(var(--primary-foreground))] hover:brightness-110" data-testid="link-create-report-card"><FileBarChart className="size-4" /> Create report card</Link></div>}<PupilExportToolbar /><AttendanceRegisterHistory /><ExpenseReportToolbar />{children}</div></main>
       </div>
     </div>
   );
