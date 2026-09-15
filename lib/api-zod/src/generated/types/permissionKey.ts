@@ -16,5 +16,4 @@ export const PermissionKey = {
   transactions_print: 'transactions_print',
   finance_view: 'finance_view',
   expenses_view: 'expenses_view',
-  manage_users: 'manage_users',
 } as const;

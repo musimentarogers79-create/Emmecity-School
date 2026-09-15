@@ -1,19 +1,19 @@
 import { Router, type IRouter } from "express";
 import {
   AttendanceRecord, CreateAnnouncementBody, CreateAnnouncementResponse, CreateAttendanceRegisterBody, CreateAttendanceRegisterResponse, CreateClassBody, CreateExpenseBody, CreateExpenseResponse,
-  CreateSalaryPaymentBody, CreateSalaryPaymentResponse, CreateStudentBody, CreateStudentResponse, CreateUserBody,
-  CreateClassResponse, CreateUserResponse, GetAttendanceQueryParams, GetAttendanceResponse, GetCurrentUserResponse, GetDashboardResponse,
+  CreateSalaryPaymentBody, CreateSalaryPaymentResponse, CreateStudentBody, CreateStudentResponse,
+  CreateClassResponse, GetAttendanceQueryParams, GetAttendanceResponse, GetCurrentUserResponse, GetDashboardResponse,
   GetAdmissionFormResponse, GetFinanceSummaryResponse, GetOperationsResponse, GetReportCardParams, GetReportCardResponse, CreateReportCardBody, CreateReportCardResponse, GetStudentParams,
   GetStudentResponse, GetTimetableResponse, CreateTimetableEntryBody, CreateTimetableEntryResponse, ListAnnouncementsResponse, ListExpensesResponse, ListPaymentsResponse,
   ListSalariesResponse, ListStudentsQueryParams, ListStudentsResponse, LoginBody, LoginResponse, LogoutResponse,
   RecordPaymentBody, RecordPaymentResponse, SaveAttendanceBody, SaveAttendanceResponse, GetSettingsResponse,
-  UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse, UpdateStudentBody, UpdateStudentResponse, UpdateUserPermissionsBody, UpdateUserPermissionsResponse, UpdateUserProfileByAdminBody, UpdateUserProfileByAdminResponse,
+  UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse, UpdateStudentBody, UpdateStudentResponse,
 } from "@workspace/api-zod";
 import {
-  AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, createUser, currentUserFromToken, findUserById, getAdmissionForm,
+  AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, currentUserFromToken, getAdmissionForm,
   clearLoginFailures, deleteSession, findUser, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
-  listAttendance, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance, updateStudent,
-  deleteOperation, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserPermissions, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
+  listAttendance, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance, updateStudent,
+  deleteOperation, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
 } from "../lib/school-data";
 
 const router: IRouter = Router();
@@ -32,7 +32,7 @@ const roleActions = (role: SchoolRole, studentId?: string) => role === "teacher"
     ? [{ id: "payment", label: "Record a payment", description: "Issue a receipt and update the learner balance.", href: "/finance", tone: "green" }, { id: "expense", label: "Log an expense", description: "Capture school spending for approval and reporting.", href: "/expenses", tone: "amber" }, { id: "reports", label: "Open finance reports", description: "Review collection and expense summaries.", href: "/operations?view=reports", tone: "blue" }]
     : role === "guardian" || role === "student"
       ? [{ id: "child", label: "View my child", description: "Open the linked learner profile and progress.", href: studentId ? `/students/${studentId}` : "/students", tone: "green" }, { id: "fees", label: "Check school fees", description: "Review the current balance for your linked learner.", href: studentId ? `/students/${studentId}` : "/students", tone: "amber" }, { id: "notices", label: "Read school notices", description: "Keep up with school notices.", href: "/announcements", tone: "blue" }]
-       : [{ id: "register", label: "Register a pupil", description: "Create a permanent learner record and registration number.", href: "/students", tone: "green" }, { id: "permissions", label: "Create account & permissions", description: "Register staff accounts and configure action-level access.", href: "/operations?view=people&mode=create", tone: "violet" }, { id: "settings", label: "Configure school", description: "Set the academic year and school currency.", href: "/settings", tone: "violet" }];
+        : [{ id: "register", label: "Register a pupil", description: "Create a permanent learner record and registration number.", href: "/students", tone: "green" }, { id: "settings", label: "Configure school", description: "Set the academic year and school currency.", href: "/settings", tone: "violet" }];
 const gradeForPercentage = (percentage: number) => percentage >= 80 ? "A" : percentage >= 70 ? "B" : percentage >= 60 ? "C" : percentage >= 50 ? "D" : "E";
 const numberValue = (value: unknown) => typeof value === "number" ? value : Number(value || 0);
 const reportCardFor = (student: NonNullable<Awaited<ReturnType<typeof getStudent>>>, saved: OperationRecord | undefined, reports: OperationRecord[]) => {
@@ -122,66 +122,6 @@ router.patch("/auth/me", async (req, res): Promise<void> => {
   } catch {
     errorResponse(res, 409, "The profile could not be updated. Check the username and try again.");
   }
-});
-
-router.post("/users", async (req, res): Promise<void> => {
-  const actor = await requireUser(req);
-  if (!isAdministrator(actor)) { errorResponse(res, 403, "Only administrators can create accounts."); return; }
-  const parsed = CreateUserBody.safeParse(req.body);
-  if (!parsed.success) { errorResponse(res, 400, "Complete the account name, identifier, role, and password."); return; }
-  const existing = await findUser(parsed.data.identifier, parsed.data.userType);
-  if (existing) { errorResponse(res, 409, "That username or registration number is already in use."); return; }
-  let studentId: string | undefined;
-  if (parsed.data.studentId) {
-    const linked = await getStudent(parsed.data.studentId);
-    if (!linked) { errorResponse(res, 404, "The linked pupil record was not found."); return; }
-    studentId = linked.id;
-  }
-  if ((parsed.data.role === "student" || parsed.data.role === "guardian") && !studentId) { errorResponse(res, 400, "Link pupil and guardian accounts to a student record."); return; }
-  if ((parsed.data.role === "teacher" || parsed.data.role === "staff") && (!parsed.data.monthlySalary || parsed.data.monthlySalary <= 0)) { errorResponse(res, 400, "Register a positive monthly salary for teachers and staff."); return; }
-  if (parsed.data.role === "teacher") {
-    const assignedClasses = parsed.data.assignedClasses ?? [];
-    if (!assignedClasses.length) { errorResponse(res, 400, "Assign at least one class before registering a teacher."); return; }
-    const classRows = await listOperation("classes");
-    const availableClasses = new Set(classRows.map((item) => classAssignmentKey(String(item.name), String(item.stream ?? ""))));
-    if (assignedClasses.some((className) => !availableClasses.has(className))) { errorResponse(res, 400, "Choose only existing classes when registering a teacher."); return; }
-  }
-  try {
-    const account = await createUser({ ...parsed.data, role: parsed.data.role as SchoolRole, studentId });
-    res.status(201).json(CreateUserResponse.parse(account));
-  } catch { errorResponse(res, 409, "That username or registration number is already in use."); }
-});
-router.get("/users", async (req, res): Promise<void> => {
-  const actor = await requireUser(req);
-  if (!isAdministrator(actor)) { errorResponse(res, 403, "Only administrators can manage user accounts."); return; }
-  res.json((await listUsers()).map(publicUser));
-});
-router.patch("/users/:userId", async (req, res): Promise<void> => {
-  const actor = await requireUser(req);
-  if (!isAdministrator(actor)) { errorResponse(res, 403, "Only administrators can update user accounts."); return; }
-  const parsed = UpdateUserProfileByAdminBody.safeParse(req.body);
-  if (!parsed.success) { errorResponse(res, 400, "Enter valid user account details."); return; }
-  const target = await findUserById(req.params.userId);
-  if (!target) { errorResponse(res, 404, "User account not found."); return; }
-  if (parsed.data.identifier && parsed.data.identifier.toLowerCase() !== target.identifier.toLowerCase()) {
-    const existing = await findUser(parsed.data.identifier, target.userType);
-    if (existing && existing.id !== target.id) { errorResponse(res, 409, "That username is already in use."); return; }
-  }
-  try {
-    const updated = await updateUserProfile(target, parsed.data);
-    res.json(UpdateUserProfileByAdminResponse.parse(publicUser(updated)));
-  } catch {
-    errorResponse(res, 409, "The user account could not be updated. Check the username and try again.");
-  }
-});
-router.patch("/users/:userId/permissions", async (req, res): Promise<void> => {
-  const actor = await requireUser(req);
-  if (!isAdministrator(actor)) { errorResponse(res, 403, "Only administrators can update permissions."); return; }
-  const parsed = UpdateUserPermissionsBody.safeParse(req.body);
-  if (!parsed.success) { errorResponse(res, 400, "Choose valid action permissions."); return; }
-  const updated = await updateUserPermissions(req.params.userId, parsed.data.permissions as PermissionKey[], parsed.data.assignedClasses);
-  if (!updated) { errorResponse(res, 404, "User account not found."); return; }
-  res.json(UpdateUserPermissionsResponse.parse(publicUser(updated)));
 });
 
 router.get("/dashboard", async (req, res): Promise<void> => {

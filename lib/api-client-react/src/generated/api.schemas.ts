@@ -52,25 +52,7 @@ export const PermissionKey = {
   transactions_print: 'transactions_print',
   finance_view: 'finance_view',
   expenses_view: 'expenses_view',
-  manage_users: 'manage_users',
 } as const;
-
-export interface TeacherRegistrationForm {
-  id: string;
-  userId: string;
-  name: string;
-  username: string;
-  email: string;
-  phone: string;
-  address: string;
-  nextOfKin: string;
-  hireDate: string;
-  employmentType: string;
-  monthlySalary: number;
-  assignedClasses: string[];
-  permissions: PermissionKey[];
-  registeredAt: string;
-}
 
 export interface AuthUser {
   id: string;
@@ -87,7 +69,6 @@ export interface AuthUser {
   schoolName: string;
   /** @nullable */
   studentId?: string | null;
-  registrationForm?: TeacherRegistrationForm;
 }
 
 export interface UserProfileUpdate {
@@ -98,53 +79,6 @@ export interface UserProfileUpdate {
   email?: string;
   phone?: string;
   currentPassword?: string;
-  /** @minLength 8 */
-  newPassword?: string;
-}
-
-export type UserAccountInputUserType = typeof UserAccountInputUserType[keyof typeof UserAccountInputUserType];
-
-
-export const UserAccountInputUserType = {
-  staff: 'staff',
-  learner: 'learner',
-} as const;
-
-export interface UserAccountInput {
-  /** @minLength 1 */
-  name: string;
-  /** @minLength 1 */
-  identifier: string;
-  /** @minLength 8 */
-  password: string;
-  role: Role;
-  userType: UserAccountInputUserType;
-  /** @nullable */
-  studentId?: string | null;
-  email?: string;
-  phone?: string;
-  address?: string;
-  nextOfKin?: string;
-  hireDate?: string;
-  employmentType?: string;
-  permissions?: PermissionKey[];
-  assignedClasses?: string[];
-  /** @minimum 0 */
-  monthlySalary?: number;
-}
-
-export interface UserPermissionsInput {
-  permissions: PermissionKey[];
-  assignedClasses?: string[];
-}
-
-export interface UserAdminProfileUpdate {
-  /** @minLength 1 */
-  name?: string;
-  /** @minLength 1 */
-  identifier?: string;
-  email?: string;
-  phone?: string;
   /** @minLength 8 */
   newPassword?: string;
 }

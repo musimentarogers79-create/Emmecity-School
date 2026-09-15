@@ -9,7 +9,7 @@ import {
 import type { SchoolSettings, User } from "@workspace/db";
 
 export type SchoolRole = "super_admin" | "administrator" | "teacher" | "accountant" | "guardian" | "student" | "staff";
-export type PermissionKey = "expense_approve" | "expense_delete" | "transactions_view" | "transactions_print" | "finance_view" | "expenses_view" | "manage_users";
+export type PermissionKey = "expense_approve" | "expense_delete" | "transactions_view" | "transactions_print" | "finance_view" | "expenses_view";
 export type AttendanceStatus = "present" | "absent" | "late" | "excused";
 export type SchoolUser = {
   id: string; name: string; identifier: string; email: string; phone: string; password: string; userType: "staff" | "guardian" | "learner";
@@ -90,7 +90,7 @@ export async function initializeSchoolData() {
 export async function getSchoolId() { return initializeSchoolData(); }
 
 function publicRow(row: User, setting: SchoolSettings): SchoolUser {
-  const permissions = Array.isArray(row.permissions) ? row.permissions.filter((item): item is PermissionKey => ["expense_approve", "expense_delete", "transactions_view", "transactions_print", "finance_view", "expenses_view", "manage_users"].includes(item)) : [];
+  const permissions = Array.isArray(row.permissions) ? row.permissions.filter((item): item is PermissionKey => ["expense_approve", "expense_delete", "transactions_view", "transactions_print", "finance_view", "expenses_view"].includes(item)) : [];
   return { id: row.id, name: row.name, identifier: row.identifier, email: row.email, phone: row.phone, password: row.passwordHash, userType: row.userType as SchoolUser["userType"], role: row.role as SchoolRole, permissions, initials: row.initials, schoolName: setting.schoolName, ...(row.studentId ? { studentId: row.studentId } : {}), ...(row.monthlySalary !== null ? { monthlySalary: number(row.monthlySalary) } : {}) };
 }
 export function publicUser(user: SchoolUser) {
@@ -128,58 +128,6 @@ export async function findUserById(id: string) {
   const setting = await getSchoolSettings();
   return rows[0] ? publicRow(rows[0], setting) : undefined;
 }
-export async function createUser(data: {
-  name: string; identifier: string; password: string; userType: string; role: SchoolRole; studentId?: string;
-  email?: string; phone?: string; address?: string; nextOfKin?: string; hireDate?: string; employmentType?: string; permissions?: PermissionKey[]; assignedClasses?: string[]; monthlySalary?: number;
-}) {
-  const schoolId = await getSchoolId();
-  const row = (await db.insert(users).values({
-    schoolId, name: data.name, identifier: data.identifier, email: data.email || "", phone: data.phone || "",
-    passwordHash: hashPassword(data.password), userType: data.userType, role: data.role, permissions: data.permissions || [], initials: initials(data.name), studentId: data.studentId, monthlySalary: data.monthlySalary ? String(data.monthlySalary) : null,
-  }).returning())[0];
-  if (!row) throw new Error("Unable to create account");
-  if (data.userType === "staff") {
-    await db.insert(staff).values({
-      schoolId,
-      data: {
-        userId: row.id, name: data.name, role: data.role.replace("_", " "), username: data.identifier, email: data.email || "",
-         phone: data.phone || "Not provided", address: data.address || "", nextOfKin: data.nextOfKin || "", monthlySalary: data.monthlySalary || 0,
-        hireDate: data.hireDate || "", employmentType: data.employmentType || "Full-time", status: "Active",
-      },
-    });
-  }
-  if (data.role === "teacher" && data.assignedClasses?.length) {
-    const classRows = await listOperation("classes");
-    await Promise.all(classRows
-      .filter((item) => data.assignedClasses?.includes(classAssignmentKey(String(item.name), String(item.stream ?? ""))))
-      .map((item) => updateOperation("classes", item.id, { ...item, teacherId: row.id, teacherName: data.name })));
-  }
-  const publicUser = publicRow(row, await getSchoolSettings());
-  if (data.role !== "teacher") return publicUser;
-  const classRows = await listOperation("classes");
-  const assignedClasses = classRows
-    .filter((item) => item.teacherId === row.id)
-    .map((item) => classAssignmentKey(String(item.name), String(item.stream ?? "")));
-  const registrationForm = {
-    documentType: "teacher_registration_form",
-    title: "Teacher Registration Form",
-    userId: row.id,
-    name: data.name,
-    username: data.identifier,
-    email: data.email || "",
-    phone: data.phone || "",
-    address: data.address || "",
-    nextOfKin: data.nextOfKin || "",
-    hireDate: data.hireDate || "",
-    employmentType: data.employmentType || "Full-time",
-    monthlySalary: data.monthlySalary || 0,
-    assignedClasses,
-    permissions: data.permissions || [],
-    registeredAt: new Date().toISOString(),
-  };
-  const document = (await db.insert(documents).values({ schoolId, data: registrationForm }).returning())[0];
-  return document ? { ...publicUser, assignedClasses, registrationForm: { ...registrationForm, id: document.id } } : { ...publicUser, assignedClasses };
-}
 export async function updateUserProfile(user: SchoolUser, data: {
   name?: string; identifier?: string; email?: string; phone?: string; newPassword?: string;
 }) {
@@ -209,23 +157,6 @@ export async function updateUserProfile(user: SchoolUser, data: {
     }
   }
   return publicRow(row, await getSchoolSettings());
-}
-export async function updateUserPermissions(userId: string, permissions: PermissionKey[], assignedClasses?: string[]) {
-  const schoolId = await getSchoolId();
-  const row = (await db.update(users).set({ permissions, updatedAt: new Date() }).where(and(eq(users.schoolId, schoolId), eq(users.id, userId))).returning())[0];
-  if (!row) return undefined;
-  if (row.role === "teacher" && assignedClasses !== undefined) {
-    const classRows = await listOperation("classes");
-    await Promise.all(classRows.map((item) => {
-      const isAssigned = assignedClasses.includes(classAssignmentKey(String(item.name), String(item.stream ?? "")));
-      if (item.teacherId === row.id && !isAssigned) return updateOperation("classes", item.id, { ...item, teacherId: null, teacherName: "Unassigned" });
-      if (isAssigned) return updateOperation("classes", item.id, { ...item, teacherId: row.id, teacherName: row.name });
-      return undefined;
-    }));
-  }
-  const setting = await getSchoolSettings();
-  const user = publicRow(row, setting);
-  return row.role === "teacher" ? { ...user, assignedClasses: (await listOperation("classes")).filter((item) => item.teacherId === row.id).map((item) => classAssignmentKey(String(item.name), String(item.stream ?? ""))) } : user;
 }
 
 const tokenDigest = (token: string) => createHash("sha256").update(token).digest("hex");

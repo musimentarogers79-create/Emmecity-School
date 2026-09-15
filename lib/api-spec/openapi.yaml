@@ -111,97 +111,6 @@ paths:
           description: Not signed in
         "409":
           description: Username already in use
-  /users:
-    get:
-      operationId: listUsers
-      tags: [auth]
-      summary: List school user accounts for administrator management
-      responses:
-        "200":
-          description: User accounts
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AuthUser"
-        "403":
-          description: Administrator access required
-    post:
-      operationId: createUser
-      tags: [auth]
-      summary: Create a staff, teacher, accountant, guardian, or pupil account
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UserAccountInput"
-      responses:
-        "201":
-          description: Account created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthUser"
-        "403":
-          description: Administrator access required
-  /users/{userId}:
-    patch:
-      operationId: updateUserProfileByAdmin
-      tags: [auth]
-      summary: Update a school user account profile as an administrator
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UserAdminProfileUpdate"
-      responses:
-        "200":
-          description: Updated user account
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthUser"
-        "403":
-          description: Administrator access required
-        "404":
-          description: User account not found
-        "409":
-          description: Username already in use
-  /users/{userId}/permissions:
-    patch:
-      operationId: updateUserPermissions
-      tags: [auth]
-      summary: Update the action permissions for a school user
-      parameters:
-        - name: userId
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UserPermissionsInput"
-      responses:
-        "200":
-          description: Updated user account
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthUser"
-        "403":
-          description: Administrator access required
   /dashboard:
     get:
       operationId: getDashboard
@@ -764,45 +673,7 @@ components:
           type: string
         studentId:
           type: ["string", "null"]
-        registrationForm:
-          $ref: "#/components/schemas/TeacherRegistrationForm"
       required: [id, name, identifier, email, phone, role, permissions, initials, schoolName]
-    TeacherRegistrationForm:
-      type: object
-      properties:
-        id:
-          type: string
-        userId:
-          type: string
-        name:
-          type: string
-        username:
-          type: string
-        email:
-          type: string
-        phone:
-          type: string
-        address:
-          type: string
-        nextOfKin:
-          type: string
-        hireDate:
-          type: string
-        employmentType:
-          type: string
-        monthlySalary:
-          type: number
-        assignedClasses:
-          type: array
-          items:
-            type: string
-        permissions:
-          type: array
-          items:
-            $ref: "#/components/schemas/PermissionKey"
-        registeredAt:
-          type: string
-      required: [id, userId, name, username, email, phone, address, nextOfKin, hireDate, employmentType, monthlySalary, assignedClasses, permissions, registeredAt]
     UserProfileUpdate:
       type: object
       properties:
@@ -821,80 +692,9 @@ components:
         newPassword:
           type: string
           minLength: 8
-    UserAccountInput:
-      type: object
-      properties:
-        name:
-          type: string
-          minLength: 1
-        identifier:
-          type: string
-          minLength: 1
-        password:
-          type: string
-          minLength: 8
-        role:
-          $ref: "#/components/schemas/Role"
-        userType:
-          type: string
-          enum: [staff, learner]
-        studentId:
-          type: ["string", "null"]
-        email:
-          type: string
-        phone:
-          type: string
-        address:
-          type: string
-        nextOfKin:
-          type: string
-        hireDate:
-          type: string
-        employmentType:
-          type: string
-        permissions:
-          type: array
-          items:
-            $ref: "#/components/schemas/PermissionKey"
-        assignedClasses:
-          type: array
-          items:
-            type: string
-        monthlySalary:
-          type: number
-          minimum: 0
-      required: [name, identifier, password, role, userType]
-    UserPermissionsInput:
-      type: object
-      properties:
-        permissions:
-          type: array
-          items:
-            $ref: "#/components/schemas/PermissionKey"
-        assignedClasses:
-          type: array
-          items:
-            type: string
-      required: [permissions]
-    UserAdminProfileUpdate:
-      type: object
-      properties:
-        name:
-          type: string
-          minLength: 1
-        identifier:
-          type: string
-          minLength: 1
-        email:
-          type: string
-        phone:
-          type: string
-        newPassword:
-          type: string
-          minLength: 8
     PermissionKey:
       type: string
-      enum: [expense_approve, expense_delete, transactions_view, transactions_print, finance_view, expenses_view, manage_users]
+      enum: [expense_approve, expense_delete, transactions_view, transactions_print, finance_view, expenses_view]
     AuthSession:
       type: object
       properties:

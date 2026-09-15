@@ -41,29 +41,13 @@ export const LoginResponse = zod.object({
   "identifier": zod.string(),
   "email": zod.string(),
   "phone": zod.string(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view'])),
   "assignedClasses": zod.array(zod.string()).optional(),
   "monthlySalary": zod.number().min(loginResponseUserMonthlySalaryMin).optional(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
-  "studentId": zod.string().nullish(),
-  "registrationForm": zod.object({
-  "id": zod.string(),
-  "userId": zod.string(),
-  "name": zod.string(),
-  "username": zod.string(),
-  "email": zod.string(),
-  "phone": zod.string(),
-  "address": zod.string(),
-  "nextOfKin": zod.string(),
-  "hireDate": zod.string(),
-  "employmentType": zod.string(),
-  "monthlySalary": zod.number(),
-  "assignedClasses": zod.array(zod.string()),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
-  "registeredAt": zod.string()
-}).optional()
+  "studentId": zod.string().nullish()
 }),
   "expiresAt": zod.string()
 })
@@ -91,29 +75,13 @@ export const GetCurrentUserResponse = zod.object({
   "identifier": zod.string(),
   "email": zod.string(),
   "phone": zod.string(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view'])),
   "assignedClasses": zod.array(zod.string()).optional(),
   "monthlySalary": zod.number().min(getCurrentUserResponseUserMonthlySalaryMin).optional(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
-  "studentId": zod.string().nullish(),
-  "registrationForm": zod.object({
-  "id": zod.string(),
-  "userId": zod.string(),
-  "name": zod.string(),
-  "username": zod.string(),
-  "email": zod.string(),
-  "phone": zod.string(),
-  "address": zod.string(),
-  "nextOfKin": zod.string(),
-  "hireDate": zod.string(),
-  "employmentType": zod.string(),
-  "monthlySalary": zod.number(),
-  "assignedClasses": zod.array(zod.string()),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
-  "registeredAt": zod.string()
-}).optional()
+  "studentId": zod.string().nullish()
 }),
   "expiresAt": zod.string()
 })
@@ -148,241 +116,15 @@ export const UpdateCurrentUserResponse = zod.object({
   "identifier": zod.string(),
   "email": zod.string(),
   "phone": zod.string(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view'])),
   "assignedClasses": zod.array(zod.string()).optional(),
   "monthlySalary": zod.number().min(updateCurrentUserResponseUserMonthlySalaryMin).optional(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
-  "studentId": zod.string().nullish(),
-  "registrationForm": zod.object({
-  "id": zod.string(),
-  "userId": zod.string(),
-  "name": zod.string(),
-  "username": zod.string(),
-  "email": zod.string(),
-  "phone": zod.string(),
-  "address": zod.string(),
-  "nextOfKin": zod.string(),
-  "hireDate": zod.string(),
-  "employmentType": zod.string(),
-  "monthlySalary": zod.number(),
-  "assignedClasses": zod.array(zod.string()),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
-  "registeredAt": zod.string()
-}).optional()
+  "studentId": zod.string().nullish()
 }),
   "expiresAt": zod.string()
-})
-
-
-/**
- * @summary List school user accounts for administrator management
- */
-export const listUsersResponseMonthlySalaryMin = 0;
-
-
-
-export const ListUsersResponseItem = zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "identifier": zod.string(),
-  "email": zod.string(),
-  "phone": zod.string(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
-  "assignedClasses": zod.array(zod.string()).optional(),
-  "monthlySalary": zod.number().min(listUsersResponseMonthlySalaryMin).optional(),
-  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
-  "initials": zod.string(),
-  "schoolName": zod.string(),
-  "studentId": zod.string().nullish(),
-  "registrationForm": zod.object({
-  "id": zod.string(),
-  "userId": zod.string(),
-  "name": zod.string(),
-  "username": zod.string(),
-  "email": zod.string(),
-  "phone": zod.string(),
-  "address": zod.string(),
-  "nextOfKin": zod.string(),
-  "hireDate": zod.string(),
-  "employmentType": zod.string(),
-  "monthlySalary": zod.number(),
-  "assignedClasses": zod.array(zod.string()),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
-  "registeredAt": zod.string()
-}).optional()
-})
-export const ListUsersResponse = zod.array(ListUsersResponseItem)
-
-
-/**
- * @summary Create a staff, teacher, accountant, guardian, or pupil account
- */
-
-
-export const createUserBodyPasswordMin = 8;
-
-export const createUserBodyMonthlySalaryMin = 0;
-
-
-
-export const CreateUserBody = zod.object({
-  "name": zod.string().min(1),
-  "identifier": zod.string().min(1),
-  "password": zod.string().min(createUserBodyPasswordMin),
-  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
-  "userType": zod.enum(['staff', 'learner']),
-  "studentId": zod.string().nullish(),
-  "email": zod.string().optional(),
-  "phone": zod.string().optional(),
-  "address": zod.string().optional(),
-  "nextOfKin": zod.string().optional(),
-  "hireDate": zod.string().optional(),
-  "employmentType": zod.string().optional(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])).optional(),
-  "assignedClasses": zod.array(zod.string()).optional(),
-  "monthlySalary": zod.number().min(createUserBodyMonthlySalaryMin).optional()
-})
-
-export const createUserResponseMonthlySalaryMin = 0;
-
-
-
-export const CreateUserResponse = zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "identifier": zod.string(),
-  "email": zod.string(),
-  "phone": zod.string(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
-  "assignedClasses": zod.array(zod.string()).optional(),
-  "monthlySalary": zod.number().min(createUserResponseMonthlySalaryMin).optional(),
-  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
-  "initials": zod.string(),
-  "schoolName": zod.string(),
-  "studentId": zod.string().nullish(),
-  "registrationForm": zod.object({
-  "id": zod.string(),
-  "userId": zod.string(),
-  "name": zod.string(),
-  "username": zod.string(),
-  "email": zod.string(),
-  "phone": zod.string(),
-  "address": zod.string(),
-  "nextOfKin": zod.string(),
-  "hireDate": zod.string(),
-  "employmentType": zod.string(),
-  "monthlySalary": zod.number(),
-  "assignedClasses": zod.array(zod.string()),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
-  "registeredAt": zod.string()
-}).optional()
-})
-
-
-/**
- * @summary Update a school user account profile as an administrator
- */
-export const UpdateUserProfileByAdminParams = zod.object({
-  "userId": zod.coerce.string()
-})
-
-
-
-export const updateUserProfileByAdminBodyNewPasswordMin = 8;
-
-
-
-export const UpdateUserProfileByAdminBody = zod.object({
-  "name": zod.string().min(1).optional(),
-  "identifier": zod.string().min(1).optional(),
-  "email": zod.string().optional(),
-  "phone": zod.string().optional(),
-  "newPassword": zod.string().min(updateUserProfileByAdminBodyNewPasswordMin).optional()
-})
-
-export const updateUserProfileByAdminResponseMonthlySalaryMin = 0;
-
-
-
-export const UpdateUserProfileByAdminResponse = zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "identifier": zod.string(),
-  "email": zod.string(),
-  "phone": zod.string(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
-  "assignedClasses": zod.array(zod.string()).optional(),
-  "monthlySalary": zod.number().min(updateUserProfileByAdminResponseMonthlySalaryMin).optional(),
-  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
-  "initials": zod.string(),
-  "schoolName": zod.string(),
-  "studentId": zod.string().nullish(),
-  "registrationForm": zod.object({
-  "id": zod.string(),
-  "userId": zod.string(),
-  "name": zod.string(),
-  "username": zod.string(),
-  "email": zod.string(),
-  "phone": zod.string(),
-  "address": zod.string(),
-  "nextOfKin": zod.string(),
-  "hireDate": zod.string(),
-  "employmentType": zod.string(),
-  "monthlySalary": zod.number(),
-  "assignedClasses": zod.array(zod.string()),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
-  "registeredAt": zod.string()
-}).optional()
-})
-
-
-/**
- * @summary Update the action permissions for a school user
- */
-export const UpdateUserPermissionsParams = zod.object({
-  "userId": zod.coerce.string()
-})
-
-export const UpdateUserPermissionsBody = zod.object({
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
-  "assignedClasses": zod.array(zod.string()).optional()
-})
-
-export const updateUserPermissionsResponseMonthlySalaryMin = 0;
-
-
-
-export const UpdateUserPermissionsResponse = zod.object({
-  "id": zod.string(),
-  "name": zod.string(),
-  "identifier": zod.string(),
-  "email": zod.string(),
-  "phone": zod.string(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
-  "assignedClasses": zod.array(zod.string()).optional(),
-  "monthlySalary": zod.number().min(updateUserPermissionsResponseMonthlySalaryMin).optional(),
-  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
-  "initials": zod.string(),
-  "schoolName": zod.string(),
-  "studentId": zod.string().nullish(),
-  "registrationForm": zod.object({
-  "id": zod.string(),
-  "userId": zod.string(),
-  "name": zod.string(),
-  "username": zod.string(),
-  "email": zod.string(),
-  "phone": zod.string(),
-  "address": zod.string(),
-  "nextOfKin": zod.string(),
-  "hireDate": zod.string(),
-  "employmentType": zod.string(),
-  "monthlySalary": zod.number(),
-  "assignedClasses": zod.array(zod.string()),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
-  "registeredAt": zod.string()
-}).optional()
 })
 
 
