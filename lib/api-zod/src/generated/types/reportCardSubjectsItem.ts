@@ -8,8 +8,14 @@
 
 export type ReportCardSubjectsItem = {
   subject: string;
+  beginning: number;
+  midterm: number;
+  tests: number;
+  endOfTerm: number;
   score: number;
   max: number;
+  percentage: number;
+  position: number;
   grade: string;
   comment: string;
 };

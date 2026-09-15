@@ -19,10 +19,12 @@ import type { OperationParent } from './operationParent';
 import type { OperationReport } from './operationReport';
 import type { OperationSalary } from './operationSalary';
 import type { OperationStaff } from './operationStaff';
+import type { OperationSubject } from './operationSubject';
 import type { OperationTransport } from './operationTransport';
 
 export interface OperationModules {
   classes: OperationClass[];
+  subjects: OperationSubject[];
   assignments: OperationAssignment[];
   staff: OperationStaff[];
   parents: OperationParent[];

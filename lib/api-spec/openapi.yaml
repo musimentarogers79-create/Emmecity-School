@@ -605,6 +605,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReportCard"
+    post:
+      operationId: createReportCard
+      tags: [academics]
+      summary: Create or update a pupil report card
+      parameters:
+        - $ref: "#/components/parameters/StudentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReportCardInput"
+      responses:
+        "201":
+          description: Saved report card
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReportCard"
+        "403":
+          description: Teacher is not assigned to the pupil's class
   /operations:
     post:
       operationId: createClass
@@ -1474,16 +1495,67 @@ components:
             properties:
               subject:
                 type: string
+              beginning:
+                type: number
+              midterm:
+                type: number
+              tests:
+                type: number
+              endOfTerm:
+                type: number
               score:
                 type: number
               max:
+                type: number
+              percentage:
+                type: number
+              position:
                 type: number
               grade:
                 type: string
               comment:
                 type: string
-            required: [subject, score, max, grade, comment]
+            required: [subject, beginning, midterm, tests, endOfTerm, score, max, percentage, position, grade, comment]
       required: [student, term, academicYear, overallAverage, overallGrade, position, teacherComment, subjects]
+    ReportCardInput:
+      type: object
+      properties:
+        term:
+          type: string
+          minLength: 1
+        academicYear:
+          type: string
+          minLength: 1
+        teacherComment:
+          type: string
+        subjects:
+          type: array
+          items:
+            type: object
+            properties:
+              subject:
+                type: string
+                minLength: 1
+              beginning:
+                type: number
+                minimum: 0
+                maximum: 100
+              midterm:
+                type: number
+                minimum: 0
+                maximum: 100
+              tests:
+                type: number
+                minimum: 0
+                maximum: 100
+              endOfTerm:
+                type: number
+                minimum: 0
+                maximum: 100
+              comment:
+                type: string
+            required: [subject, beginning, midterm, tests, endOfTerm]
+      required: [term, academicYear, subjects]
     Dashboard:
       type: object
       properties:
@@ -1608,6 +1680,32 @@ components:
         subjectCount:
           type: number
       required: [id, name, grade, stream, teacherName, pupilCount, room, subjectCount]
+    OperationSubject:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        className:
+          type: string
+        teacherName:
+          type: string
+        status:
+          type: string
+      required: [id, name, className, teacherName, status]
+    SubjectInput:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        className:
+          type: string
+          minLength: 1
+        teacherName:
+          type: string
+      required: [name, className]
     ClassInput:
       type: object
       properties:
@@ -1861,6 +1959,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/OperationClass"
+        subjects:
+          type: array
+          items:
+            $ref: "#/components/schemas/OperationSubject"
         assignments:
           type: array
           items:
@@ -1917,7 +2019,7 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/OperationNotification"
-      required: [classes, assignments, staff, parents, expenses, salaries, discipline, medical, library, transport, inventory, events, documents, reports, notifications]
+      required: [classes, subjects, assignments, staff, parents, expenses, salaries, discipline, medical, library, transport, inventory, events, documents, reports, notifications]
     OperationsOverview:
       type: object
       properties:

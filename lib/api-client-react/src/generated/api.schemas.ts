@@ -551,8 +551,14 @@ export interface TimetableInput {
 
 export type ReportCardSubjectsItem = {
   subject: string;
+  beginning: number;
+  midterm: number;
+  tests: number;
+  endOfTerm: number;
   score: number;
   max: number;
+  percentage: number;
+  position: number;
   grade: string;
   comment: string;
 };
@@ -566,6 +572,41 @@ export interface ReportCard {
   position: number;
   teacherComment: string;
   subjects: ReportCardSubjectsItem[];
+}
+
+export type ReportCardInputSubjectsItem = {
+  /** @minLength 1 */
+  subject: string;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  beginning: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  midterm: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  tests: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  endOfTerm: number;
+  comment?: string;
+};
+
+export interface ReportCardInput {
+  /** @minLength 1 */
+  term: string;
+  /** @minLength 1 */
+  academicYear: string;
+  teacherComment?: string;
+  subjects: ReportCardInputSubjectsItem[];
 }
 
 export type DashboardSummary = {
@@ -630,6 +671,22 @@ export interface OperationClass {
   pupilCount: number;
   room: string;
   subjectCount: number;
+}
+
+export interface OperationSubject {
+  id: string;
+  name: string;
+  className: string;
+  teacherName: string;
+  status: string;
+}
+
+export interface SubjectInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  className: string;
+  teacherName?: string;
 }
 
 export interface ClassInput {
@@ -775,6 +832,7 @@ export interface OperationNotification {
 
 export interface OperationModules {
   classes: OperationClass[];
+  subjects: OperationSubject[];
   assignments: OperationAssignment[];
   staff: OperationStaff[];
   parents: OperationParent[];

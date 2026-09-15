@@ -3,7 +3,7 @@ import {
   AttendanceRecord, CreateAnnouncementBody, CreateAnnouncementResponse, CreateAttendanceRegisterBody, CreateAttendanceRegisterResponse, CreateClassBody, CreateExpenseBody, CreateExpenseResponse,
   CreateSalaryPaymentBody, CreateSalaryPaymentResponse, CreateStudentBody, CreateStudentResponse, CreateUserBody,
   CreateClassResponse, CreateUserResponse, GetAttendanceQueryParams, GetAttendanceResponse, GetCurrentUserResponse, GetDashboardResponse,
-  GetAdmissionFormResponse, GetFinanceSummaryResponse, GetOperationsResponse, GetReportCardParams, GetReportCardResponse, GetStudentParams,
+  GetAdmissionFormResponse, GetFinanceSummaryResponse, GetOperationsResponse, GetReportCardParams, GetReportCardResponse, CreateReportCardBody, CreateReportCardResponse, GetStudentParams,
   GetStudentResponse, GetTimetableResponse, CreateTimetableEntryBody, CreateTimetableEntryResponse, ListAnnouncementsResponse, ListExpensesResponse, ListPaymentsResponse,
   ListSalariesResponse, ListStudentsQueryParams, ListStudentsResponse, LoginBody, LoginResponse, LogoutResponse,
   RecordPaymentBody, RecordPaymentResponse, SaveAttendanceBody, SaveAttendanceResponse, GetSettingsResponse,
@@ -33,6 +33,24 @@ const roleActions = (role: SchoolRole, studentId?: string) => role === "teacher"
     : role === "guardian" || role === "student"
       ? [{ id: "child", label: "View my child", description: "Open the linked learner profile and progress.", href: studentId ? `/students/${studentId}` : "/students", tone: "green" }, { id: "fees", label: "Check school fees", description: "Review the current balance for your linked learner.", href: studentId ? `/students/${studentId}` : "/students", tone: "amber" }, { id: "notices", label: "Read school notices", description: "Keep up with school notices.", href: "/announcements", tone: "blue" }]
        : [{ id: "register", label: "Register a pupil", description: "Create a permanent learner record and registration number.", href: "/students", tone: "green" }, { id: "people", label: "Users & Roles", description: "Review registered staff and school accounts.", href: "/operations?view=people", tone: "blue" }, { id: "permissions", label: "Create account & permissions", description: "Register staff accounts and configure action-level access.", href: "/operations?view=people&mode=create", tone: "violet" }, { id: "settings", label: "Configure school", description: "Set the academic year and school currency.", href: "/settings", tone: "violet" }];
+const gradeForPercentage = (percentage: number) => percentage >= 80 ? "A" : percentage >= 70 ? "B" : percentage >= 60 ? "C" : percentage >= 50 ? "D" : "E";
+const numberValue = (value: unknown) => typeof value === "number" ? value : Number(value || 0);
+const reportCardFor = (student: NonNullable<Awaited<ReturnType<typeof getStudent>>>, saved: OperationRecord | undefined, reports: OperationRecord[]) => {
+  const rawSubjects = Array.isArray(saved?.subjects) ? saved.subjects as Array<Record<string, unknown>> : [];
+  const subjects = rawSubjects.map((item) => {
+    const beginning = numberValue(item.beginning);
+    const midterm = numberValue(item.midterm);
+    const tests = numberValue(item.tests);
+    const endOfTerm = numberValue(item.endOfTerm);
+    const score = beginning + midterm + tests + endOfTerm;
+    const percentage = Math.round((score / 4) * 100) / 100;
+    return { subject: String(item.subject || ""), beginning, midterm, tests, endOfTerm, score, max: 400, percentage, position: 0, grade: gradeForPercentage(percentage), comment: String(item.comment || "") };
+  });
+  const overallAverage = subjects.length ? Math.round(subjects.reduce((sum, item) => sum + item.percentage, 0) / subjects.length * 100) / 100 : 0;
+  const sameClass = reports.filter((item) => item.id !== saved?.id && item.className === student.className && item.stream === student.stream && item.term === saved?.term && item.academicYear === saved?.academicYear && typeof item.overallAverage === "number");
+  const position = 1 + sameClass.filter((item) => numberValue(item.overallAverage) > overallAverage).length;
+  return { student, term: String(saved?.term || "Term 3"), academicYear: String(saved?.academicYear || ""), overallAverage, overallGrade: overallAverage ? gradeForPercentage(overallAverage) : "N/A", position, teacherComment: String(saved?.teacherComment || ""), subjects };
+};
 async function assignedClassNames(user?: SchoolUser) {
   if (user?.role !== "teacher") return [];
   const rows = await listOperation("classes");
@@ -407,10 +425,42 @@ router.get("/academics/report-cards/:studentId", async (req, res): Promise<void>
   if (!user) { errorResponse(res, 401, "Not signed in"); return; }
   if (!isAdministrator(user) && user.role !== "teacher" && user.studentId !== student.id) { errorResponse(res, 403, "You do not have access to this report card."); return; }
   if (user.studentId && user.studentId !== student.id) { errorResponse(res, 403, "You do not have access to this report card."); return; }
-  if (user.role === "teacher" && !(await assignedClassNames(user)).includes(`${student.className} ${student.stream}`)) { errorResponse(res, 403, "You do not have access to this assigned class."); return; }
-  res.json(GetReportCardResponse.parse({ student, term: "Term 3", academicYear: (await getSchoolSettings()).academicYear, overallAverage: 0, overallGrade: "N/A", position: 0, teacherComment: "", subjects: [] }));
+  if (user.role === "teacher" && !matchesAssignedClass(await assignedClassNames(user), student.className, student.stream)) { errorResponse(res, 403, "You do not have access to this assigned class."); return; }
+  const settings = await getSchoolSettings();
+  const saved = (await listOperation("reports")).find((item) => item.studentId === student.id && item.term === "Term 3" && item.academicYear === settings.academicYear);
+  res.json(GetReportCardResponse.parse(reportCardFor(student, saved, await listOperation("reports"))));
+});
+router.post("/academics/report-cards/:studentId", async (req, res): Promise<void> => {
+  const parsedParams = GetReportCardParams.safeParse(req.params);
+  const user = await requireUser(req);
+  if (!parsedParams.success) { errorResponse(res, 400, "Invalid student id."); return; }
+  const student = await getStudent(parsedParams.data.studentId);
+  if (!student) { errorResponse(res, 404, "Student not found"); return; }
+  if (!user || (!isAdministrator(user) && user.role !== "teacher")) { errorResponse(res, 403, "Only administrators and assigned teachers can record marks."); return; }
+  if (user.role === "teacher" && !matchesAssignedClass(await assignedClassNames(user), student.className, student.stream)) { errorResponse(res, 403, "Teachers can only record marks for assigned classes."); return; }
+  const parsed = CreateReportCardBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Enter all marks between 0 and 100 for every subject."); return; }
+  const reports = await listOperation("reports");
+  const settings = await getSchoolSettings();
+  const previous = reports.find((item) => item.studentId === student.id && item.term === parsed.data.term && item.academicYear === parsed.data.academicYear);
+  const data = { ...parsed.data, studentId: student.id, className: student.className, stream: student.stream, teacherId: user.id, overallAverage: parsed.data.subjects.length ? parsed.data.subjects.reduce((sum, item) => sum + (item.beginning + item.midterm + item.tests + item.endOfTerm) / 4, 0) / parsed.data.subjects.length : 0 };
+  const saved = previous ? await updateOperation("reports", previous.id, data) : await createOperation("reports", data);
+  if (!saved) { errorResponse(res, 500, "The report card could not be saved."); return; }
+  res.status(201).json(CreateReportCardResponse.parse(reportCardFor(student, saved, reports.filter((item) => item.id !== previous?.id).concat(saved))));
 });
 
+router.post("/operations/subjects", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!isAdministrator(user)) { errorResponse(res, 403, "Only administrators can register subjects."); return; }
+  const name = String(req.body?.name || "").trim();
+  const className = String(req.body?.className || "").trim();
+  const teacherName = String(req.body?.teacherName || "").trim();
+  if (!name || !className) { errorResponse(res, 400, "Enter a subject name and choose the class."); return; }
+  const existing = await listOperation("subjects");
+  if (existing.some((item) => String(item.name).toLowerCase() === name.toLowerCase() && String(item.className).toLowerCase() === className.toLowerCase())) { errorResponse(res, 409, "That subject is already registered for this class."); return; }
+  const created = await createOperation("subjects", { name, className, teacherName, status: "Active" });
+  res.status(201).json(created);
+});
 router.post("/operations", async (req, res): Promise<void> => {
   const user = await requireUser(req);
   if (!isAdministrator(user)) { errorResponse(res, 403, "Only administrators can create classes."); return; }
@@ -428,7 +478,7 @@ router.get("/operations", async (req, res): Promise<void> => {
   const user = await requireUser(req);
   if (!user) { errorResponse(res, 401, "Not signed in"); return; }
   const settings = await getSchoolSettings();
-  const kinds: OperationKind[] = ["classes", "assignments", "staff", "parents", "expenses", "salaryPayments", "discipline", "medical", "library", "transport", "inventory", "events", "documents", "reports", "notifications"];
+  const kinds: OperationKind[] = ["classes", "subjects", "assignments", "staff", "parents", "expenses", "salaryPayments", "discipline", "medical", "library", "transport", "inventory", "events", "documents", "reports", "notifications"];
   const loaded = await Promise.all(kinds.map(async (kind) => [kind, kind === "salaryPayments" ? await listSalaryPayments() : await listOperation(kind)] as const));
   const data = Object.fromEntries(loaded) as Record<OperationKind, OperationRecord[]>;
   const students = await listStudents();
@@ -448,7 +498,7 @@ router.get("/operations", async (req, res): Promise<void> => {
     return operationDocumentRow(item, pupil?.name);
   });
   const modules = {
-    classes: visibleClasses, assignments: isAdministrator(user) ? data.assignments : data.assignments.filter((item) => matchesAssignedClass(assigned, String(item.className))),
+    classes: visibleClasses, subjects: isAdministrator(user) ? data.subjects : data.subjects.filter((item) => matchesAssignedClass(assigned, String(item.className))), assignments: isAdministrator(user) ? data.assignments : data.assignments.filter((item) => matchesAssignedClass(assigned, String(item.className))),
     staff: isAdministrator(user) ? data.staff : [], parents: isAdministrator(user) ? data.parents : [],
     expenses: isAdministrator(user) || user.role === "accountant" || hasPermission(user, "expenses_view") ? data.expenses : [], salaries: isAdministrator(user) || user.role === "accountant" ? data.salaryPayments : [],
     discipline: data.discipline.filter((item) => studentIds.has(String(item.studentId))), medical: data.medical.filter((item) => studentIds.has(String(item.studentId))),

@@ -1412,8 +1412,135 @@ export const GetReportCardResponse = zod.object({
   "teacherComment": zod.string(),
   "subjects": zod.array(zod.object({
   "subject": zod.string(),
+  "beginning": zod.number(),
+  "midterm": zod.number(),
+  "tests": zod.number(),
+  "endOfTerm": zod.number(),
   "score": zod.number(),
   "max": zod.number(),
+  "percentage": zod.number(),
+  "position": zod.number(),
+  "grade": zod.string(),
+  "comment": zod.string()
+}))
+})
+
+
+/**
+ * @summary Create or update a pupil report card
+ */
+export const CreateReportCardParams = zod.object({
+  "studentId": zod.coerce.string()
+})
+
+
+
+
+export const createReportCardBodySubjectsItemBeginningMin = 0;
+export const createReportCardBodySubjectsItemBeginningMax = 100;
+
+export const createReportCardBodySubjectsItemMidtermMin = 0;
+export const createReportCardBodySubjectsItemMidtermMax = 100;
+
+export const createReportCardBodySubjectsItemTestsMin = 0;
+export const createReportCardBodySubjectsItemTestsMax = 100;
+
+export const createReportCardBodySubjectsItemEndOfTermMin = 0;
+export const createReportCardBodySubjectsItemEndOfTermMax = 100;
+
+
+
+export const CreateReportCardBody = zod.object({
+  "term": zod.string().min(1),
+  "academicYear": zod.string().min(1),
+  "teacherComment": zod.string().optional(),
+  "subjects": zod.array(zod.object({
+  "subject": zod.string().min(1),
+  "beginning": zod.number().min(createReportCardBodySubjectsItemBeginningMin).max(createReportCardBodySubjectsItemBeginningMax),
+  "midterm": zod.number().min(createReportCardBodySubjectsItemMidtermMin).max(createReportCardBodySubjectsItemMidtermMax),
+  "tests": zod.number().min(createReportCardBodySubjectsItemTestsMin).max(createReportCardBodySubjectsItemTestsMax),
+  "endOfTerm": zod.number().min(createReportCardBodySubjectsItemEndOfTermMin).max(createReportCardBodySubjectsItemEndOfTermMax),
+  "comment": zod.string().optional()
+}))
+})
+
+export const CreateReportCardResponse = zod.object({
+  "student": zod.object({
+  "id": zod.string(),
+  "registrationNumber": zod.string(),
+  "name": zod.string(),
+  "firstName": zod.string(),
+  "middleName": zod.string().optional(),
+  "lastName": zod.string(),
+  "className": zod.string(),
+  "stream": zod.string(),
+  "gender": zod.string(),
+  "status": zod.enum(['active', 'inactive']),
+  "attendancePercentage": zod.number(),
+  "feeBalance": zod.number(),
+  "avatarTone": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number(),
+  "previousFeeBalance": zod.number(),
+  "receiptNumber": zod.string().optional(),
+  "admissionForm": zod.object({
+  "id": zod.string(),
+  "studentId": zod.string(),
+  "registrationNumber": zod.string(),
+  "pupilName": zod.string(),
+  "dateOfBirth": zod.string(),
+  "gender": zod.string(),
+  "className": zod.string(),
+  "stream": zod.string(),
+  "guardianName": zod.string(),
+  "guardianPhone": zod.string(),
+  "guardianEmail": zod.string().optional(),
+  "religion": zod.string().optional(),
+  "placeOfBirth": zod.string().optional(),
+  "homeVillage": zod.string().optional(),
+  "nationality": zod.string().optional(),
+  "tribe": zod.string().optional(),
+  "guardianRelationship": zod.string().optional(),
+  "guardianNationalId": zod.string().optional(),
+  "residentialAddress": zod.string().optional(),
+  "guardianOccupation": zod.string().optional(),
+  "alternativeContact": zod.string().optional(),
+  "previousSchool": zod.string().optional(),
+  "lastClassCompleted": zod.string().optional(),
+  "medicalConditions": zod.string().optional(),
+  "specialNeeds": zod.string().optional(),
+  "knownMedicalNote": zod.string().optional(),
+  "emergencyContactName": zod.string().optional(),
+  "emergencyContactPhone": zod.string().optional(),
+  "emergencyContactRelationship": zod.string().optional(),
+  "declarationAccepted": zod.boolean().optional(),
+  "declarationDate": zod.string().optional(),
+  "admissionDate": zod.string(),
+  "enrollmentType": zod.enum(['day', 'boarding']),
+  "termFee": zod.number(),
+  "amountPaid": zod.number(),
+  "feeBalance": zod.number(),
+  "previousFeeBalance": zod.number(),
+  "generatedAt": zod.string()
+}).optional()
+}),
+  "term": zod.string(),
+  "academicYear": zod.string(),
+  "overallAverage": zod.number(),
+  "overallGrade": zod.string(),
+  "position": zod.number(),
+  "teacherComment": zod.string(),
+  "subjects": zod.array(zod.object({
+  "subject": zod.string(),
+  "beginning": zod.number(),
+  "midterm": zod.number(),
+  "tests": zod.number(),
+  "endOfTerm": zod.number(),
+  "score": zod.number(),
+  "max": zod.number(),
+  "percentage": zod.number(),
+  "position": zod.number(),
   "grade": zod.string(),
   "comment": zod.string()
 }))
@@ -1474,6 +1601,13 @@ export const GetOperationsResponse = zod.object({
   "pupilCount": zod.number(),
   "room": zod.string(),
   "subjectCount": zod.number()
+})),
+  "subjects": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "teacherName": zod.string(),
+  "status": zod.string()
 })),
   "assignments": zod.array(zod.object({
   "id": zod.string(),

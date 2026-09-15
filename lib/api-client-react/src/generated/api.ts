@@ -43,6 +43,7 @@ import type {
   Payment,
   PaymentInput,
   ReportCard,
+  ReportCardInput,
   SalaryPayment,
   SalaryPaymentInput,
   SalaryStaffAccount,
@@ -2543,6 +2544,78 @@ export function useGetReportCard<TData = Awaited<ReturnType<typeof getReportCard
 
 
 
+
+export const getCreateReportCardUrl = (studentId: string,) => {
+
+
+
+
+  return `/api/academics/report-cards/${studentId}`
+}
+
+/**
+ * @summary Create or update a pupil report card
+ */
+export const createReportCard = async (studentId: string,
+    reportCardInput: ReportCardInput, options?: Parameters<typeof customFetch>[1]): Promise<ReportCard> => {
+
+  return customFetch<ReportCard>(getCreateReportCardUrl(studentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(reportCardInput)
+  }
+);}
+
+
+
+
+
+export const getCreateReportCardMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReportCard>>, TError,{studentId: string;data: BodyType<ReportCardInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createReportCard>>, TError,{studentId: string;data: BodyType<ReportCardInput>}, TContext> => {
+
+const mutationKey = ['createReportCard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createReportCard>>, {studentId: string;data: BodyType<ReportCardInput>}> = (props) => {
+          const {studentId,data} = props ?? {};
+
+          return  createReportCard(studentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateReportCardMutationResult = NonNullable<Awaited<ReturnType<typeof createReportCard>>>
+    export type CreateReportCardMutationBody = BodyType<ReportCardInput>
+    export type CreateReportCardMutationError = ErrorType<void>
+
+    /**
+ * @summary Create or update a pupil report card
+ */
+export const useCreateReportCard = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createReportCard>>, TError,{studentId: string;data: BodyType<ReportCardInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createReportCard>>,
+        TError,
+        {studentId: string;data: BodyType<ReportCardInput>},
+        TContext
+      > => {
+      return useMutation(getCreateReportCardMutationOptions(options));
+    }
 
 export const getCreateClassUrl = () => {
 
