@@ -2,7 +2,7 @@ import { type ReactNode, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetCurrentUserQueryKey, useGetCurrentUser, useLogout } from '@workspace/api-client-react';
-import { BookOpen, CalendarDays, ChevronDown, CircleDollarSign, ClipboardList, FileBarChart, LayoutDashboard, LogOut, Menu, Megaphone, PanelLeftClose, PanelLeftOpen, ReceiptText, Search, Settings, ShieldCheck, UserRound, Users, X } from 'lucide-react';
+import { BookOpen, CalendarDays, CircleDollarSign, ClipboardList, FileBarChart, LayoutDashboard, LogOut, Menu, Megaphone, PanelLeftClose, PanelLeftOpen, ReceiptText, Search, Settings, ShieldCheck, UserRound, Users, X } from 'lucide-react';
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
 export const SCHOOL_NAME = 'EMMECTY NURSERY & PRIMARY SCHOOL';
@@ -117,7 +117,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const client = useQueryClient();
-  const { data: session, isLoading } = useGetCurrentUser();
+  const { data: session } = useGetCurrentUser();
   const logout = useLogout();
   const user = session?.user;
   const displayName = user?.name || 'School administrator';
@@ -151,16 +151,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
           <button onClick={() => setMobileOpen(false)} className="rounded-lg p-2 text-[hsl(var(--sidebar-foreground)/.7)] hover:bg-[hsl(var(--sidebar-accent))] md:hidden" data-testid="button-close-sidebar"><X className="size-4" /></button>
         </div>
-        <div className={`border-b border-[hsl(var(--sidebar-border))] px-4 py-5 ${collapsed ? 'md:px-3' : ''}`}>
-          <div className={`flex items-center gap-3 rounded-xl bg-[hsl(var(--sidebar-accent)/.65)] p-3 ${collapsed ? 'md:justify-center md:p-2' : ''}`}>
-            <Initials name={displayName} />
-            <div className={`${collapsed ? 'md:hidden' : ''} min-w-0`}>
-              <p className="truncate text-sm font-semibold" data-testid="text-sidebar-user">{isLoading ? 'Loading profile' : displayName}</p>
-              <p className="mt-0.5 truncate text-[11px] capitalize text-[hsl(var(--sidebar-foreground)/.6)]" data-testid="text-sidebar-role">{roleLabel}</p>
-            </div>
-            <ChevronDown className={`ml-auto size-4 text-[hsl(var(--sidebar-foreground)/.45)] ${collapsed ? 'md:hidden' : ''}`} />
-          </div>
-        </div>
         <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto px-3 py-5" aria-label="Primary navigation">
           <p className={`mb-3 px-3 text-[10px] font-semibold uppercase tracking-[.18em] text-[hsl(var(--sidebar-foreground)/.42)] ${collapsed ? 'md:hidden' : ''}`}>Workspace</p>
           {navItems.map(({ href, label, icon: Icon }) => {
@@ -171,7 +161,6 @@ export function AppShell({ children }: { children: ReactNode }) {
           })}
           <p className={`mb-3 mt-8 px-3 text-[10px] font-semibold uppercase tracking-[.18em] text-[hsl(var(--sidebar-foreground)/.42)] ${collapsed ? 'md:hidden' : ''}`}>School</p>
            <Link href="/manual" onClick={() => setMobileOpen(false)} data-testid="link-nav-user-manual" className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[hsl(var(--sidebar-foreground)/.82)] transition-colors hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-foreground))] ${location === '/manual' ? 'bg-[hsl(var(--sidebar-primary))] font-semibold text-[hsl(var(--sidebar-primary-foreground))]' : ''} ${collapsed ? 'md:justify-center md:px-2' : ''}`}><BookOpen className="size-[18px] shrink-0" /><span className={collapsed ? 'md:hidden' : ''}>User manual</span></Link>
-          <Link href="/profile" onClick={() => setMobileOpen(false)} data-testid="link-nav-profile" className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[hsl(var(--sidebar-foreground)/.82)] transition-colors hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-foreground))] ${location === '/profile' ? 'bg-[hsl(var(--sidebar-primary))] font-semibold text-[hsl(var(--sidebar-primary-foreground))]' : ''} ${collapsed ? 'md:justify-center md:px-2' : ''}`}><UserRound className="size-[18px] shrink-0" /><span className={collapsed ? 'md:hidden' : ''}>My profile</span></Link>
         </nav>
         <div className={`border-t border-[hsl(var(--sidebar-border))] p-3 ${collapsed ? 'md:px-2' : ''}`}>
            <div className={`flex items-center gap-2 px-3 py-2 text-[11px] text-[hsl(var(--sidebar-foreground)/.48)] ${collapsed ? 'md:justify-center md:px-2' : ''}`}><ShieldCheck className="size-3.5 text-[hsl(var(--accent))]" /><span className={collapsed ? 'md:hidden' : ''}>Secure school workspace</span></div>
