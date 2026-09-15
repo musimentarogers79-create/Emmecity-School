@@ -282,6 +282,63 @@ export const CreateUserResponse = zod.object({
 
 
 /**
+ * @summary Update a school user account profile as an administrator
+ */
+export const UpdateUserProfileByAdminParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+
+
+export const updateUserProfileByAdminBodyNewPasswordMin = 8;
+
+
+
+export const UpdateUserProfileByAdminBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "identifier": zod.string().min(1).optional(),
+  "email": zod.string().optional(),
+  "phone": zod.string().optional(),
+  "newPassword": zod.string().min(updateUserProfileByAdminBodyNewPasswordMin).optional()
+})
+
+export const updateUserProfileByAdminResponseMonthlySalaryMin = 0;
+
+
+
+export const UpdateUserProfileByAdminResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "identifier": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
+  "assignedClasses": zod.array(zod.string()).optional(),
+  "monthlySalary": zod.number().min(updateUserProfileByAdminResponseMonthlySalaryMin).optional(),
+  "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'guardian', 'student', 'staff']),
+  "initials": zod.string(),
+  "schoolName": zod.string(),
+  "studentId": zod.string().nullish(),
+  "registrationForm": zod.object({
+  "id": zod.string(),
+  "userId": zod.string(),
+  "name": zod.string(),
+  "username": zod.string(),
+  "email": zod.string(),
+  "phone": zod.string(),
+  "address": zod.string(),
+  "nextOfKin": zod.string(),
+  "hireDate": zod.string(),
+  "employmentType": zod.string(),
+  "monthlySalary": zod.number(),
+  "assignedClasses": zod.array(zod.string()),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'manage_users'])),
+  "registeredAt": zod.string()
+}).optional()
+})
+
+
+/**
  * @summary Update the action permissions for a school user
  */
 export const UpdateUserPermissionsParams = zod.object({

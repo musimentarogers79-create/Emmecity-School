@@ -80,5 +80,6 @@ export * from './timetableEntry';
 export * from './timetableInput';
 export * from './userAccountInput';
 export * from './userAccountInputUserType';
+export * from './userAdminProfileUpdate';
 export * from './userPermissionsInput';
 export * from './userProfileUpdate';

@@ -138,6 +138,17 @@ export interface UserPermissionsInput {
   assignedClasses?: string[];
 }
 
+export interface UserAdminProfileUpdate {
+  /** @minLength 1 */
+  name?: string;
+  /** @minLength 1 */
+  identifier?: string;
+  email?: string;
+  phone?: string;
+  /** @minLength 8 */
+  newPassword?: string;
+}
+
 export interface AuthSession {
   user: AuthUser;
   expiresAt: string;

@@ -7,10 +7,10 @@ import {
   GetStudentResponse, GetTimetableResponse, CreateTimetableEntryBody, CreateTimetableEntryResponse, ListAnnouncementsResponse, ListExpensesResponse, ListPaymentsResponse,
   ListSalariesResponse, ListStudentsQueryParams, ListStudentsResponse, LoginBody, LoginResponse, LogoutResponse,
   RecordPaymentBody, RecordPaymentResponse, SaveAttendanceBody, SaveAttendanceResponse, GetSettingsResponse,
-  UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse, UpdateStudentBody, UpdateStudentResponse, UpdateUserPermissionsBody, UpdateUserPermissionsResponse,
+  UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse, UpdateStudentBody, UpdateStudentResponse, UpdateUserPermissionsBody, UpdateUserPermissionsResponse, UpdateUserProfileByAdminBody, UpdateUserProfileByAdminResponse,
 } from "@workspace/api-zod";
 import {
-  AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, createUser, currentUserFromToken, getAdmissionForm,
+  AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, createUser, currentUserFromToken, findUserById, getAdmissionForm,
   clearLoginFailures, deleteSession, findUser, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
   listAttendance, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance, updateStudent,
   deleteOperation, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserPermissions, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
@@ -32,7 +32,7 @@ const roleActions = (role: SchoolRole, studentId?: string) => role === "teacher"
     ? [{ id: "payment", label: "Record a payment", description: "Issue a receipt and update the learner balance.", href: "/finance", tone: "green" }, { id: "expense", label: "Log an expense", description: "Capture school spending for approval and reporting.", href: "/expenses", tone: "amber" }, { id: "reports", label: "Open finance reports", description: "Review collection and expense summaries.", href: "/operations?view=reports", tone: "blue" }]
     : role === "guardian" || role === "student"
       ? [{ id: "child", label: "View my child", description: "Open the linked learner profile and progress.", href: studentId ? `/students/${studentId}` : "/students", tone: "green" }, { id: "fees", label: "Check school fees", description: "Review the current balance for your linked learner.", href: studentId ? `/students/${studentId}` : "/students", tone: "amber" }, { id: "notices", label: "Read school notices", description: "Keep up with school notices.", href: "/announcements", tone: "blue" }]
-      : [{ id: "register", label: "Register a pupil", description: "Create a permanent learner record and registration number.", href: "/students", tone: "green" }, { id: "people", label: "Manage people", description: "Review pupils, guardians, and school staff.", href: "/operations?view=people", tone: "blue" }, { id: "permissions", label: "Users & permissions", description: "Create accounts and configure action-level access.", href: "/operations?view=people", tone: "violet" }, { id: "settings", label: "Configure school", description: "Set the academic year and school currency.", href: "/settings", tone: "violet" }];
+       : [{ id: "register", label: "Register a pupil", description: "Create a permanent learner record and registration number.", href: "/students", tone: "green" }, { id: "people", label: "Users & Roles", description: "Review registered staff and school accounts.", href: "/operations?view=people", tone: "blue" }, { id: "permissions", label: "Create account & permissions", description: "Register staff accounts and configure action-level access.", href: "/operations?view=people&mode=create", tone: "violet" }, { id: "settings", label: "Configure school", description: "Set the academic year and school currency.", href: "/settings", tone: "violet" }];
 async function assignedClassNames(user?: SchoolUser) {
   if (user?.role !== "teacher") return [];
   const rows = await listOperation("classes");
@@ -137,6 +137,24 @@ router.get("/users", async (req, res): Promise<void> => {
   const actor = await requireUser(req);
   if (!isAdministrator(actor)) { errorResponse(res, 403, "Only administrators can manage user accounts."); return; }
   res.json((await listUsers()).map(publicUser));
+});
+router.patch("/users/:userId", async (req, res): Promise<void> => {
+  const actor = await requireUser(req);
+  if (!isAdministrator(actor)) { errorResponse(res, 403, "Only administrators can update user accounts."); return; }
+  const parsed = UpdateUserProfileByAdminBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Enter valid user account details."); return; }
+  const target = await findUserById(req.params.userId);
+  if (!target) { errorResponse(res, 404, "User account not found."); return; }
+  if (parsed.data.identifier && parsed.data.identifier.toLowerCase() !== target.identifier.toLowerCase()) {
+    const existing = await findUser(parsed.data.identifier, target.userType);
+    if (existing && existing.id !== target.id) { errorResponse(res, 409, "That username is already in use."); return; }
+  }
+  try {
+    const updated = await updateUserProfile(target, parsed.data);
+    res.json(UpdateUserProfileByAdminResponse.parse(publicUser(updated)));
+  } catch {
+    errorResponse(res, 409, "The user account could not be updated. Check the username and try again.");
+  }
 });
 router.patch("/users/:userId/permissions", async (req, res): Promise<void> => {
   const actor = await requireUser(req);

@@ -146,6 +146,36 @@ paths:
                 $ref: "#/components/schemas/AuthUser"
         "403":
           description: Administrator access required
+  /users/{userId}:
+    patch:
+      operationId: updateUserProfileByAdmin
+      tags: [auth]
+      summary: Update a school user account profile as an administrator
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserAdminProfileUpdate"
+      responses:
+        "200":
+          description: Updated user account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUser"
+        "403":
+          description: Administrator access required
+        "404":
+          description: User account not found
+        "409":
+          description: Username already in use
   /users/{userId}/permissions:
     patch:
       operationId: updateUserPermissions
@@ -825,6 +855,22 @@ components:
           items:
             type: string
       required: [permissions]
+    UserAdminProfileUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+        identifier:
+          type: string
+          minLength: 1
+        email:
+          type: string
+        phone:
+          type: string
+        newPassword:
+          type: string
+          minLength: 8
     PermissionKey:
       type: string
       enum: [expense_approve, expense_delete, transactions_view, transactions_print, finance_view, expenses_view, manage_users]

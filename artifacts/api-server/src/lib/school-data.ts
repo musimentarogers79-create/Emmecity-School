@@ -195,6 +195,19 @@ export async function updateUserProfile(user: SchoolUser, data: {
   if (data.newPassword !== undefined) updates.passwordHash = hashPassword(data.newPassword);
   const row = (await db.update(users).set(updates).where(and(eq(users.schoolId, schoolId), eq(users.id, user.id))).returning())[0];
   if (!row) throw new Error("Account not found");
+  if (user.userType === "staff") {
+    const staffRecord = (await listOperation("staff")).find((item) => String(item.userId || "") === user.id);
+    if (staffRecord) {
+      await updateOperation("staff", staffRecord.id, {
+        ...staffRecord,
+        name: row.name,
+        username: row.identifier,
+        email: row.email,
+        phone: row.phone,
+        updatedAt: new Date().toISOString(),
+      });
+    }
+  }
   return publicRow(row, await getSchoolSettings());
 }
 export async function updateUserPermissions(userId: string, permissions: PermissionKey[], assignedClasses?: string[]) {

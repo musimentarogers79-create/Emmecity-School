@@ -55,6 +55,7 @@ import type {
   TimetableEntry,
   TimetableInput,
   UserAccountInput,
+  UserAdminProfileUpdate,
   UserPermissionsInput,
   UserProfileUpdate
 } from './api.schemas';
@@ -600,6 +601,78 @@ export const useCreateUser = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreateUserMutationOptions(options));
+    }
+
+export const getUpdateUserProfileByAdminUrl = (userId: string,) => {
+
+
+
+
+  return `/api/users/${userId}`
+}
+
+/**
+ * @summary Update a school user account profile as an administrator
+ */
+export const updateUserProfileByAdmin = async (userId: string,
+    userAdminProfileUpdate: UserAdminProfileUpdate, options?: Parameters<typeof customFetch>[1]): Promise<AuthUser> => {
+
+  return customFetch<AuthUser>(getUpdateUserProfileByAdminUrl(userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(userAdminProfileUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateUserProfileByAdminMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUserProfileByAdmin>>, TError,{userId: string;data: BodyType<UserAdminProfileUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateUserProfileByAdmin>>, TError,{userId: string;data: BodyType<UserAdminProfileUpdate>}, TContext> => {
+
+const mutationKey = ['updateUserProfileByAdmin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateUserProfileByAdmin>>, {userId: string;data: BodyType<UserAdminProfileUpdate>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  updateUserProfileByAdmin(userId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateUserProfileByAdminMutationResult = NonNullable<Awaited<ReturnType<typeof updateUserProfileByAdmin>>>
+    export type UpdateUserProfileByAdminMutationBody = BodyType<UserAdminProfileUpdate>
+    export type UpdateUserProfileByAdminMutationError = ErrorType<void>
+
+    /**
+ * @summary Update a school user account profile as an administrator
+ */
+export const useUpdateUserProfileByAdmin = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateUserProfileByAdmin>>, TError,{userId: string;data: BodyType<UserAdminProfileUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateUserProfileByAdmin>>,
+        TError,
+        {userId: string;data: BodyType<UserAdminProfileUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateUserProfileByAdminMutationOptions(options));
     }
 
 export const getUpdateUserPermissionsUrl = (userId: string,) => {
