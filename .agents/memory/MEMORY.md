@@ -8,3 +8,4 @@
 - [Drizzle JSONB predicates](drizzle-jsonb-predicates.md) — quote JSONB string literals completely inside SQL template predicates or updates fail at runtime.
 - [Mockup build defaults](mockup-build-defaults.md) — mockup Vite builds must provide safe PORT and BASE_PATH defaults while workflows can still override them.
 - [User-management removal boundary](user-management-removal.md) — remove administrator account CRUD without disabling authentication or internal staff-dependent workflows.
+- [Class access identity](class-access-identity.md) — normalize class-and-stream assignments consistently across teacher access and subject visibility.

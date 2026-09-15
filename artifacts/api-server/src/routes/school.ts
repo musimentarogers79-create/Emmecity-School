@@ -68,7 +68,7 @@ const reportCardFor = (student: NonNullable<Awaited<ReturnType<typeof getStudent
 async function assignedClassNames(user?: SchoolUser) {
   if (user?.role !== "teacher") return [];
   const rows = await listOperation("classes");
-  return rows.filter((item) => item.teacherId === user.id).map((item) => String(item.name));
+  return rows.filter((item) => item.teacherId === user.id).map((item) => classAssignmentKey(String(item.name), String(item.stream ?? "")));
 }
 const errorResponse = (res: Parameters<Parameters<IRouter["get"]>[1]>[1], status: number, error: string) => res.status(status).json({ error });
 const matchesAssignedClass = (assigned: string[], className: string, stream?: string) => {
@@ -203,7 +203,10 @@ router.patch("/users/:userId/permissions", async (req, res): Promise<void> => {
     if (!existing) { errorResponse(res, 404, "Account not found."); return; }
     const updated = await updateUserAdmin(req.params.userId, { permissions: parsed.data.permissions });
     if (!updated) { errorResponse(res, 404, "Account not found."); return; }
-    const requestedClasses = parsed.data.assignedClasses || [];
+    const requestedClasses = (parsed.data.assignedClasses || []).map((value) => {
+      const [name, stream] = value.split("::");
+      return classAssignmentKey(name, stream);
+    });
     const classRows = await listOperation("classes");
     await Promise.all(classRows.filter((item) => item.teacherId === existing.id && !requestedClasses.includes(classAssignmentKey(String(item.name), String(item.stream ?? "")))).map((item) => updateOperation("classes", item.id, { ...item, teacherId: null, teacherName: "Unassigned" })));
     await Promise.all(classRows.filter((item) => existing.role === "teacher" && requestedClasses.includes(classAssignmentKey(String(item.name), String(item.stream ?? "")))).map((item) => updateOperation("classes", item.id, { ...item, teacherId: existing.id, teacherName: existing.name })));
@@ -440,7 +443,7 @@ router.get("/academics/timetable", async (req, res): Promise<void> => {
   const rows = await listOperation("timetable");
   const student = user.studentId ? await getStudent(user.studentId) : undefined;
   const assigned = await assignedClassNames(user);
-  const visible = user.role === "teacher" ? rows.filter((item) => assigned.includes(String(item.className)) && item.teacher === user.name) : student ? rows.filter((item) => item.className === `${student.className} ${student.stream}`) : isAdministrator(user) || user.role === "staff" || user.role === "accountant" ? rows : [];
+  const visible = user.role === "teacher" ? rows.filter((item) => matchesAssignedClass(assigned, String(item.className)) && item.teacher === user.name) : student ? rows.filter((item) => item.className === `${student.className} ${student.stream}`) : isAdministrator(user) || user.role === "staff" || user.role === "accountant" ? rows : [];
   res.json(GetTimetableResponse.parse(visible));
 });
 router.post("/academics/timetable", async (req, res): Promise<void> => {
@@ -488,10 +491,11 @@ router.get("/operations/subjects", async (req, res): Promise<void> => {
   const user = await requireUser(req);
   if (!user) { errorResponse(res, 401, "Not signed in"); return; }
   const rows = await listOperation("subjects");
+  const assigned = await assignedClassNames(user);
   const visible = isAdministrator(user) || user.permissions.includes("subjects_view") || user.permissions.includes("subjects_manage")
     ? rows
     : user.role === "teacher"
-      ? rows.filter((item) => item.teacherId === user.id || item.createdBy === user.id)
+      ? rows.filter((item) => matchesAssignedClass(assigned, String(item.className), String(item.stream ?? "")) || item.teacherId === user.id || item.createdBy === user.id)
       : [];
   res.json(ListSubjectsResponse.parse(visible));
 });

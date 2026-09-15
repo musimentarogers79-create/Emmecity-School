@@ -1546,7 +1546,7 @@ export const GetOperationsResponse = zod.object({
   "className": zod.string(),
   "classId": zod.string().optional(),
   "stream": zod.string().optional(),
-  "teacherId": zod.string().optional(),
+  "teacherId": zod.string().nullish(),
   "teacherName": zod.string(),
   "createdBy": zod.string().optional(),
   "status": zod.string()
@@ -1678,7 +1678,7 @@ export const ListSubjectsResponseItem = zod.object({
   "className": zod.string(),
   "classId": zod.string().optional(),
   "stream": zod.string().optional(),
-  "teacherId": zod.string().optional(),
+  "teacherId": zod.string().nullish(),
   "teacherName": zod.string(),
   "createdBy": zod.string().optional(),
   "status": zod.string()
@@ -1708,7 +1708,7 @@ export const CreateSubjectResponse = zod.object({
   "className": zod.string(),
   "classId": zod.string().optional(),
   "stream": zod.string().optional(),
-  "teacherId": zod.string().optional(),
+  "teacherId": zod.string().nullish(),
   "teacherName": zod.string(),
   "createdBy": zod.string().optional(),
   "status": zod.string()
@@ -1741,7 +1741,7 @@ export const UpdateSubjectResponse = zod.object({
   "className": zod.string(),
   "classId": zod.string().optional(),
   "stream": zod.string().optional(),
-  "teacherId": zod.string().optional(),
+  "teacherId": zod.string().nullish(),
   "teacherName": zod.string(),
   "createdBy": zod.string().optional(),
   "status": zod.string()

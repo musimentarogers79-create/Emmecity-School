@@ -12,7 +12,8 @@ export interface OperationSubject {
   className: string;
   classId?: string;
   stream?: string;
-  teacherId?: string;
+  /** @nullable */
+  teacherId?: string | null;
   teacherName: string;
   createdBy?: string;
   status: string;

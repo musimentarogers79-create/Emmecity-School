@@ -1788,7 +1788,7 @@ components:
         stream:
           type: string
         teacherId:
-          type: string
+          type: ["string", "null"]
         teacherName:
           type: string
         createdBy:
