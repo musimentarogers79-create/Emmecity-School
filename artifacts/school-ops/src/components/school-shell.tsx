@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
 import { getGetCurrentUserQueryKey, useGetCurrentUser, useLogout } from '@workspace/api-client-react';
@@ -117,6 +117,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [location, setLocation] = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const profileMenuRef = useRef<HTMLDivElement>(null);
   const client = useQueryClient();
   const { data: session } = useGetCurrentUser();
   const logout = useLogout();
@@ -138,8 +140,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   });
 
   const handleLogout = () => {
+    setProfileOpen(false);
     logout.mutate(undefined, { onSettled: () => { client.removeQueries({ queryKey: getGetCurrentUserQueryKey() }); setLocation('/'); } });
   };
+  useEffect(() => {
+    if (!profileOpen) return;
+    const closeMenu = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) setProfileOpen(false);
+    };
+    document.addEventListener('mousedown', closeMenu);
+    return () => document.removeEventListener('mousedown', closeMenu);
+  }, [profileOpen]);
 
   return (
     <div className="flex min-h-[100dvh] bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
@@ -174,11 +185,15 @@ export function AppShell({ children }: { children: ReactNode }) {
             <button onClick={() => setCollapsed(!collapsed)} className="hidden rounded-lg p-2 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] md:block" data-testid="button-toggle-sidebar">{collapsed ? <PanelLeftOpen className="size-5" /> : <PanelLeftClose className="size-5" />}</button>
             <div className="hidden items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2 text-xs text-[hsl(var(--muted-foreground))] lg:flex"><Search className="size-3.5" /><span>Search Emmecty</span><kbd className="ml-5 rounded bg-[hsl(var(--muted))] px-1.5 py-0.5 font-mono text-[10px]">⌘ K</kbd></div>
           </div>
-           <div className="flex items-center gap-1.5 sm:gap-2">
-             {(user?.role === 'administrator' || user?.role === 'super_admin') && <Link href="/settings" onClick={() => setMobileOpen(false)} data-testid="link-nav-settings" aria-label="Settings" title="Settings" className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold transition-colors sm:px-3 ${location === '/settings' ? 'bg-[hsl(var(--secondary))] text-[hsl(var(--primary))]' : 'text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))]'}`}><Settings className="size-[17px]" /><span className="hidden sm:inline">Settings</span></Link>}
-             <button onClick={handleLogout} disabled={logout.isPending} data-testid="button-logout" aria-label={logout.isPending ? 'Signing out' : 'Sign out'} title={logout.isPending ? 'Signing out' : 'Sign out'} className="inline-flex min-h-10 items-center gap-2 rounded-xl px-2.5 text-xs font-semibold text-[hsl(var(--muted-foreground))] transition-colors hover:bg-[hsl(var(--muted))] disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"><LogOut className="size-[17px]" /><span className="hidden sm:inline">{logout.isPending ? 'Signing out…' : 'Sign out'}</span></button>
-            <Link href="/profile" data-testid="link-header-profile" className="group flex items-center gap-2.5 rounded-xl p-1.5 pr-2 transition-colors hover:bg-[hsl(var(--muted))]"><Initials name={displayName} className="size-8" /><span className="hidden text-left sm:block"><span className="block max-w-[140px] truncate text-xs font-semibold">{displayName}</span><span className="block text-[10px] capitalize text-[hsl(var(--muted-foreground))]">{roleLabel}</span></span></Link>
-          </div>
+             <div className="relative" ref={profileMenuRef}>
+               <button onClick={() => setProfileOpen((open) => !open)} data-testid="button-profile-menu" aria-label="Open profile menu" aria-expanded={profileOpen} className="group flex items-center gap-2.5 rounded-xl p-1.5 pr-2 transition-colors hover:bg-[hsl(var(--muted))]"><Initials name={displayName} className="size-8" /><span className="hidden text-left sm:block"><span className="block max-w-[140px] truncate text-xs font-semibold">{displayName}</span><span className="block text-[10px] capitalize text-[hsl(var(--muted-foreground))]">{roleLabel}</span></span></button>
+               {profileOpen && <div className="absolute right-0 top-[calc(100%+.5rem)] z-50 w-56 overflow-hidden rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-1.5 shadow-xl" role="menu">
+                 <div className="border-b border-[hsl(var(--border))] px-3 py-2.5"><p className="truncate text-sm font-semibold">{displayName}</p><p className="mt-0.5 truncate text-xs capitalize text-[hsl(var(--muted-foreground))]">{roleLabel}</p></div>
+                 <Link href="/profile" onClick={() => setProfileOpen(false)} data-testid="link-header-profile" role="menuitem" className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-[hsl(var(--muted))]"><UserRound className="size-4 text-[hsl(var(--primary))]" /> Profile</Link>
+                 {(user?.role === 'administrator' || user?.role === 'super_admin') && <Link href="/settings" onClick={() => setProfileOpen(false)} data-testid="link-header-settings" role="menuitem" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-[hsl(var(--muted))]"><Settings className="size-4 text-[hsl(var(--primary))]" /> Settings</Link>}
+                 <button onClick={handleLogout} disabled={logout.isPending} data-testid="button-logout" role="menuitem" className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/.08)] disabled:cursor-not-allowed disabled:opacity-50"><LogOut className="size-4" /> {logout.isPending ? 'Signing out…' : 'Sign out'}</button>
+               </div>}
+             </div>
         </header>
         <main className="app-grid flex-1 overflow-x-hidden"><div className="hidden print:block print:px-8 print:pt-6"><SchoolLetterhead /></div><div className="mx-auto w-full max-w-[1480px] p-5 md:p-8">{children}</div></main>
       </div>
