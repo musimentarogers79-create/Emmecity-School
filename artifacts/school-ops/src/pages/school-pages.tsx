@@ -5,7 +5,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from 'wouter';
 import type { AdmissionForm, Student, StudentUpdateInput, ReportCardInput, OperationSubject } from '@workspace/api-client-react';
 import { AnnouncementInputPriority, AttendanceStatus, type AnnouncementInput, type SalaryPayment, type StudentInput, type AttendanceRecord, type Dashboard, type Payment, type PaymentInput, type TimetableInput, getAdmissionForm, useCreateAnnouncement, useCreateAttendanceRegister, useCreateReportCard, useCreateStudent, useCreateTimetableEntry, useGetAdmissionForm, useGetAttendance, useGetCurrentUser, useGetDashboard, useGetFinanceSummary, useGetOperations, useGetReportCard, useGetSettings, useGetStudent, useGetTimetable, useListAnnouncements, useListPayments, useListSalaries, useListStudents, useLogin, useRecordPayment, useSaveAttendance, useUpdateSettings, useUpdateStudent, getGetAdmissionFormQueryKey, getGetAttendanceQueryKey, getGetFinanceSummaryQueryKey, getGetOperationsQueryKey, getGetReportCardQueryKey, getGetSettingsQueryKey, getGetStudentQueryKey, getGetTimetableQueryKey, getListAnnouncementsQueryKey, getListPaymentsQueryKey, getListStudentsQueryKey } from '@workspace/api-client-react';
-import { ArrowLeft, ArrowRight, BadgeCheck, BarChart3, BookOpen, CalendarDays, Check, ChevronDown, CircleDollarSign, ClipboardList, Download, Eye, EyeOff, FileBarChart, FileText, GraduationCap, Info, LockKeyhole, Megaphone, MoreHorizontal, PhoneCall, Plus, Printer, Receipt, RefreshCcw, Search, Send, Share2, ShieldCheck, UserPlus, Users, WalletCards, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, BadgeCheck, BarChart3, BookOpen, CalendarDays, Check, ChevronDown, CircleDollarSign, ClipboardList, Download, Eye, EyeOff, FileBarChart, FileText, GraduationCap, Info, LockKeyhole, Megaphone, MoreHorizontal, PhoneCall, Plus, Printer, Receipt, RefreshCcw, Search, Send, Share2, ShieldCheck, Upload, UserPlus, Users, WalletCards, X } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { AppShell, Button, EmptyState, ErrorState, PageHeader, Panel, SCHOOL_LOCATION, SCHOOL_NAME, SCHOOL_PHONE, SCHOOL_POSTAL_ADDRESS, SchoolMark, Skeleton } from '@/components/school-shell';
 import { trackEvent } from '@/lib/analytics';
@@ -208,8 +208,39 @@ const loadSchoolLogo = () => {
   }).catch(() => undefined);
   return schoolLogoPromise;
 };
-export async function brandedPdf(lines: string[]) {
+const loadPupilPhoto = async (photoPath?: string) => {
+  if (!photoPath?.startsWith('/objects/')) return undefined;
+  try {
+    const response = await fetch(`/api/storage${photoPath}`);
+    if (!response.ok) return undefined;
+    return { bytes: new Uint8Array(await response.arrayBuffer()), width: 240, height: 300 };
+  } catch {
+    return undefined;
+  }
+};
+const normalizePupilPhoto = async (file: File) => {
+  if (file.type === 'image/jpeg') return file;
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = await new Promise<HTMLImageElement>((resolve, reject) => {
+      const element = new Image();
+      element.onload = () => resolve(element);
+      element.onerror = () => reject(new Error('Unable to read image'));
+      element.src = objectUrl;
+    });
+    const canvas = document.createElement('canvas');
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    canvas.getContext('2d')?.drawImage(image, 0, 0);
+    const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error('Unable to convert image')), 'image/jpeg', 0.92));
+    return new File([blob], file.name.replace(/\.[^.]+$/, '') + '.jpg', { type: 'image/jpeg' });
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+};
+export async function brandedPdf(lines: string[], photoPath?: string) {
   const logo = await loadSchoolLogo();
+  const photo = await loadPupilPhoto(photoPath);
   const encoder = new TextEncoder();
   const wrappedLines = lines.flatMap((line) => {
     const value = String(line);
@@ -222,25 +253,28 @@ export async function brandedPdf(lines: string[]) {
   const pageSize = logo ? 20 : 23;
   const bodyPageSize = pageSize - headerLines.length;
   const pages = Array.from({ length: Math.max(1, Math.ceil(wrappedLines.length / bodyPageSize)) }, (_, index) => [...headerLines, ...wrappedLines.slice(index * bodyPageSize, (index + 1) * bodyPageSize)]);
-  const firstPageObject = logo ? 5 : 4;
+  const photoObjectNumber = logo ? 5 : 4;
+  const firstPageObject = 4 + (logo ? 1 : 0) + (photo ? 1 : 0);
   const pageObjects = pages.map((_, index) => firstPageObject + index * 2);
   const objects: { text: string; binary?: Uint8Array; after?: string }[] = [
     { text: '<< /Type /Catalog /Pages 2 0 R >>' },
     { text: `<< /Type /Pages /Kids [${pageObjects.map((objectNumber) => `${objectNumber} 0 R`).join(' ')}] /Count ${pages.length} >>` },
     { text: '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>' },
     ...(logo ? [{ text: `<< /Type /XObject /Subtype /Image /Width ${logo.width} /Height ${logo.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${logo.bytes.length} >>\nstream\n`, binary: logo.bytes, after: '\nendstream' }] : []),
+    ...(photo ? [{ text: `<< /Type /XObject /Subtype /Image /Width ${photo.width} /Height ${photo.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${photo.bytes.length} >>\nstream\n`, binary: photo.bytes, after: '\nendstream' }] : []),
   ];
   pages.forEach((pageLines, index) => {
     const contentObjectNumber = firstPageObject + index * 2 + 1;
     const stream = [
-      ...(logo ? ['q', '90 0 0 92 50 660 cm', '/Im1 Do', 'Q'] : []),
+       ...(logo ? ['q', '90 0 0 92 50 660 cm', '/Im1 Do', 'Q'] : []),
+       ...(photo ? ['q', '72 0 0 90 480 600 cm', '/PupilPhoto Do', 'Q'] : []),
       'BT',
       logo ? '/F1 15 Tf\n175 740 Td' : '/F1 15 Tf\n50 744 Td',
       ...pageLines.flatMap((line, lineIndex) => [`(${pdfEscape(line)}) Tj`, ...(lineIndex < pageLines.length - 1 ? ['0 -30 Td', '/F1 10 Tf'] : [])]),
       'ET',
     ].join('\n');
     objects.push({
-      text: `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >>${logo ? ' /XObject << /Im1 4 0 R >>' : ''} >> /Contents ${contentObjectNumber} 0 R >>`,
+      text: `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >>${logo || photo ? ` /XObject <<${logo ? ' /Im1 4 0 R' : ''}${photo ? ` /PupilPhoto ${photoObjectNumber} 0 R` : ''} >>` : ''} >> /Contents ${contentObjectNumber} 0 R >>`,
     });
     objects.push({ text: `<< /Length ${encoder.encode(stream).length} >>\nstream\n${stream}\nendstream` });
   });
@@ -267,19 +301,70 @@ export async function brandedPdf(lines: string[]) {
   addText(`xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map((offset) => `${String(offset).padStart(10, '0')} 00000 n `).join('\n')}\ntrailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
   return new Blob(chunks.map((chunk) => chunk.slice().buffer), { type: 'application/pdf' });
 }
+async function thermalReceiptPdf(lines: string[]) {
+  const logo = await loadSchoolLogo();
+  const encoder = new TextEncoder();
+  const wrappedLines = lines.flatMap((line) => {
+    const value = String(line);
+    if (value.length <= 34) return [value];
+    const chunks: string[] = [];
+    for (let index = 0; index < value.length; index += 34) chunks.push(value.slice(index, index + 34));
+    return chunks;
+  });
+  const pageHeight = Math.max(520, 188 + wrappedLines.length * 16);
+  const firstPageObject = logo ? 5 : 4;
+  const objects: { text: string; binary?: Uint8Array; after?: string }[] = [
+    { text: '<< /Type /Catalog /Pages 2 0 R >>' },
+    { text: `<< /Type /Pages /Kids [${firstPageObject} 0 R] /Count 1 >>` },
+    { text: '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>' },
+    ...(logo ? [{ text: `<< /Type /XObject /Subtype /Image /Width ${logo.width} /Height ${logo.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${logo.bytes.length} >>\nstream\n`, binary: logo.bytes, after: '\nendstream' }] : []),
+  ];
+  const stream = [
+    ...(logo ? ['q', '62 0 0 64 82', `${pageHeight - 82} cm`, '/Im1 Do', 'Q'] : []),
+    'BT',
+    logo ? `/F1 10 Tf\n24 ${pageHeight - 102} Td` : `/F1 10 Tf\n24 ${pageHeight - 42} Td`,
+    ...wrappedLines.flatMap((line, index) => [`(${pdfEscape(line)}) Tj`, ...(index < wrappedLines.length - 1 ? ['0 -16 Td'] : [])]),
+    'ET',
+  ].join('\n');
+  objects.push({ text: `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 226 ${pageHeight}] /Resources << /Font << /F1 3 0 R >>${logo ? ' /XObject << /Im1 4 0 R >>' : ''} >> /Contents ${firstPageObject + 1} 0 R >>` });
+  objects.push({ text: `<< /Length ${encoder.encode(stream).length} >>\nstream\n${stream}\nendstream` });
+  const chunks: Uint8Array[] = [];
+  const offsets: number[] = [0];
+  let byteLength = 0;
+  const addText = (text: string) => {
+    const bytes = encoder.encode(text);
+    chunks.push(bytes);
+    byteLength += bytes.length;
+  };
+  const addBytes = (bytes: Uint8Array) => {
+    chunks.push(bytes);
+    byteLength += bytes.length;
+  };
+  addText('%PDF-1.4\n');
+  objects.forEach((object, index) => {
+    offsets.push(byteLength);
+    addText(`${index + 1} 0 obj\n${object.text}`);
+    if (object.binary) addBytes(object.binary);
+    addText(`${object.after ? `${object.after}\n` : '\n'}endobj\n`);
+  });
+  const xref = byteLength;
+  addText(`xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map((offset) => `${String(offset).padStart(10, '0')} 00000 n `).join('\n')}\ntrailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
+  return new Blob(chunks.map((chunk) => chunk.slice().buffer), { type: 'application/pdf' });
+}
 async function receiptPdf(item: Payment, history: Payment[] = []) {
-  return brandedPdf([
+  return thermalReceiptPdf([
+    SCHOOL_NAME,
     'OFFICIAL PAYMENT RECEIPT',
-    `Receipt number: ${item.receiptNumber}`,
+    `Receipt no: ${item.receiptNumber}`,
     `Pupil: ${item.studentName}`,
-    `Registration number: ${item.registrationNumber}`,
-    `Amount: ${money(item.amount)}`,
-    `Payment method: ${item.method}`,
+    `Reg. no: ${item.registrationNumber}`,
+    `Amount paid: ${money(item.amount)}`,
+    `Method: ${item.method}`,
     `Date: ${item.date}`,
     `Status: ${item.status}`,
-    `Current balance: ${money(item.balance)}`,
+    `Balance due: ${money(item.balance)}`,
     'Payment history:',
-    ...history.map((payment) => `  ${payment.date} · ${payment.receiptNumber} · ${money(payment.amount)}`),
+    ...history.map((payment) => `${payment.date} · ${payment.receiptNumber} · ${money(payment.amount)}`),
     "Thank you for supporting the pupil's education.",
   ]);
 }
@@ -302,7 +387,7 @@ function receiptPrintPage(item: Payment, history: Payment[] = []) {
   const printWindow = window.open('', '_blank');
   if (!printWindow) return;
   const row = (label: string, value: string) => `<div><dt>${label}</dt><dd>${value}</dd></div>`;
-   printWindow.document.write(`<html><head><title>${htmlEscape(item.receiptNumber)}</title><style>body{font-family:Arial,sans-serif;color:#17231f;padding:48px;max-width:720px;margin:auto}header{display:flex;gap:18px;border-bottom:3px solid #1d7056;padding-bottom:18px;margin-bottom:28px;min-height:92px}header img{width:84px;height:86px;object-fit:contain;order:2;margin-left:auto}h1{font-size:24px;margin:0 0 6px}p{color:#63756e;margin:4px 0}header strong{display:block;margin-top:10px}dl{display:grid;grid-template-columns:1fr 1fr;gap:18px 32px}dt{font-size:11px;color:#63756e;text-transform:uppercase;letter-spacing:.12em}dd{font-size:16px;font-weight:600;margin:5px 0 0}.amount{font-size:28px;color:#1d7056}table{width:100%;margin-top:32px;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:8px;border-bottom:1px solid #d9e2dc}@media print{body{padding:0}}</style></head><body>${schoolPrintHeader(`Official payment receipt · ${item.receiptNumber}`)}<dl>${row('Pupil', htmlEscape(item.studentName))}${row('Registration number', htmlEscape(item.registrationNumber))}${row('Amount', `<span class="amount">${htmlEscape(money(item.amount))}</span>`)}${row('Payment method', htmlEscape(item.method))}${row('Date', htmlEscape(item.date))}${row('Status', htmlEscape(item.status))}${row('Current balance', htmlEscape(money(item.balance)))}</dl><h2>Payment history</h2><table><thead><tr><th>Date</th><th>Receipt number</th><th>Amount</th></tr></thead><tbody>${history.map((payment) => `<tr><td>${htmlEscape(payment.date)}</td><td>${htmlEscape(payment.receiptNumber)}</td><td>${htmlEscape(money(payment.amount))}</td></tr>`).join('')}</tbody></table><p style="margin-top:56px">This is an official EMMECTY school payment record.</p></body></html>`);
+  printWindow.document.write(`<html><head><title>${htmlEscape(item.receiptNumber)}</title><style>@page{size:80mm auto;margin:0}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#17231f;width:72mm;margin:0 auto;padding:5mm 0;font-size:11px}header{display:block;text-align:center;border-bottom:1px dashed #17231f;padding-bottom:4mm;margin-bottom:4mm;min-height:0}header img{display:block;width:22mm;height:22mm;object-fit:contain;margin:0 auto 2mm}header h1{font-size:13px;line-height:1.2;margin:0 0 1mm}header p{font-size:9px;margin:1mm 0;color:#63756e}header strong{display:block;margin-top:2mm;font-size:11px}dl{display:block;margin:0}dl>div{display:flex;justify-content:space-between;gap:3mm;border-bottom:1px dotted #b9c4bf;padding:2mm 0}dt{font-size:9px;color:#63756e;text-transform:uppercase}dd{font-size:11px;font-weight:600;margin:0;text-align:right;max-width:45mm;overflow-wrap:anywhere}.amount{font-size:16px;color:#1d7056}h2{font-size:11px;margin:5mm 0 2mm;border-bottom:1px solid #17231f;padding-bottom:1mm}table{width:100%;border-collapse:collapse;font-size:9px}th,td{text-align:left;padding:1.5mm 0;border-bottom:1px dotted #b9c4bf}th:last-child,td:last-child{text-align:right}.receipt-thanks{text-align:center;border-top:1px dashed #17231f;margin-top:6mm;padding-top:4mm;font-size:9px;color:#63756e}@media print{body{padding-top:3mm}}</style></head><body>${schoolPrintHeader(`Official payment receipt · ${item.receiptNumber}`)}<dl>${row('Pupil', htmlEscape(item.studentName))}${row('Registration no.', htmlEscape(item.registrationNumber))}${row('Amount paid', `<span class="amount">${htmlEscape(money(item.amount))}</span>`)}${row('Payment method', htmlEscape(item.method))}${row('Date', htmlEscape(item.date))}${row('Status', htmlEscape(item.status))}${row('Balance due', htmlEscape(money(item.balance)))}</dl><h2>Payment history</h2><table><thead><tr><th>Date</th><th>Receipt</th><th>Amount</th></tr></thead><tbody>${history.map((payment) => `<tr><td>${htmlEscape(payment.date)}</td><td>${htmlEscape(payment.receiptNumber)}</td><td>${htmlEscape(money(payment.amount))}</td></tr>`).join('')}</tbody></table><p class="receipt-thanks">This is an official EMMECTY school payment record.</p></body></html>`);
    printWindow.document.close();
   printWindow.focus();
   printWindow.print();
@@ -344,12 +429,13 @@ async function admissionFormPdf(form: AdmissionForm) {
     `Fee balance: ${money(form.feeBalance)}`,
     `Declaration accepted: ${form.declarationAccepted ? 'Yes' : 'No'} · ${admissionValue(form.declarationDate)}`,
     'This is an official EMMECTY school admission record.',
-  ]);
+  ], form.photoPath);
 }
 
 function admissionPrintContent(form: AdmissionForm) {
   const field = (label: string, value: unknown) => `<div><dt>${htmlEscape(label)}</dt><dd>${htmlEscape(value)}</dd></div>`;
-  return `<style>.admission-identity{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin:0 0 22px;padding:14px 0 18px;border-bottom:1px solid #d9e2dc}.identity-label{margin:0;color:#1d7056;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}.identity-note{max-width:470px;margin:7px 0 0;color:#63756e;font-size:12px}.photo-box{width:3cm;height:4cm;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1.5px solid #1d7056;background:#fffdf4;color:#1d7056;font-size:10px;font-weight:700;letter-spacing:.1em;text-align:center}.photo-box span{display:block;margin-top:8px;color:#63756e;font-size:8px;font-weight:400;letter-spacing:0}.section h2{position:relative;padding:0 0 10px;border-bottom:3px solid #1d7056;color:#1d7056}.section h2::after{content:"";position:absolute;left:0;right:0;bottom:3px;border-bottom:1px solid #e7b84b}.section dd{min-height:20px;padding:0 2px 5px;border-bottom:1px solid #1d7056}@media print{.admission-identity{break-inside:avoid}.section h2{break-after:avoid}}</style><div class="admission-identity"><div><p class="identity-label">Official pupil record</p><p class="identity-note">Please attach a recent passport-size photograph in the holder provided.</p></div><div class="photo-box">PASSPORT<br>PHOTO<span>3 cm × 4 cm</span></div></div><div class="section"><h2>Pupil information</h2><dl>${field('Pupil full name', form.pupilName)}${field('Registration number', form.registrationNumber)}${field('Date of birth', form.dateOfBirth)}${field('Gender', form.gender)}${field('Religion', form.religion)}${field('Place of birth', form.placeOfBirth)}${field('Home village', form.homeVillage)}${field('Nationality', form.nationality)}${field('Tribe', form.tribe)}${field('Class applying for', `${form.className}${form.stream ? ` · ${form.stream}` : ''}`)}${field('Day or boarding', form.enrollmentType)}</dl></div><div class="section"><h2>Parent or guardian information</h2><dl>${field('Name', form.guardianName)}${field('Relationship', form.guardianRelationship)}${field('Phone number', form.guardianPhone)}${field('Email address', form.guardianEmail)}${field('National ID number', form.guardianNationalId)}${field('Residential address', form.residentialAddress)}${field('Occupation', form.guardianOccupation)}${field('Alternative contact', form.alternativeContact)}</dl></div><div class="section"><h2>Previous school and health</h2><dl>${field('Previous school', form.previousSchool)}${field('Last class completed', form.lastClassCompleted)}${field('Medical conditions or allergies', form.medicalConditions)}${field('Special needs or disabilities', form.specialNeeds)}${field('Known medical notes', form.knownMedicalNote)}</dl></div><div class="section"><h2>Emergency contact</h2><dl>${field('Name', form.emergencyContactName)}${field('Phone number', form.emergencyContactPhone)}${field('Relationship', form.emergencyContactRelationship)}</dl></div><div class="section"><h2>Fees and declaration</h2><dl>${field('Admission date', form.admissionDate)}${field('Termly fee', money(form.termFee))}${field('Opening payment', money(form.amountPaid))}${field('Fee balance', money(form.feeBalance))}${field('Declaration accepted', form.declarationAccepted ? 'Yes' : 'No')}${field('Declaration date', form.declarationDate)}</dl><p class="declaration">I confirm that the information supplied on this admission form is correct.</p></div>`;
+  const photo = form.photoPath ? `<img class="photo-image" src="${htmlEscape(`/api/storage${form.photoPath}`)}" alt="Pupil passport photograph">` : '<span>PASSPORT<br>PHOTO<span>3 cm × 4 cm</span></span>';
+  return `<style>.admission-identity{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin:0 0 22px;padding:14px 0 18px;border-bottom:1px solid #d9e2dc}.identity-label{margin:0;color:#1d7056;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}.identity-note{max-width:470px;margin:7px 0 0;color:#63756e;font-size:12px}.photo-box{width:3cm;height:4cm;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;border:1.5px solid #1d7056;background:#fffdf4;color:#1d7056;font-size:10px;font-weight:700;letter-spacing:.1em;text-align:center}.photo-box span{display:block;margin-top:8px;color:#63756e;font-size:8px;font-weight:400;letter-spacing:0}.photo-image{width:100%;height:100%;object-fit:cover}.section h2{position:relative;padding:0 0 10px;border-bottom:3px solid #1d7056;color:#1d7056}.section h2::after{content:"";position:absolute;left:0;right:0;bottom:3px;border-bottom:1px solid #e7b84b}.section dd{min-height:20px;padding:0 2px 5px;border-bottom:1px solid #1d7056}@media print{.admission-identity{break-inside:avoid}.section h2{break-after:avoid}}</style><div class="admission-identity"><div><p class="identity-label">Official pupil record</p><p class="identity-note">${form.photoPath ? 'Pupil passport photograph attached.' : 'Please attach a recent passport-size photograph in the holder provided.'}</p></div><div class="photo-box">${photo}</div></div><div class="section"><h2>Pupil information</h2><dl>${field('Pupil full name', form.pupilName)}${field('Registration number', form.registrationNumber)}${field('Date of birth', form.dateOfBirth)}${field('Gender', form.gender)}${field('Religion', form.religion)}${field('Place of birth', form.placeOfBirth)}${field('Home village', form.homeVillage)}${field('Nationality', form.nationality)}${field('Tribe', form.tribe)}${field('Class applying for', `${form.className}${form.stream ? ` · ${form.stream}` : ''}`)}${field('Day or boarding', form.enrollmentType)}</dl></div><div class="section"><h2>Parent or guardian information</h2><dl>${field('Name', form.guardianName)}${field('Relationship', form.guardianRelationship)}${field('Phone number', form.guardianPhone)}${field('Email address', form.guardianEmail)}${field('National ID number', form.guardianNationalId)}${field('Residential address', form.residentialAddress)}${field('Occupation', form.guardianOccupation)}${field('Alternative contact', form.alternativeContact)}</dl></div><div class="section"><h2>Previous school and health</h2><dl>${field('Previous school', form.previousSchool)}${field('Last class completed', form.lastClassCompleted)}${field('Medical conditions or allergies', form.medicalConditions)}${field('Special needs or disabilities', form.specialNeeds)}${field('Known medical notes', form.knownMedicalNote)}</dl></div><div class="section"><h2>Emergency contact</h2><dl>${field('Name', form.emergencyContactName)}${field('Phone number', form.emergencyContactPhone)}${field('Relationship', form.emergencyContactRelationship)}</dl></div><div class="section"><h2>Fees and declaration</h2><dl>${field('Admission date', form.admissionDate)}${field('Termly fee', money(form.termFee))}${field('Opening payment', money(form.amountPaid))}${field('Fee balance', money(form.feeBalance))}${field('Declaration accepted', form.declarationAccepted ? 'Yes' : 'No')}${field('Declaration date', form.declarationDate)}</dl><p class="declaration">I confirm that the information supplied on this admission form is correct.</p></div>`;
 }
 
 async function downloadAdmissionForm(form: AdmissionForm) {
@@ -645,6 +731,8 @@ function StudentProfilePage() {
   const payments = useListPayments({ query: { enabled: canEdit, queryKey: getListPaymentsQueryKey() } });
   const updateStudent = useUpdateStudent();
   const student = profile.data;
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoUploadError, setPhotoUploadError] = useState('');
   const operations = useGetOperations();
   const savedClassOptions = (operations.data?.modules?.classes || [])
     .map((item) => String(item.name || '').trim())
@@ -672,6 +760,7 @@ function StudentProfilePage() {
       termFee: student.termFee,
        previousFeeBalance: student.previousFeeBalance,
       status: student.status,
+      photoPath: student.photoPath,
       newPassword: '',
     });
   }, [student]);
@@ -699,6 +788,39 @@ function StudentProfilePage() {
       },
     });
   };
+  const uploadPhoto = async (file: File) => {
+    setPhotoUploadError('');
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size > 5 * 1024 * 1024) {
+      setPhotoUploadError('Choose a JPEG, PNG, or WebP image up to 5 MB.');
+      return;
+    }
+    setPhotoUploading(true);
+    try {
+      const uploadFile = await normalizePupilPhoto(file);
+      const urlResponse = await fetch('/api/storage/uploads/request-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: uploadFile.name, size: uploadFile.size, contentType: uploadFile.type }),
+      });
+      if (!urlResponse.ok) throw new Error('Upload URL unavailable');
+      const upload = await urlResponse.json() as { uploadURL: string; objectPath: string };
+      const uploadResponse = await fetch(upload.uploadURL, { method: 'PUT', headers: { 'Content-Type': uploadFile.type }, body: uploadFile });
+      if (!uploadResponse.ok) throw new Error('Photo upload failed');
+      updateStudent.mutate({ studentId, data: { photoPath: upload.objectPath } }, {
+        onSuccess: (updated) => {
+          setEditForm((current) => ({ ...current, photoPath: updated.photoPath }));
+          void profile.refetch();
+          void admission.refetch();
+          client.invalidateQueries({ queryKey: getListStudentsQueryKey() });
+        },
+        onError: () => setPhotoUploadError('The pupil photo could not be saved. Please try again.'),
+      });
+    } catch {
+      setPhotoUploadError('The pupil photo could not be uploaded. Please try again.');
+    } finally {
+      setPhotoUploading(false);
+    }
+  };
   const pupilPayments = payments.data?.filter((payment) => payment.studentId === student?.id) || [];
 
   return <AppShell>
@@ -714,6 +836,7 @@ function StudentProfilePage() {
           <div className="mt-7 flex flex-wrap gap-2"><span className="rounded-full bg-[hsl(var(--primary)/.1)] px-3 py-1.5 text-xs font-semibold text-[hsl(var(--primary))]">{student.className}{student.stream ? ` · Stream ${student.stream}` : ''}</span><span className="rounded-full bg-[hsl(var(--muted))] px-3 py-1.5 text-xs capitalize text-[hsl(var(--muted-foreground))]">{student.gender}</span><span className="rounded-full bg-[hsl(var(--primary)/.1)] px-3 py-1.5 text-xs font-semibold capitalize text-[hsl(var(--primary))]">{student.status}</span></div>
         </div>
       </Panel>
+      <Panel className="p-6 print:hidden" testId="panel-student-photo"><div className="flex flex-col gap-4 sm:flex-row sm:items-center"><div className="flex size-32 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--muted)/.4)]">{student.photoPath ? <img src={`/api/storage${student.photoPath}`} alt={`${student.name} passport photo`} className="h-full w-full object-cover" /> : <span className="px-3 text-center text-[10px] font-semibold uppercase tracking-[.12em] text-[hsl(var(--muted-foreground))]">No passport photo</span>}</div><div><p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.16em] text-[hsl(var(--primary))]">Pupil identity</p><h2 className="mt-1 font-display text-xl">Passport photo</h2><p className="mt-1 max-w-xl text-sm leading-6 text-[hsl(var(--muted-foreground))]">Upload a clear JPEG up to 5 MB. The saved photo is reused automatically on admission forms and report cards.</p><label className="mt-3 inline-flex cursor-pointer items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-3.5 py-2.5 text-xs font-semibold text-[hsl(var(--primary-foreground))] hover:brightness-110"><Upload className="size-4" />{photoUploading || updateStudent.isPending ? 'Uploading…' : 'Upload passport photo'}<input type="file" accept="image/jpeg" className="sr-only" disabled={photoUploading || updateStudent.isPending} onChange={(event) => { const file = event.target.files?.[0]; if (file) void uploadPhoto(file); event.currentTarget.value = ''; }} /></label>{photoUploadError && <p className="mt-2 text-xs text-[hsl(var(--destructive))]" role="alert">{photoUploadError}</p>}</div></div></Panel>
       <div className="grid gap-6 lg:grid-cols-[.75fr_1.25fr]">
         <Panel className="p-6" testId="panel-student-details"><div className="mb-5 flex items-center gap-2"><Info className="size-4 text-[hsl(var(--primary))]" /><h2 className="font-display text-xl">Personal information</h2></div><dl className="space-y-4 text-sm"><div className="flex justify-between gap-4"><dt className="text-[hsl(var(--muted-foreground))]">Date of birth</dt><dd className="font-medium">{dateLabel(student.dateOfBirth)}</dd></div><div className="flex justify-between gap-4"><dt className="text-[hsl(var(--muted-foreground))]">Guardian</dt><dd className="text-right font-medium">{student.guardianName}</dd></div><div className="flex justify-between gap-4"><dt className="text-[hsl(var(--muted-foreground))]">Phone</dt><dd className="font-mono-ui text-xs">{student.guardianPhone}</dd></div><div className="flex justify-between gap-4"><dt className="text-[hsl(var(--muted-foreground))]">Email</dt><dd className="max-w-[180px] truncate text-right font-medium">{student.guardianEmail || 'Not provided'}</dd></div></dl></Panel>
         <Panel className="p-6" testId="panel-student-metrics"><div className="mb-5 flex items-center justify-between"><h2 className="font-display text-xl">At a glance</h2><span className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-[hsl(var(--muted-foreground))]">Current year</span></div><div className="grid gap-4 sm:grid-cols-3"><div className="rounded-2xl bg-[hsl(var(--secondary)/.75)] p-4"><CalendarDays className="size-4 text-[hsl(var(--primary))]" /><p className="mt-5 font-display text-3xl">{student.attendancePercentage}%</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Attendance</p></div><div className="rounded-2xl bg-[hsl(var(--secondary)/.75)] p-4"><WalletCards className="size-4 text-[hsl(var(--chart-2))]" /><p className="mt-5 font-display text-3xl">{money(student.feeBalance)}</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Fee balance</p></div><div className="rounded-2xl bg-[hsl(var(--secondary)/.75)] p-4"><BarChart3 className="size-4 text-[hsl(var(--chart-3))]" /><p className="mt-5 font-display text-3xl">{student.academicHistory?.[0]?.average ?? '—'}</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Latest average</p></div></div></Panel>
@@ -990,6 +1113,18 @@ function ReportCardPage() {
   useEffect(() => {
     if (settings.data?.academicYear && !academicYear) setAcademicYear(settings.data.academicYear);
   }, [settings.data, academicYear]);
+  useEffect(() => {
+    if (!student?.photoPath) return;
+    const panel = document.querySelector('[data-testid="panel-report-card"]');
+    const placeholder = Array.from(panel?.querySelectorAll('div') || []).find((element) => element.textContent?.trim() === 'Passportphoto');
+    if (!placeholder) return;
+    const image = document.createElement('img');
+    image.src = `/api/storage${student.photoPath}`;
+    image.alt = `${student.name} passport photo`;
+    image.className = 'h-full w-full object-cover';
+    placeholder.classList.add('overflow-hidden');
+    placeholder.replaceChildren(image);
+  }, [student?.photoPath, student?.name]);
   const updateRow = (index: number, key: string, value: string) => setRows((current) => current.map((row, rowIndex) => rowIndex === index ? { ...row, [key]: key === 'subject' || key === 'comment' ? value : Math.max(0, Math.min(100, Number(value || 0))) } : row));
   const save = (event: FormEvent) => {
     event.preventDefault();

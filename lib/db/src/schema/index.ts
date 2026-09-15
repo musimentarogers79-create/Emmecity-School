@@ -45,6 +45,7 @@ export const students = pgTable("students", {
   enrollmentType: text("enrollment_type"),
   termFee: numeric("term_fee", { precision: 14, scale: 2 }),
   amountPaid: numeric("amount_paid", { precision: 14, scale: 2 }),
+  photoPath: text("photo_path"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [

@@ -193,6 +193,7 @@ export interface AdmissionForm {
   religion?: string;
   placeOfBirth?: string;
   homeVillage?: string;
+  photoPath?: string;
   nationality?: string;
   tribe?: string;
   guardianRelationship?: string;
@@ -233,6 +234,7 @@ export interface Student {
   attendancePercentage: number;
   feeBalance: number;
   avatarTone: string;
+  photoPath?: string;
   enrollmentType: StudentEnrollmentType;
   termFee: number;
   amountPaid: number;
@@ -350,6 +352,7 @@ export interface StudentUpdateInput {
   status?: StudentUpdateInputStatus;
   /** @minLength 8 */
   newPassword?: string;
+  photoPath?: string;
 }
 
 export type StudentProfileAcademicHistoryItem = {

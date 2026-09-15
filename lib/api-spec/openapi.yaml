@@ -933,6 +933,8 @@ components:
           type: number
         avatarTone:
           type: string
+        photoPath:
+          type: string
         enrollmentType:
           type: string
           enum: [day, boarding]
@@ -977,6 +979,8 @@ components:
         placeOfBirth:
           type: string
         homeVillage:
+          type: string
+        photoPath:
           type: string
         nationality:
           type: string
@@ -1190,6 +1194,8 @@ components:
         newPassword:
           type: string
           minLength: 8
+        photoPath:
+          type: string
     StudentProfile:
       allOf:
         - $ref: "#/components/schemas/Student"

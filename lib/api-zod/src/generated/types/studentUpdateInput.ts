@@ -49,4 +49,5 @@ export interface StudentUpdateInput {
   status?: StudentUpdateInputStatus;
   /** @minLength 8 */
   newPassword?: string;
+  photoPath?: string;
 }

@@ -23,6 +23,7 @@ export interface Student {
   attendancePercentage: number;
   feeBalance: number;
   avatarTone: string;
+  photoPath?: string;
   enrollmentType: StudentEnrollmentType;
   termFee: number;
   amountPaid: number;

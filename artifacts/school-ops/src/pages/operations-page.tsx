@@ -350,8 +350,10 @@ export function OperationsPage() {
   const baseViews = roleViews[role] || roleViews.staff;
   const isExpensesRoute = location.split('?')[0] === '/expenses';
   const visibleViews = views.filter((item) => (isExpensesRoute ? item.key === 'expenses' : baseViews.includes(item.key) || ((item.key === 'expenses') && session?.user.permissions.includes('expenses_view'))));
-  const requested = new URLSearchParams(location.split('?')[1] || '').get('view') as ViewKey | null;
-  const createMode = new URLSearchParams(location.split('?')[1] || '').get('mode') === 'create';
+  const queryString = location.includes('?') ? location.slice(location.indexOf('?') + 1) : '';
+  const queryParams = new URLSearchParams(queryString);
+  const requested = queryParams.get('view') as ViewKey | null;
+  const createMode = requested === 'people' && queryParams.get('mode') === 'create';
   const view = isExpensesRoute ? 'expenses' : visibleViews.some((item) => item.key === requested) ? requested as ViewKey : visibleViews[0]?.key || 'events';
   const selected = views.find((item) => item.key === view) || views[0];
   const rows = useMemo(() => {

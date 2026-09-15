@@ -260,7 +260,11 @@ router.get("/students/:studentId", async (req, res): Promise<void> => {
 router.patch("/students/:studentId", async (req, res): Promise<void> => {
   const user = await requireUser(req);
   if (!isAdministrator(user)) { errorResponse(res, 403, "Only administrators can update pupil records."); return; }
-  const parsed = UpdateStudentBody.safeParse(req.body);
+  const body = { ...(req.body as Record<string, unknown>) };
+  for (const key of ["firstName", "lastName", "dateOfBirth", "gender", "className", "guardianName", "guardianPhone"]) {
+    if (typeof body[key] === "string" && !body[key].trim()) delete body[key];
+  }
+  const parsed = UpdateStudentBody.safeParse(body);
   if (!parsed.success) { errorResponse(res, 400, "Enter valid pupil details. Passwords must be at least 8 characters."); return; }
   try {
     const updated = await updateStudent(req.params.studentId, parsed.data);

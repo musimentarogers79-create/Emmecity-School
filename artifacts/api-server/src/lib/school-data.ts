@@ -19,7 +19,7 @@ export type SchoolStudent = {
   id: string; registrationNumber: string; name: string; firstName: string; lastName: string; middleName?: string;
   className: string; stream: string; gender: string; status: "active" | "inactive"; attendancePercentage: number;
   feeBalance: number; previousFeeBalance: number; avatarTone: string; dateOfBirth: string; guardianName: string; guardianPhone: string;
-  guardianEmail: string; admissionDate: string; enrollmentType?: "day" | "boarding"; termFee?: number; amountPaid?: number;
+  guardianEmail: string; admissionDate: string; enrollmentType?: "day" | "boarding"; termFee?: number; amountPaid?: number; photoPath?: string;
 };
 export type AttendanceRecord = { id: string; studentId: string; studentName: string; registrationNumber: string; className: string; date: string; status: AttendanceStatus; arrivalTime?: string | null };
 export type Payment = { id: string; studentId: string; receiptNumber: string; studentName: string; registrationNumber: string; amount: number; method: string; date: string; status: "completed" | "pending" | "reversed"; balance: number };
@@ -269,6 +269,7 @@ function studentRow(row: typeof students.$inferSelect): SchoolStudent {
     guardianEmail: row.guardianEmail, admissionDate: row.admissionDate,
   };
   if (row.middleName) result.middleName = row.middleName;
+  if (row.photoPath) result.photoPath = row.photoPath;
   result.enrollmentType = (row.enrollmentType || "day") as "day" | "boarding";
   result.termFee = number(row.termFee);
   result.amountPaid = number(row.amountPaid);
@@ -293,7 +294,7 @@ export async function updateStudent(id: string, data: {
   guardianRelationship?: string; guardianNationalId?: string; residentialAddress?: string; guardianOccupation?: string;
   alternativeContact?: string; previousSchool?: string; lastClassCompleted?: string; medicalConditions?: string;
   specialNeeds?: string; knownMedicalNote?: string; emergencyContactName?: string; emergencyContactPhone?: string;
-  emergencyContactRelationship?: string; declarationAccepted?: boolean; declarationDate?: string;
+  emergencyContactRelationship?: string; declarationAccepted?: boolean; declarationDate?: string; photoPath?: string | null;
 }) {
   const schoolId = await getSchoolId();
   const current = (await db.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.id, id))).limit(1))[0];
@@ -311,6 +312,9 @@ export async function updateStudent(id: string, data: {
   if (data.previousFeeBalance !== undefined) {
     updates.previousFeeBalance = String(data.previousFeeBalance);
   }
+  if (data.photoPath !== undefined) {
+    updates.photoPath = data.photoPath?.trim() || null;
+  }
   if (data.termFee !== undefined || data.previousFeeBalance !== undefined) {
     const termFee = data.termFee ?? number(current.termFee);
     const previousFeeBalance = data.previousFeeBalance ?? number(current.previousFeeBalance);
@@ -326,7 +330,7 @@ export async function updateStudent(id: string, data: {
       pupilCount: pupils.filter((pupil) => pupil.className === String(item.name)).length,
     })));
   }
-  const admission = (await db.select().from(documents).where(and(eq(documents.schoolId, schoolId), sql`${documents.data}->>'studentId' = ${id}`, sql`${documents.data}->>'documentType' = 'admission_form`)).orderBy(desc(documents.createdAt)).limit(1))[0];
+  const admission = (await db.select().from(documents).where(and(eq(documents.schoolId, schoolId), sql`${documents.data}->>'studentId' = ${id}`, sql`${documents.data}->>'documentType' = 'admission_form'`)).orderBy(desc(documents.createdAt)).limit(1))[0];
   if (admission) {
     const currentForm = admission.data as Record<string, unknown>;
     const admissionFields = [
@@ -355,6 +359,7 @@ export async function updateStudent(id: string, data: {
         amountPaid: number(updated.amountPaid),
         previousFeeBalance: number(updated.previousFeeBalance),
         feeBalance: number(updated.feeBalance),
+        photoPath: updated.photoPath || undefined,
         updatedAt: new Date().toISOString(),
       },
       updatedAt: new Date(),
@@ -377,6 +382,7 @@ export async function getAdmissionForm(id: string) {
       id: row.id,
       previousFeeBalance: saved.previousFeeBalance === undefined ? student.previousFeeBalance : saved.previousFeeBalance,
       feeBalance: saved.feeBalance === undefined ? student.feeBalance : saved.feeBalance,
+      photoPath: saved.photoPath ?? student.photoPath,
     };
   }
   return {
@@ -396,6 +402,7 @@ export async function getAdmissionForm(id: string) {
     amountPaid: student.amountPaid || 0,
     previousFeeBalance: student.previousFeeBalance,
     feeBalance: student.feeBalance,
+    photoPath: student.photoPath,
     generatedAt: new Date().toISOString(),
   };
 }
@@ -488,6 +495,7 @@ export async function createStudentWithPayment(data: {
       amountPaid: initialPayment,
       previousFeeBalance,
       feeBalance: Math.max(0, previousFeeBalance + data.termFee - initialPayment),
+      photoPath: undefined,
       generatedAt: new Date().toISOString(),
     };
     const admissionDocument = (await tx.insert(documents).values({ schoolId, data: admissionFormData }).returning())[0];
