@@ -501,3 +501,32 @@
     touch-action: manipulation;
   }
 }
+
+/* The login screen stays plain white; the manual belongs inside the signed-in dashboard. */
+body:has([data-testid="button-sign-in"]) {
+  background: #fff;
+}
+
+body:has([data-testid="button-sign-in"]) section:first-of-type {
+  background: #fff !important;
+  border-color: transparent !important;
+}
+
+body:has([data-testid="button-sign-in"]) section:first-of-type > .relative.z-10 {
+  border-color: transparent;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+body:has([data-testid="button-sign-in"]) section:first-of-type > .pointer-events-none {
+  display: none;
+}
+
+body:has([data-testid="button-sign-in"]) [data-testid="link-user-manual-login"] {
+  display: none;
+}
+
+body:has([data-testid="button-sign-in"]) li:has([data-testid="link-user-manual-login"]) {
+  display: none;
+}

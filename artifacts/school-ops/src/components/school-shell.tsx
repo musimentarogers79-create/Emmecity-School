@@ -257,6 +257,17 @@ export function AppShell({ children }: { children: ReactNode }) {
     document.addEventListener('mousedown', closeMenu);
     return () => document.removeEventListener('mousedown', closeMenu);
   }, [profileOpen]);
+  useEffect(() => {
+    const handleShortcutClick = (event: MouseEvent) => {
+      const target = event.target as Element | null;
+      if (target?.closest('[data-testid="link-register-subject"]')) {
+        event.preventDefault();
+        setLocation('/operations?view=subjects');
+      }
+    };
+    document.addEventListener('click', handleShortcutClick);
+    return () => document.removeEventListener('click', handleShortcutClick);
+  }, [setLocation]);
 
   return (
     <div className="flex min-h-[100dvh] bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
