@@ -429,9 +429,7 @@ summary::-webkit-details-marker { display: none; }
 .admission-registration-form {
   position: relative;
   border-color: hsl(var(--primary) / .35);
-  background:
-    linear-gradient(135deg, hsl(var(--secondary) / .22), transparent 34%),
-    hsl(var(--card));
+  background: #fff;
   box-shadow: 0 24px 70px hsl(var(--primary) / .14);
 }
 
@@ -456,23 +454,60 @@ summary::-webkit-details-marker { display: none; }
   background: hsl(var(--accent));
 }
 
-.admission-registration-form form::before {
-  content: "PASSPORT PHOTO  ·  3 cm × 4 cm";
-  display: flex;
-  width: 3cm;
-  height: 4cm;
+.admission-paper-header {
+  color: #062d72;
+}
+
+.admission-photo-box {
   align-items: center;
   justify-content: center;
-  float: right;
-  margin: 0 0 1.25rem 1.25rem;
-  border: 1.5px solid hsl(var(--primary));
-  background: hsl(var(--accent) / .12);
-  color: hsl(var(--primary));
-  font-size: .58rem;
-  font-weight: 700;
-  letter-spacing: .08em;
-  line-height: 1.35;
-  text-align: center;
+  border: 1.5px dashed #365276;
+  background: #f7fbfd;
+}
+
+.admission-registration-form form > div {
+  border-radius: .75rem;
+}
+
+.admission-registration-form form::before {
+  content: "Section 1: Pupil Information";
+  display: block;
+  margin-bottom: -.25rem;
+  padding: .55rem .8rem;
+  border: 2px solid #0b6fa8;
+  background: #acd5ec;
+  color: #062d72;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.admission-registration-form form > div:nth-child(-n + 4) {
+  border: 2px solid #0b6fa8;
+  background: #f2f9fc;
+  padding: 1rem;
+}
+
+.admission-registration-form form > div:nth-child(-n + 4) input,
+.admission-registration-form form > div:nth-child(-n + 4) select {
+  background: #fff;
+}
+
+.admission-registration-form form > div:nth-child(5) {
+  border: 2px solid #0b6fa8;
+  background: #f2f9fc;
+  padding: 1rem;
+}
+
+.admission-registration-form form > div:nth-child(5)::before {
+  content: "Section 2: Parent/Guardian Information";
+  display: block;
+  margin: -1rem -1rem 1rem;
+  padding: .55rem .8rem;
+  border-bottom: 1px solid #0b6fa8;
+  background: #acd5ec;
+  color: #062d72;
+  font-size: 1rem;
+  font-weight: 800;
 }
 
 .admission-registration-form input:not([type="checkbox"]),
@@ -504,7 +539,42 @@ summary::-webkit-details-marker { display: none; }
 }
 
 .admission-section {
-  background: linear-gradient(135deg, hsl(var(--secondary) / .12), transparent 58%);
+  overflow: hidden;
+  border: 2px solid #0b6fa8 !important;
+  background: #f2f9fc;
+}
+
+.admission-section-heading {
+  margin: -1rem -1rem 1rem;
+  padding: .55rem .8rem;
+  border: 0;
+  background: #acd5ec;
+  color: #062d72 !important;
+  font-size: 1rem !important;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.admission-section-heading::after {
+  display: none;
+}
+
+.admission-official-sections > p {
+  color: #365276;
+}
+
+.admission-registration-form form::after {
+  content: "OFFICE USE ONLY  ·  Registration number and receipt number are generated automatically after saving";
+  display: block;
+  margin-top: 1rem;
+  padding: .75rem;
+  border-top: 3px double #0b6fa8;
+  color: #365276;
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  line-height: 1.5;
+  text-align: center;
 }
 
 /* Keep the login form reachable on short phone viewports. The form can scroll

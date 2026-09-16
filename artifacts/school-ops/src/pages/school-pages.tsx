@@ -22,13 +22,9 @@ function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarati
   declarationAccepted: boolean;
   onDeclarationChange: (accepted: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  return <details open={open} onToggle={(event) => setOpen(event.currentTarget.open)} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card)/.7)]" data-testid="details-additional-admission">
-    <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3.5 text-sm font-semibold marker:hidden">
-      <span><span className="block">Optional admission details</span><span className="mt-0.5 block text-xs font-normal text-[hsl(var(--muted-foreground))]">Guardian, health, emergency contact, and declaration information · complete later if needed</span></span>
-      <ChevronDown className={`size-4 shrink-0 text-[hsl(var(--primary))] transition-transform ${open ? 'rotate-180' : ''}`} />
-    </summary>
-    <div className="space-y-5 border-t border-[hsl(var(--border))] p-4">
+  return <div className="admission-official-sections space-y-3" data-testid="details-additional-admission">
+    <p className="px-1 text-[11px] font-semibold uppercase tracking-[.14em] text-[#082f73]">Complete the remaining sections below</p>
+    <div className="space-y-5">
     <div className="admission-section rounded-2xl border border-[hsl(var(--primary)/.25)] bg-[hsl(var(--secondary)/.45)] p-4">
       <p className="admission-section-heading mb-2 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Previous fees</p>
       <p className="mb-4 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Because the school is in Term 3, record any unpaid balance carried forward from Terms 1 and 2. Leave it at zero when there is no previous balance.</p>
@@ -56,7 +52,7 @@ function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarati
       </div>
     </div>
     <div className="admission-section rounded-2xl border border-[hsl(var(--border))] p-4">
-      <p className="admission-section-heading mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Previous school and health information</p>
+      <p className="admission-section-heading mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Section 3: Academic and medical information</p>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Previous school" value={String(form.previousSchool || '')} onChange={(value) => update('previousSchool', value)} placeholder="Write None if not applicable" required={false} />
         <Field label="Last class completed" value={String(form.lastClassCompleted || '')} onChange={(value) => update('lastClassCompleted', value)} placeholder="For example, Primary 2" required={false} />
@@ -66,7 +62,7 @@ function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarati
       </div>
     </div>
     <div className="admission-section rounded-2xl border border-[hsl(var(--border))] p-4">
-      <p className="admission-section-heading mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Emergency contact</p>
+      <p className="admission-section-heading mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Section 4: Emergency contact and declaration</p>
       <div className="grid gap-4 sm:grid-cols-3">
         <Field label="Emergency contact name" value={String(form.emergencyContactName || '')} onChange={(value) => update('emergencyContactName', value)} placeholder="Full name" required={false} />
         <Field label="Emergency contact phone" value={String(form.emergencyContactPhone || '')} onChange={(value) => update('emergencyContactPhone', value)} placeholder="+256 7..." required={false} />
@@ -85,12 +81,33 @@ function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarati
       </div>
     </div>
     </div>
-  </details>;
+  </div>;
+}
+
+function AdmissionPaperHeader() {
+  return <div className="admission-paper-header">
+    <div className="flex items-center gap-3 sm:gap-5">
+      <img src="/school-logo.jpg" alt={`${SCHOOL_NAME} crest`} className="size-20 shrink-0 object-contain sm:size-28" />
+      <div className="min-w-0 flex-1 text-center sm:text-left">
+        <h2 className="font-display text-xl font-bold leading-tight text-[#062d72] sm:text-3xl">{SCHOOL_NAME}</h2>
+        <p className="mt-1 text-xs font-semibold leading-5 text-[#062d72] sm:text-sm">{SCHOOL_POSTAL_ADDRESS} · Hoima City</p>
+        <p className="text-xs font-semibold leading-5 text-[#062d72] sm:text-sm">Tel {SCHOOL_PHONE}</p>
+        <p className="text-[10px] font-semibold leading-4 text-[#062d72] sm:text-xs">Located: {SCHOOL_LOCATION}</p>
+      </div>
+      <div className="admission-photo-box hidden h-28 w-24 shrink-0 sm:flex">
+        <span className="text-center text-[10px] font-semibold leading-4 text-[#062d72]">Passport Photo<br />3×4 cm</span>
+      </div>
+    </div>
+    <div className="mt-4 border-y-4 border-[#d5b51b] py-2 text-center">
+      <h3 className="font-display text-2xl font-bold tracking-[.04em] text-[#062d72] sm:text-4xl">PUPIL ADMISSION FORM</h3>
+    </div>
+    <p className="mt-2 text-center text-[10px] font-semibold uppercase tracking-[.12em] text-[#365276]">Please complete every section in order</p>
+  </div>;
 }
 
 function Modal({ title, description, onClose, children, wide = false }: { title: string; description?: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
   const modalTone = title === 'Register a student' ? ' admission-registration-form' : '';
-  return <div className="fixed inset-0 z-50 flex items-end justify-center bg-[hsl(var(--foreground)/.35)] p-0 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" data-testid="modal-dialog"><div className={`max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-2xl sm:rounded-3xl${modalTone} ${wide ? 'max-w-2xl' : 'max-w-lg'}`}><div className="mb-6 flex items-start justify-between gap-4"><div><h2 className="font-display text-2xl">{title}</h2>{description && <p className="mt-1 text-sm leading-5 text-[hsl(var(--muted-foreground))]">{description}</p>}</div><button onClick={onClose} className="rounded-lg p-2 hover:bg-[hsl(var(--muted))]" data-testid="button-close-modal"><X className="size-4" /></button></div>{children}</div></div>;
+  return <div className="fixed inset-0 z-50 flex items-end justify-center bg-[hsl(var(--foreground)/.35)] p-0 backdrop-blur-sm sm:items-center sm:p-6" role="dialog" aria-modal="true" data-testid="modal-dialog"><div className={`max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-6 shadow-2xl sm:rounded-3xl${modalTone} ${wide ? 'max-w-2xl' : 'max-w-lg'}`}><div className={`flex items-start justify-between gap-4 ${modalTone ? 'mb-2' : 'mb-6'}`}><div>{!modalTone && <><h2 className="font-display text-2xl">{title}</h2>{description && <p className="mt-1 text-sm leading-5 text-[hsl(var(--muted-foreground))]">{description}</p>}</>}</div><button onClick={onClose} className="rounded-lg p-2 hover:bg-[hsl(var(--muted))]" data-testid="button-close-modal"><X className="size-4" /></button></div>{modalTone && <AdmissionPaperHeader />}{children}</div></div>;
 }
 
 function Field({ label, value, onChange, placeholder, type = 'text', required = true, autoComplete }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; type?: string; required?: boolean; autoComplete?: string }) {
