@@ -389,6 +389,38 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/AttendanceRecord"
+  /attendance/deleted:
+    get:
+      operationId: getDeletedAttendanceRegisters
+      tags: [attendance]
+      summary: Get deleted attendance registers and their reasons
+      responses:
+        "200":
+          description: Deleted attendance registers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/DeletedAttendanceRegister"
+  /attendance/register:
+    delete:
+      operationId: deleteAttendanceRegister
+      tags: [attendance]
+      summary: Delete an attendance register with a reason
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteAttendanceRegisterInput"
+      responses:
+        "200":
+          description: Deleted attendance register
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeletedAttendanceRegister"
   /finance/summary:
     get:
       operationId: getFinanceSummary
@@ -1391,6 +1423,33 @@ components:
         className:
           type: string
       required: [date, className]
+    DeleteAttendanceRegisterInput:
+      type: object
+      properties:
+        date:
+          type: string
+        className:
+          type: string
+        reason:
+          type: string
+          minLength: 3
+      required: [date, className, reason]
+    DeletedAttendanceRegister:
+      type: object
+      properties:
+        date:
+          type: string
+        className:
+          type: string
+        recordCount:
+          type: integer
+        reason:
+          type: string
+        deletedAt:
+          type: string
+        deletedBy:
+          type: string
+      required: [date, className, recordCount, reason, deletedAt]
     Payment:
       type: object
       properties:

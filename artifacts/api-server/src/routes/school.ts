@@ -6,7 +6,7 @@ import {
   GetAdmissionFormResponse, GetFinanceSummaryResponse, GetOperationsResponse, GetReportCardParams, GetReportCardResponse, CreateReportCardBody, CreateReportCardResponse, GetStudentParams,
   GetStudentResponse, GetTimetableResponse, CreateTimetableEntryBody, CreateTimetableEntryResponse, ListAnnouncementsResponse, ListExpensesResponse, ListPaymentsResponse,
   ListSalariesResponse, ListStudentsQueryParams, ListStudentsResponse, LoginBody, LoginResponse, LogoutResponse,
-  RecordPaymentBody, RecordPaymentResponse, UpdatePaymentBody, UpdatePaymentResponse, SaveAttendanceBody, SaveAttendanceResponse, GetSettingsResponse,
+  RecordPaymentBody, RecordPaymentResponse, UpdatePaymentBody, UpdatePaymentResponse, SaveAttendanceBody, SaveAttendanceResponse, DeleteAttendanceRegisterBody, DeleteAttendanceRegisterResponse, GetDeletedAttendanceRegistersResponse, GetSettingsResponse,
   UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse, UpdateStudentBody, UpdateStudentResponse,
   CreateUserBody, CreateUserResponse, ListUsersResponse, UpdateUserProfileByAdminBody, UpdateUserProfileByAdminResponse,
   UpdateUserPermissionsBody, UpdateUserPermissionsResponse, DeleteUserResponse,
@@ -16,7 +16,7 @@ import {
 import {
   AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, currentUserFromToken, getAdmissionForm,
   clearLoginFailures, deleteSession, findUser, findUserById, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
-  listAttendance, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance, updateStudent,
+  listAttendance, listDeletedAttendanceRegisters, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance, deleteAttendanceRegister, updateStudent,
   createUser, deleteOperation, deleteUser, updatePayment, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserAdmin, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
 } from "../lib/school-data";
 
@@ -345,6 +345,27 @@ router.post("/attendance/create", async (req, res): Promise<void> => {
   if (user.role === "teacher" && !(await assignedClassNames(user)).some((assignedClass) => assignedClass === parsed.data.className || assignedClass.startsWith(`${parsed.data.className} `))) { errorResponse(res, 403, "Teachers can only create registers for assigned classes."); return; }
   const records = await createAttendanceRegister(parsed.data.className, parsed.data.date);
   res.status(201).json(CreateAttendanceRegisterResponse.parse(records));
+});
+router.get("/attendance/deleted", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!user) { errorResponse(res, 401, "Not signed in"); return; }
+  const deleted = await listDeletedAttendanceRegisters();
+  const visible = user.role === "teacher"
+    ? deleted.filter((item) => matchesAssignedClass(await assignedClassNames(user), item.className))
+    : isAdministrator(user) ? deleted : [];
+  res.json(GetDeletedAttendanceRegistersResponse.parse(visible));
+});
+router.delete("/attendance/register", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!user || (!isAdministrator(user) && user.role !== "teacher")) { errorResponse(res, 403, "Only administrators and assigned teachers can delete attendance registers."); return; }
+  const parsed = DeleteAttendanceRegisterBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Enter a reason of at least three characters before deleting the register."); return; }
+  if (user.role === "teacher" && !(await assignedClassNames(user)).some((assignedClass) => assignedClass === parsed.data.className || assignedClass.startsWith(`${parsed.data.className} `))) {
+    errorResponse(res, 403, "Teachers can only delete registers for assigned classes."); return;
+  }
+  const deleted = await deleteAttendanceRegister(parsed.data.date, parsed.data.className, parsed.data.reason, user.id);
+  if (!deleted) { errorResponse(res, 404, "Attendance register not found or already deleted."); return; }
+  res.json(DeleteAttendanceRegisterResponse.parse(deleted));
 });
 
 router.get("/finance/summary", async (req, res): Promise<void> => {

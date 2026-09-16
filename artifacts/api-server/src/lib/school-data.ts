@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
-import { and, asc, desc, eq, gt, ilike, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, ilike, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   announcements, attendance, assignments, classes, discipline, documents, events, expenses,
@@ -22,6 +22,7 @@ export type SchoolStudent = {
   guardianEmail: string; admissionDate: string; enrollmentType?: "day" | "boarding"; isSponsored: boolean; termFee?: number; amountPaid?: number; photoPath?: string;
 };
 export type AttendanceRecord = { id: string; studentId: string; studentName: string; registrationNumber: string; className: string; date: string; status: AttendanceStatus; arrivalTime?: string | null };
+export type DeletedAttendanceRegister = { date: string; className: string; recordCount: number; reason: string; deletedAt: string; deletedBy?: string | null };
 export type Payment = { id: string; studentId: string; receiptNumber: string; studentName: string; registrationNumber: string; amount: number; method: string; reference: string; date: string; status: "completed" | "pending" | "reversed"; balance: number };
 export type OperationRecord = Record<string, unknown> & { id: string };
 export const classAssignmentKey = (name: string, stream?: string | null) => {
@@ -726,12 +727,36 @@ export async function saveAttendance(studentId: string, date: string, status: At
   if (!student) return undefined;
   const schoolId = await getSchoolId();
   const row = (await db.insert(attendance).values({ schoolId, studentId: student.id, date, status, arrivalTime: arrivalTime || null }).onConflictDoUpdate({ target: [attendance.studentId, attendance.date], set: { status, arrivalTime: arrivalTime || null, updatedAt: new Date() } }).returning())[0];
-  return row ? { id: row.id, studentId: student.id, studentName: student.name, registrationNumber: student.registrationNumber, className: `${student.className} ${student.stream}`, date: row.date, status: row.status as AttendanceStatus, arrivalTime: row.arrivalTime } : undefined;
+  return row ? { id: row.id, studentId: student.id, studentName: student.name, registrationNumber: student.registrationNumber, className: classAssignmentKey(student.className, student.stream), date: row.date, status: row.status as AttendanceStatus, arrivalTime: row.arrivalTime } : undefined;
 }
 export async function listAttendance() {
   const schoolId = await getSchoolId();
-  const rows = await db.select({ record: attendance, student: students }).from(attendance).innerJoin(students, eq(attendance.studentId, students.id)).where(eq(attendance.schoolId, schoolId)).orderBy(desc(attendance.date));
-  return rows.map(({ record, student }) => ({ id: record.id, studentId: student.id, studentName: `${student.firstName}${student.middleName ? ` ${student.middleName}` : ""} ${student.lastName}`, registrationNumber: student.registrationNumber, className: `${student.className} ${student.stream}`, date: record.date, status: record.status as AttendanceStatus, arrivalTime: record.arrivalTime }));
+  const rows = await db.select({ record: attendance, student: students }).from(attendance).innerJoin(students, eq(attendance.studentId, students.id)).where(and(eq(attendance.schoolId, schoolId), isNull(attendance.deletedAt))).orderBy(desc(attendance.date));
+  return rows.map(({ record, student }) => ({ id: record.id, studentId: student.id, studentName: `${student.firstName}${student.middleName ? ` ${student.middleName}` : ""} ${student.lastName}`, registrationNumber: student.registrationNumber, className: classAssignmentKey(student.className, student.stream), date: record.date, status: record.status as AttendanceStatus, arrivalTime: record.arrivalTime }));
+}
+
+export async function listDeletedAttendanceRegisters() {
+  const schoolId = await getSchoolId();
+  const rows = await db.select({ record: attendance, student: students }).from(attendance).innerJoin(students, eq(attendance.studentId, students.id)).where(and(eq(attendance.schoolId, schoolId), isNotNull(attendance.deletedAt))).orderBy(desc(attendance.deletedAt));
+  const groups = new Map<string, DeletedAttendanceRegister>();
+  for (const { record, student } of rows) {
+    const className = classAssignmentKey(student.className, student.stream);
+    const key = `${record.date}|${className}|${record.deletedAt?.toISOString() || ""}`;
+    const current = groups.get(key);
+    if (current) current.recordCount += 1;
+    else groups.set(key, { date: record.date, className, recordCount: 1, reason: record.deletionReason || "No reason provided", deletedAt: record.deletedAt!.toISOString(), deletedBy: record.deletedBy });
+  }
+  return Array.from(groups.values()).sort((a, b) => b.deletedAt.localeCompare(a.deletedAt));
+}
+
+export async function deleteAttendanceRegister(date: string, className: string, reason: string, deletedBy: string) {
+  const schoolId = await getSchoolId();
+  const rows = await db.select({ record: attendance, student: students }).from(attendance).innerJoin(students, eq(attendance.studentId, students.id)).where(and(eq(attendance.schoolId, schoolId), eq(attendance.date, date), isNull(attendance.deletedAt)));
+  const matching = rows.filter(({ student }) => classAssignmentKey(student.className, student.stream) === className);
+  if (!matching.length) return undefined;
+  const deletedAt = new Date();
+  await db.update(attendance).set({ deletedAt, deletedBy, deletionReason: reason, updatedAt: deletedAt }).where(and(eq(attendance.schoolId, schoolId), inArray(attendance.id, matching.map(({ record }) => record.id))));
+  return { date, className, recordCount: matching.length, reason, deletedAt: deletedAt.toISOString(), deletedBy };
 }
 
 export async function createAttendanceRegister(className: string, date: string) {
@@ -748,7 +773,7 @@ export async function createAttendanceRegister(className: string, date: string) 
     const row = (await db.insert(attendance).values({
       schoolId, studentId: student.id, date, status: "present", arrivalTime: null,
     }).onConflictDoNothing({ target: [attendance.studentId, attendance.date] }).returning())[0];
-    return row ? { id: row.id, studentId: student.id, studentName: student.name, registrationNumber: student.registrationNumber, className: `${student.className} ${student.stream}`, date: row.date, status: row.status as AttendanceStatus, arrivalTime: row.arrivalTime } : undefined;
+      return row ? { id: row.id, studentId: student.id, studentName: student.name, registrationNumber: student.registrationNumber, className: classAssignmentKey(student.className, student.stream), date: row.date, status: row.status as AttendanceStatus, arrivalTime: row.arrivalTime } : undefined;
   }));
   return created.filter((item): item is NonNullable<typeof item> => !!item);
 }
