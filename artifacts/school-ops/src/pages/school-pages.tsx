@@ -22,10 +22,10 @@ function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarati
   declarationAccepted: boolean;
   onDeclarationChange: (accepted: boolean) => void;
 }) {
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(false);
   return <details open={open} onToggle={(event) => setOpen(event.currentTarget.open)} className="rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card)/.7)]" data-testid="details-additional-admission">
     <summary className="flex cursor-pointer list-none items-center justify-between gap-4 px-4 py-3.5 text-sm font-semibold marker:hidden">
-      <span><span className="block">Additional admission details</span><span className="mt-0.5 block text-xs font-normal text-[hsl(var(--muted-foreground))]">Guardian, health, emergency contact, and declaration information</span></span>
+      <span><span className="block">Optional admission details</span><span className="mt-0.5 block text-xs font-normal text-[hsl(var(--muted-foreground))]">Guardian, health, emergency contact, and declaration information · complete later if needed</span></span>
       <ChevronDown className={`size-4 shrink-0 text-[hsl(var(--primary))] transition-transform ${open ? 'rotate-180' : ''}`} />
     </summary>
     <div className="space-y-5 border-t border-[hsl(var(--border))] p-4">
