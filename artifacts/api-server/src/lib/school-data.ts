@@ -78,11 +78,24 @@ export async function initializeSchoolData() {
     }
     if (!admins[0]) {
       await db.insert(users).values({
-        schoolId: setting.id, name: "School administrator", identifier: "admin", passwordHash: hashPassword(configuredPassword || "admin123"),
+        schoolId: setting.id,
+        name: production ? "Isingoma" : "School administrator",
+        identifier: production ? "Isingoma" : "admin",
+        passwordHash: hashPassword(configuredPassword || "admin123"),
         userType: "staff", role: "administrator", status: "active", initials: "SA",
       }).onConflictDoNothing({ target: [users.schoolId, users.identifier] });
-    } else if (production && configuredPassword && verifyPassword("admin123", admins[0].passwordHash)) {
-      await db.update(users).set({ passwordHash: hashPassword(configuredPassword), updatedAt: new Date() }).where(eq(users.id, admins[0].id));
+    } else if (production && configuredPassword && admins[0]) {
+      const isLegacyBootstrapAdmin = admins[0].identifier === "admin" && admins[0].name === "School administrator";
+      if (isLegacyBootstrapAdmin) {
+        await db.update(users).set({
+          name: "Isingoma",
+          identifier: "Isingoma",
+          passwordHash: verifyPassword("admin123", admins[0].passwordHash) ? hashPassword(configuredPassword) : admins[0].passwordHash,
+          updatedAt: new Date(),
+        }).where(eq(users.id, admins[0].id));
+      } else if (verifyPassword("admin123", admins[0].passwordHash)) {
+        await db.update(users).set({ passwordHash: hashPassword(configuredPassword), updatedAt: new Date() }).where(eq(users.id, admins[0].id));
+      }
     }
     return setting.id;
   })();
@@ -119,7 +132,13 @@ export async function listUsers() {
 }
 export async function findUser(identifier: string, userType: string) {
   const schoolId = await getSchoolId();
-  const rows = await db.select().from(users).where(and(eq(users.schoolId, schoolId), eq(users.userType, userType), ilike(users.identifier, identifier))).limit(1);
+  const normalizedIdentifier = identifier.trim();
+  const rows = await db.select().from(users).where(and(eq(users.schoolId, schoolId), eq(users.userType, userType), ilike(users.identifier, normalizedIdentifier))).limit(1);
+  if (!rows[0] && userType === "staff" && ["admin", "isingoma"].includes(normalizedIdentifier.toLowerCase())) {
+    const legacyIdentifier = normalizedIdentifier.toLowerCase() === "admin" ? "Isingoma" : "admin";
+    const legacyRows = await db.select().from(users).where(and(eq(users.schoolId, schoolId), eq(users.userType, userType), ilike(users.identifier, legacyIdentifier))).limit(1);
+    if (legacyRows[0]) rows.push(legacyRows[0]);
+  }
   const setting = await getSchoolSettings();
   return rows[0] ? publicRow(rows[0], setting) : undefined;
 }
