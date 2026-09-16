@@ -1928,3 +1928,44 @@ export const UpdateSettingsResponse = zod.object({
 })
 
 
+/**
+ * @summary List administrator backup files
+ */
+export const ListBackupsResponseItem = zod.object({
+  "id": zod.string(),
+  "fileName": zod.string(),
+  "createdAt": zod.string(),
+  "bytes": zod.number(),
+  "tableCounts": zod.record(zod.string(), zod.number()),
+  "fileCounts": zod.record(zod.string(), zod.number()),
+  "createdBy": zod.string()
+})
+export const ListBackupsResponse = zod.array(ListBackupsResponseItem)
+
+
+/**
+ * @summary Create and store a complete school backup
+ */
+export const CreateFullBackupResponse = zod.object({
+  "id": zod.string(),
+  "fileName": zod.string(),
+  "createdAt": zod.string(),
+  "bytes": zod.number(),
+  "tableCounts": zod.record(zod.string(), zod.number()),
+  "fileCounts": zod.record(zod.string(), zod.number()),
+  "createdBy": zod.string()
+}).and(zod.object({
+  "downloadUrl": zod.string()
+}))
+
+
+/**
+ * @summary Download an administrator backup file
+ */
+export const DownloadBackupParams = zod.object({
+  "backupId": zod.coerce.string()
+})
+
+export const DownloadBackupResponse = zod.void()
+
+

@@ -28,12 +28,14 @@ import type {
   AttendanceRegisterInput,
   AuthSession,
   AuthUser,
+  BackupSummary,
   ClassInput,
   Dashboard,
   DeleteAttendanceRegisterInput,
   DeletedAttendanceRegister,
   ExpenseInput,
   FinanceSummary,
+  FullBackupResponse,
   GetAttendanceParams,
   HealthStatus,
   ListStudentsParams,
@@ -164,9 +166,6 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
-
 
 
 
@@ -3500,3 +3499,221 @@ export const useUpdateSettings = <TError = ErrorType<void>,
       return useMutation(getUpdateSettingsMutationOptions(options));
     }
 
+export const getListBackupsUrl = () => {
+
+
+
+
+  return `/api/backups`
+}
+
+/**
+ * @summary List administrator backup files
+ */
+export const listBackups = async ( options?: Parameters<typeof customFetch>[1]): Promise<BackupSummary[]> => {
+
+  return customFetch<BackupSummary[]>(getListBackupsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListBackupsQueryKey = () => {
+    return [
+    `/api/backups`
+    ] as const;
+    }
+
+
+export const getListBackupsQueryOptions = <TData = Awaited<ReturnType<typeof listBackups>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBackups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListBackupsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listBackups>>> = ({ signal }) => listBackups({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listBackups>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListBackupsQueryResult = NonNullable<Awaited<ReturnType<typeof listBackups>>>
+export type ListBackupsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List administrator backup files
+ */
+
+export function useListBackups<TData = Awaited<ReturnType<typeof listBackups>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listBackups>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListBackupsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateFullBackupUrl = () => {
+
+
+
+
+  return `/api/backups/full`
+}
+
+/**
+ * @summary Create and store a complete school backup
+ */
+export const createFullBackup = async ( options?: Parameters<typeof customFetch>[1]): Promise<FullBackupResponse> => {
+
+  return customFetch<FullBackupResponse>(getCreateFullBackupUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCreateFullBackupMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFullBackup>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createFullBackup>>, TError,void, TContext> => {
+
+const mutationKey = ['createFullBackup'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createFullBackup>>, void> = () => {
+
+
+          return  createFullBackup(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateFullBackupMutationResult = NonNullable<Awaited<ReturnType<typeof createFullBackup>>>
+
+    export type CreateFullBackupMutationError = ErrorType<void>
+
+    /**
+ * @summary Create and store a complete school backup
+ */
+export const useCreateFullBackup = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createFullBackup>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createFullBackup>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCreateFullBackupMutationOptions(options));
+    }
+
+export const getDownloadBackupUrl = (backupId: string,) => {
+
+
+
+
+  return `/api/backups/${backupId}/download`
+}
+
+/**
+ * @summary Download an administrator backup file
+ */
+export const downloadBackup = async (backupId: string, options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getDownloadBackupUrl(backupId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadBackupQueryKey = (backupId: string,) => {
+    return [
+    `/api/backups/${backupId}/download`
+    ] as const;
+    }
+
+
+export const getDownloadBackupQueryOptions = <TData = Awaited<ReturnType<typeof downloadBackup>>, TError = ErrorType<void>>(backupId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadBackup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadBackupQueryKey(backupId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadBackup>>> = ({ signal }) => downloadBackup(backupId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: backupId !== null && backupId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadBackup>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadBackupQueryResult = NonNullable<Awaited<ReturnType<typeof downloadBackup>>>
+export type DownloadBackupQueryError = ErrorType<void>
+
+
+/**
+ * @summary Download an administrator backup file
+ */
+
+export function useDownloadBackup<TData = Awaited<ReturnType<typeof downloadBackup>>, TError = ErrorType<void>>(
+ backupId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadBackup>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadBackupQueryOptions(backupId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}

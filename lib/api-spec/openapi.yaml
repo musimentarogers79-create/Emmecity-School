@@ -847,6 +847,54 @@ paths:
                 $ref: "#/components/schemas/SchoolSettings"
         "403":
           description: Administrator access required
+  /backups:
+    get:
+      operationId: listBackups
+      tags: [backups]
+      summary: List administrator backup files
+      responses:
+        "200":
+          description: Backup history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BackupSummary"
+        "403":
+          description: Administrator access required
+  /backups/full:
+    post:
+      operationId: createFullBackup
+      tags: [backups]
+      summary: Create and store a complete school backup
+      responses:
+        "201":
+          description: Full backup created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FullBackupResponse"
+        "403":
+          description: Administrator access required
+  /backups/{backupId}/download:
+    get:
+      operationId: downloadBackup
+      tags: [backups]
+      summary: Download an administrator backup file
+      parameters:
+        - name: backupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to the private backup file
+        "403":
+          description: Administrator access required
+        "404":
+          description: Backup not found
 components:
   parameters:
     StudentId:
@@ -2294,4 +2342,34 @@ components:
           type: string
         currencyCode:
           type: string
+    BackupSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        fileName:
+          type: string
+        createdAt:
+          type: string
+        bytes:
+          type: number
+        tableCounts:
+          type: object
+          additionalProperties:
+            type: number
+        fileCounts:
+          type: object
+          additionalProperties:
+            type: number
+        createdBy:
+          type: string
+      required: [id, fileName, createdAt, bytes, tableCounts, fileCounts, createdBy]
+    FullBackupResponse:
+      allOf:
+        - $ref: "#/components/schemas/BackupSummary"
+        - type: object
+          properties:
+            downloadUrl:
+              type: string
+          required: [downloadUrl]
 

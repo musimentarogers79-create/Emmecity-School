@@ -937,6 +937,24 @@ export interface SchoolSettingsUpdate {
   currencyCode?: string;
 }
 
+export type BackupSummaryTableCounts = {[key: string]: number};
+
+export type BackupSummaryFileCounts = {[key: string]: number};
+
+export interface BackupSummary {
+  id: string;
+  fileName: string;
+  createdAt: string;
+  bytes: number;
+  tableCounts: BackupSummaryTableCounts;
+  fileCounts: BackupSummaryFileCounts;
+  createdBy: string;
+}
+
+export type FullBackupResponse = BackupSummary & {
+  downloadUrl: string;
+};
+
 export type ListStudentsParams = {
 search?: string;
 className?: string;

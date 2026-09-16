@@ -7,6 +7,7 @@ import {
   recordSequences, sessions, staff, students, subjects, timetable, transport, users,
 } from "@workspace/db";
 import type { SchoolSettings, User } from "@workspace/db";
+import { requestObjectDownload } from "./object-storage";
 
 export type SchoolRole = "super_admin" | "administrator" | "teacher" | "accountant" | "secretary" | "librarian" | "nurse" | "guardian" | "student" | "staff";
 export type PermissionKey = "expense_approve" | "expense_delete" | "transactions_view" | "transactions_print" | "finance_view" | "expenses_view" | "users_view" | "users_manage" | "subjects_view" | "subjects_manage" | "subjects_delete";
@@ -699,6 +700,62 @@ export async function listOperation(kind: OperationKind): Promise<OperationRecor
   const table = tables[kind];
   const rows = await db.select().from(table).where(eq(table.schoolId, schoolId)).orderBy(desc(table.createdAt));
   return rows.map((row) => ({ ...(row.data as OperationRecord), id: row.id }));
+}
+export async function getOperation(kind: OperationKind, id: string) {
+  const schoolId = await getSchoolId();
+  const table = tables[kind];
+  const row = (await db.select().from(table).where(and(eq(table.schoolId, schoolId), eq(table.id, id))).limit(1))[0];
+  return row ? { ...(row.data as OperationRecord), id: row.id } : undefined;
+}
+export async function buildFullBackup() {
+  const schoolId = await getSchoolId();
+  const [settingsRows, studentRows, userRows, paymentRows, attendanceRows, sequenceRows, loginAttemptRows] = await Promise.all([
+    db.select().from(schoolSettings).where(eq(schoolSettings.id, schoolId)),
+    db.select().from(students).where(eq(students.schoolId, schoolId)),
+    db.select().from(users).where(eq(users.schoolId, schoolId)),
+    db.select().from(payments).where(eq(payments.schoolId, schoolId)),
+    db.select().from(attendance).where(eq(attendance.schoolId, schoolId)),
+    db.select().from(recordSequences).where(eq(recordSequences.schoolId, schoolId)),
+    db.select().from(loginAttempts),
+  ]);
+  const userIds = userRows.map((row) => row.id);
+  const sessionRows = userIds.length ? await db.select().from(sessions).where(inArray(sessions.userId, userIds)) : [];
+  const operationEntries = await Promise.all(Object.entries(tables).map(async ([kind, table]) => [
+    kind,
+    await db.select().from(table).where(eq(table.schoolId, schoolId)),
+  ] as const));
+  const photoPaths = [...new Set(studentRows.map((row) => row.photoPath).filter((value): value is string => Boolean(value)))];
+  const pupilPhotos = await Promise.all(photoPaths.map(async (path) => {
+    const response = await fetch(await requestObjectDownload(path));
+    if (!response.ok) throw new Error(`Unable to include pupil photo ${path} in the backup.`);
+    return {
+      path,
+      contentType: response.headers.get("content-type") || "application/octet-stream",
+      data: Buffer.from(await response.arrayBuffer()).toString("base64"),
+    };
+  }));
+  const operations = Object.fromEntries(operationEntries);
+  const tablesInBackup = {
+    schoolSettings: settingsRows,
+    students: studentRows,
+    users: userRows,
+    sessions: sessionRows,
+    loginAttempts: loginAttemptRows,
+    payments: paymentRows,
+    attendance: attendanceRows,
+    recordSequences: sequenceRows,
+    ...operations,
+  };
+  return {
+    format: "emmecty-school-full-backup",
+    version: 1,
+    generatedAt: new Date().toISOString(),
+    schoolId,
+    tables: tablesInBackup,
+    files: { pupilPhotos },
+    tableCounts: Object.fromEntries(Object.entries(tablesInBackup).map(([name, rows]) => [name, rows.length])),
+    fileCounts: { pupilPhotos: pupilPhotos.length },
+  };
 }
 export async function createClass(data: { name: string; grade: string; stream: string; room: string; teacherId?: string | null }) {
   const name = data.name.trim();

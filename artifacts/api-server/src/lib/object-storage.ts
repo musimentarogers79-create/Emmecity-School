@@ -43,6 +43,10 @@ export function isPupilPhotoPath(value: unknown): value is string {
   return typeof value === "string" && /^\/objects\/uploads\/[A-Za-z0-9-]+$/.test(value);
 }
 
+export function isBackupObjectPath(value: unknown): value is string {
+  return typeof value === "string" && /^\/objects\/backups\/[A-Za-z0-9-]+\.json\.gz$/.test(value);
+}
+
 export async function requestPupilPhotoUpload(contentType: string) {
   if (!/^image\/(jpeg|png|webp)$/.test(contentType)) {
     throw new Error("Only JPEG, PNG, and WebP pupil photos are supported.");
@@ -58,6 +62,26 @@ export async function requestPupilPhotoUpload(contentType: string) {
 
 export async function requestObjectDownload(objectPath: string) {
   if (!isPupilPhotoPath(objectPath)) throw new Error("Invalid object path.");
+  const objectName = objectPath.slice("/objects/".length);
+  const { bucketName } = parseObjectPath(`${privateObjectDir()}/${objectName}`);
+  return signObjectUrl({ bucketName, objectName, method: "GET" });
+}
+
+export async function uploadBackupObject(objectPath: string, body: Uint8Array) {
+  if (!isBackupObjectPath(objectPath)) throw new Error("Invalid backup object path.");
+  const objectName = objectPath.slice("/objects/".length);
+  const { bucketName } = parseObjectPath(`${privateObjectDir()}/${objectName}`);
+  const uploadUrl = await signObjectUrl({ bucketName, objectName, method: "PUT" });
+  const response = await fetch(uploadUrl, {
+    method: "PUT",
+    headers: { "Content-Type": "application/gzip" },
+    body: body as unknown as string,
+  });
+  if (!response.ok) throw new Error(`Backup upload failed (${response.status}).`);
+}
+
+export async function requestBackupDownload(objectPath: string) {
+  if (!isBackupObjectPath(objectPath)) throw new Error("Invalid backup object path.");
   const objectName = objectPath.slice("/objects/".length);
   const { bucketName } = parseObjectPath(`${privateObjectDir()}/${objectName}`);
   return signObjectUrl({ bucketName, objectName, method: "GET" });

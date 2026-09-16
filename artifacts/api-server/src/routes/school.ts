@@ -1,3 +1,5 @@
+import { gzipSync } from "node:zlib";
+import { randomUUID } from "node:crypto";
 import { Router, type IRouter } from "express";
 import {
   AttendanceRecord, CreateAnnouncementBody, CreateAnnouncementResponse, CreateAttendanceRegisterBody, CreateAttendanceRegisterResponse, CreateClassBody, CreateExpenseBody, CreateExpenseResponse,
@@ -15,10 +17,11 @@ import {
 } from "@workspace/api-zod";
 import {
   AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, currentUserFromToken, getAdmissionForm,
-  clearLoginFailures, deleteSession, findUser, findUserById, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
+  buildFullBackup, clearLoginFailures, deleteSession, findUser, findUserById, getOperation, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
   listAttendance, listDeletedAttendanceRegisters, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance, deleteAttendanceRegister, updateStudent,
   createUser, deleteOperation, deleteUser, updatePayment, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserAdmin, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
 } from "../lib/school-data";
+import { isBackupObjectPath, requestBackupDownload, uploadBackupObject } from "../lib/object-storage";
 
 const router: IRouter = Router();
 const getCookie = (req: Parameters<Parameters<IRouter["get"]>[1]>[0], name: string) =>
@@ -681,6 +684,75 @@ router.patch("/settings", async (req, res): Promise<void> => {
   if (!selected) { errorResponse(res, 400, "That currency is not available."); return; }
   const settings = await updateSchoolSettings({ schoolName: parsed.data.schoolName, academicYear: parsed.data.academicYear, currencyCode: selected.code, currencyName: selected.name, currencySymbol: selected.symbol });
   res.json(UpdateSettingsResponse.parse({ ...settings, availableCurrencies: currencyOptions }));
+});
+
+router.get("/backups", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!isAdministrator(user)) { errorResponse(res, 403, "Only administrators can view backups."); return; }
+  const records = (await listOperation("documents"))
+    .filter((item) => item.type === "full_backup")
+    .map((item) => ({
+      id: item.id,
+      fileName: String(item.fileName || "school-backup.json.gz"),
+      createdAt: String(item.createdAt || item.generatedAt || ""),
+      bytes: Number(item.bytes || 0),
+      tableCounts: (item.tableCounts || {}) as Record<string, number>,
+      fileCounts: (item.fileCounts || {}) as Record<string, number>,
+      createdBy: String(item.createdByName || "Administrator"),
+    }));
+  res.json(records);
+});
+
+router.post("/backups/full", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!user || !isAdministrator(user)) { errorResponse(res, 403, "Only administrators can create backups."); return; }
+  try {
+    const backup = await buildFullBackup();
+    const compressed = gzipSync(Buffer.from(JSON.stringify(backup)));
+    const backupId = randomUUID();
+    const fileName = `emmecty-school-backup-${new Date().toISOString().replace(/[:.]/g, "-")}.json.gz`;
+    const objectPath = `/objects/backups/${backupId}.json.gz`;
+    await uploadBackupObject(objectPath, compressed);
+    const record = await createOperation("documents", {
+      type: "full_backup",
+      title: "Full school backup",
+      fileName,
+      objectPath,
+      generatedAt: backup.generatedAt,
+      createdAt: new Date().toISOString(),
+      createdBy: user.id,
+      createdByName: user.name,
+      bytes: compressed.byteLength,
+      tableCounts: backup.tableCounts,
+      fileCounts: backup.fileCounts,
+    });
+    if (!record) throw new Error("The backup record could not be saved.");
+    res.status(201).json({
+      id: record.id,
+      fileName,
+      createdAt: backup.generatedAt,
+      bytes: compressed.byteLength,
+      tableCounts: backup.tableCounts,
+      fileCounts: backup.fileCounts,
+      downloadUrl: `/api/backups/${record.id}/download`,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "The full backup could not be created.";
+    errorResponse(res, 500, message);
+  }
+});
+
+router.get("/backups/:backupId/download", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!isAdministrator(user)) { errorResponse(res, 403, "Only administrators can download backups."); return; }
+  const record = await getOperation("documents", req.params.backupId) as (OperationRecord & { type?: unknown; objectPath?: unknown }) | undefined;
+  const objectPath = record?.type === "full_backup" ? String(record.objectPath || "") : "";
+  if (!isBackupObjectPath(objectPath)) { errorResponse(res, 404, "Backup not found."); return; }
+  try {
+    res.redirect(302, await requestBackupDownload(objectPath));
+  } catch {
+    errorResponse(res, 404, "Backup file is not available.");
+  }
 });
 
 export default router;
