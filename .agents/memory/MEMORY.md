@@ -12,4 +12,4 @@
 - [Sponsored pupils](sponsored-pupils.md) — school-sponsored pupils remain normal pupils but must have zero payable fees and no opening receipt.
 - [Payment balance recalculation](payment-balance-recalculation.md) — rebuild pupil totals from completed payment rows after edits to prevent balance drift.
 - [Attendance register deletion](attendance-register-deletion.md) — archive deleted registers with their reason instead of silently removing attendance history.
-- [Production authentication bootstrap](production-auth-bootstrap.md) — production may not contain development users; bootstrap and compatibility must be idempotent.
+- [Production authentication bootstrap](production-auth-bootstrap.md) — production may not contain development users; bootstrap only the canonical Isingoma administrator.
