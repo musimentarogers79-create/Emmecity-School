@@ -27,6 +27,8 @@ export * from './dashboardAttendanceTrendItem';
 export * from './dashboardPerformanceItem';
 export * from './dashboardSummary';
 export * from './dashboardUpcomingEventsItem';
+export * from './deleteAttendanceRegisterInput';
+export * from './deletedAttendanceRegister';
 export * from './expenseInput';
 export * from './financeSummary';
 export * from './financeSummaryMonthlyItem';

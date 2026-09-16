@@ -350,8 +350,9 @@ router.get("/attendance/deleted", async (req, res): Promise<void> => {
   const user = await requireUser(req);
   if (!user) { errorResponse(res, 401, "Not signed in"); return; }
   const deleted = await listDeletedAttendanceRegisters();
+  const assigned = user.role === "teacher" ? await assignedClassNames(user) : [];
   const visible = user.role === "teacher"
-    ? deleted.filter((item) => matchesAssignedClass(await assignedClassNames(user), item.className))
+    ? deleted.filter((item) => matchesAssignedClass(assigned, item.className))
     : isAdministrator(user) ? deleted : [];
   res.json(GetDeletedAttendanceRegistersResponse.parse(visible));
 });

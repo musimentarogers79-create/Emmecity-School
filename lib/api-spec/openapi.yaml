@@ -1442,7 +1442,7 @@ components:
         className:
           type: string
         recordCount:
-          type: integer
+          type: number
         reason:
           type: string
         deletedAt:

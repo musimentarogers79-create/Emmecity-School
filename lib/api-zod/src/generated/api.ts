@@ -1036,6 +1036,43 @@ export const CreateAttendanceRegisterResponse = zod.array(CreateAttendanceRegist
 
 
 /**
+ * @summary Get deleted attendance registers and their reasons
+ */
+export const GetDeletedAttendanceRegistersResponseItem = zod.object({
+  "date": zod.string(),
+  "className": zod.string(),
+  "recordCount": zod.number(),
+  "reason": zod.string(),
+  "deletedAt": zod.string(),
+  "deletedBy": zod.string().optional()
+})
+export const GetDeletedAttendanceRegistersResponse = zod.array(GetDeletedAttendanceRegistersResponseItem)
+
+
+/**
+ * @summary Delete an attendance register with a reason
+ */
+export const deleteAttendanceRegisterBodyReasonMin = 3;
+
+
+
+export const DeleteAttendanceRegisterBody = zod.object({
+  "date": zod.string(),
+  "className": zod.string(),
+  "reason": zod.string().min(deleteAttendanceRegisterBodyReasonMin)
+})
+
+export const DeleteAttendanceRegisterResponse = zod.object({
+  "date": zod.string(),
+  "className": zod.string(),
+  "recordCount": zod.number(),
+  "reason": zod.string(),
+  "deletedAt": zod.string(),
+  "deletedBy": zod.string().optional()
+})
+
+
+/**
  * @summary Get fee collection summary
  */
 export const GetFinanceSummaryResponse = zod.object({

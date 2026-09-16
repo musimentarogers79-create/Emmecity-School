@@ -426,6 +426,22 @@ export interface AttendanceRegisterInput {
   className: string;
 }
 
+export interface DeleteAttendanceRegisterInput {
+  date: string;
+  className: string;
+  /** @minLength 3 */
+  reason: string;
+}
+
+export interface DeletedAttendanceRegister {
+  date: string;
+  className: string;
+  recordCount: number;
+  reason: string;
+  deletedAt: string;
+  deletedBy?: string;
+}
+
 export type PaymentStatus = typeof PaymentStatus[keyof typeof PaymentStatus];
 
 

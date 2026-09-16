@@ -30,6 +30,8 @@ import type {
   AuthUser,
   ClassInput,
   Dashboard,
+  DeleteAttendanceRegisterInput,
+  DeletedAttendanceRegister,
   ExpenseInput,
   FinanceSummary,
   GetAttendanceParams,
@@ -1504,6 +1506,154 @@ export const useCreateAttendanceRegister = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateAttendanceRegisterMutationOptions(options));
+    }
+
+export const getGetDeletedAttendanceRegistersUrl = () => {
+
+
+
+
+  return `/api/attendance/deleted`
+}
+
+/**
+ * @summary Get deleted attendance registers and their reasons
+ */
+export const getDeletedAttendanceRegisters = async ( options?: Parameters<typeof customFetch>[1]): Promise<DeletedAttendanceRegister[]> => {
+
+  return customFetch<DeletedAttendanceRegister[]>(getGetDeletedAttendanceRegistersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDeletedAttendanceRegistersQueryKey = () => {
+    return [
+    `/api/attendance/deleted`
+    ] as const;
+    }
+
+
+export const getGetDeletedAttendanceRegistersQueryOptions = <TData = Awaited<ReturnType<typeof getDeletedAttendanceRegisters>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeletedAttendanceRegisters>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDeletedAttendanceRegistersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDeletedAttendanceRegisters>>> = ({ signal }) => getDeletedAttendanceRegisters({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDeletedAttendanceRegisters>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDeletedAttendanceRegistersQueryResult = NonNullable<Awaited<ReturnType<typeof getDeletedAttendanceRegisters>>>
+export type GetDeletedAttendanceRegistersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get deleted attendance registers and their reasons
+ */
+
+export function useGetDeletedAttendanceRegisters<TData = Awaited<ReturnType<typeof getDeletedAttendanceRegisters>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDeletedAttendanceRegisters>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDeletedAttendanceRegistersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDeleteAttendanceRegisterUrl = () => {
+
+
+
+
+  return `/api/attendance/register`
+}
+
+/**
+ * @summary Delete an attendance register with a reason
+ */
+export const deleteAttendanceRegister = async (deleteAttendanceRegisterInput: DeleteAttendanceRegisterInput, options?: Parameters<typeof customFetch>[1]): Promise<DeletedAttendanceRegister> => {
+
+  return customFetch<DeletedAttendanceRegister>(getDeleteAttendanceRegisterUrl(),
+  {
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(deleteAttendanceRegisterInput)
+  }
+);}
+
+
+
+
+
+export const getDeleteAttendanceRegisterMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAttendanceRegister>>, TError,{data: BodyType<DeleteAttendanceRegisterInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAttendanceRegister>>, TError,{data: BodyType<DeleteAttendanceRegisterInput>}, TContext> => {
+
+const mutationKey = ['deleteAttendanceRegister'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAttendanceRegister>>, {data: BodyType<DeleteAttendanceRegisterInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  deleteAttendanceRegister(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAttendanceRegisterMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAttendanceRegister>>>
+    export type DeleteAttendanceRegisterMutationBody = BodyType<DeleteAttendanceRegisterInput>
+    export type DeleteAttendanceRegisterMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete an attendance register with a reason
+ */
+export const useDeleteAttendanceRegister = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAttendanceRegister>>, TError,{data: BodyType<DeleteAttendanceRegisterInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAttendanceRegister>>,
+        TError,
+        {data: BodyType<DeleteAttendanceRegisterInput>},
+        TContext
+      > => {
+      return useMutation(getDeleteAttendanceRegisterMutationOptions(options));
     }
 
 export const getGetFinanceSummaryUrl = () => {
