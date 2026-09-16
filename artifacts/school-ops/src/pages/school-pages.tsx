@@ -94,7 +94,7 @@ function Modal({ title, description, onClose, children, wide = false }: { title:
 }
 
 function Field({ label, value, onChange, placeholder, type = 'text', required = true, autoComplete }: { label: string; value: string; onChange: (value: string) => void; placeholder?: string; type?: string; required?: boolean; autoComplete?: string }) {
-  const isRequired = label === 'Opening payment' ? false : required;
+  const isRequired = label === 'Opening payment' || label === 'Date of birth' ? false : required;
   const [showPassword, setShowPassword] = useState(false);
   const passwordField = type === 'password';
   return <label className="block"><span className="mb-1.5 block text-xs font-semibold text-[hsl(var(--foreground))]">{label}{isRequired && <span className="text-[hsl(var(--destructive))]"> *</span>}{!isRequired && <span className="ml-1 font-normal text-[hsl(var(--muted-foreground))]">(optional)</span>}</span><span className="relative block"><input required={isRequired} type={passwordField && showPassword ? 'text' : type} min={type === 'number' ? 0 : undefined} value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} autoComplete={autoComplete} className={`focus-ring h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3.5 text-sm text-[hsl(var(--foreground))] outline-none transition-colors placeholder:text-[hsl(var(--muted-foreground))] focus:border-[hsl(var(--primary))] ${passwordField ? 'pr-12' : ''}`} data-testid={`input-${label.toLowerCase().replaceAll(' ', '-')}`} />{passwordField && <button type="button" onClick={() => setShowPassword((visible) => !visible)} aria-label={showPassword ? 'Hide password' : 'Show password'} aria-pressed={showPassword} className="absolute inset-y-0 right-0 flex w-11 items-center justify-center rounded-r-xl text-[hsl(var(--primary))] hover:bg-[hsl(var(--muted))]" data-testid="button-toggle-password">{showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}</button>}</span></label>;
@@ -678,7 +678,7 @@ function StudentsPage() {
     const data: StudentInput = { ...form, enrollmentType: form.enrollmentType as 'day' | 'boarding', termFee: Number(form.termFee || 0), previousFeeBalance: Number(form.previousFeeBalance || 0), initialPayment: openingPayment };
     create.mutate({ data }, {
       onSuccess: (pupil) => {
-        trackEvent('pupil_registered', { enrollment_type: data.enrollmentType, opening_payment: (data.initialPayment ?? 0) > 0 });
+        trackEvent('pupil_registered', { enrollment_type: data.enrollmentType ?? 'day', opening_payment: (data.initialPayment ?? 0) > 0 });
         client.invalidateQueries({ queryKey: getListStudentsQueryKey() });
         client.invalidateQueries({ queryKey: getListPaymentsQueryKey() });
         setShowForm(false);

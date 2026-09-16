@@ -1147,8 +1147,10 @@ components:
           type: string
         guardianName:
           type: string
+          minLength: 1
         guardianPhone:
           type: string
+          minLength: 1
         guardianEmail:
           type: string
         religion:

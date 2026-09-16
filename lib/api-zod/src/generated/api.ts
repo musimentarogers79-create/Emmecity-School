@@ -309,6 +309,12 @@ export const UpdateUserPermissionsResponse = zod.object({
 /**
  * @summary Get role-aware dashboard data
  */
+
+
+
+
+
+
 export const GetDashboardResponse = zod.object({
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
   "greeting": zod.string(),
@@ -361,8 +367,8 @@ export const GetDashboardResponse = zod.object({
   "gender": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
-  "guardianName": zod.string(),
-  "guardianPhone": zod.string(),
+  "guardianName": zod.string().min(1),
+  "guardianPhone": zod.string().min(1),
   "guardianEmail": zod.string().optional(),
   "religion": zod.string().optional(),
   "placeOfBirth": zod.string().optional(),
@@ -433,8 +439,8 @@ export const GetDashboardResponse = zod.object({
   "gender": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
-  "guardianName": zod.string(),
-  "guardianPhone": zod.string(),
+  "guardianName": zod.string().min(1),
+  "guardianPhone": zod.string().min(1),
   "guardianEmail": zod.string().optional(),
   "religion": zod.string().optional(),
   "placeOfBirth": zod.string().optional(),
@@ -488,6 +494,10 @@ export const ListStudentsQueryParams = zod.object({
   "status": zod.enum(['active', 'inactive']).optional()
 })
 
+
+
+
+
 export const ListStudentsResponseItem = zod.object({
   "id": zod.string(),
   "registrationNumber": zod.string(),
@@ -518,8 +528,8 @@ export const ListStudentsResponseItem = zod.object({
   "gender": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
-  "guardianName": zod.string(),
-  "guardianPhone": zod.string(),
+  "guardianName": zod.string().min(1),
+  "guardianPhone": zod.string().min(1),
   "guardianEmail": zod.string().optional(),
   "religion": zod.string().optional(),
   "placeOfBirth": zod.string().optional(),
@@ -560,6 +570,8 @@ export const ListStudentsResponse = zod.array(ListStudentsResponseItem)
  */
 
 
+
+
 export const createStudentBodyTermFeeMin = 0;
 
 export const createStudentBodyInitialPaymentMin = 0;
@@ -572,34 +584,34 @@ export const CreateStudentBody = zod.object({
   "firstName": zod.string().min(1),
   "middleName": zod.string().optional(),
   "lastName": zod.string().min(1),
-  "dateOfBirth": zod.string(),
-  "gender": zod.string(),
-  "className": zod.string(),
-  "stream": zod.string(),
-  "guardianName": zod.string(),
-  "guardianPhone": zod.string(),
-  "guardianEmail": zod.string(),
-  "religion": zod.string(),
-  "placeOfBirth": zod.string(),
-  "homeVillage": zod.string(),
-  "nationality": zod.string(),
-  "tribe": zod.string(),
-  "guardianRelationship": zod.string(),
-  "guardianNationalId": zod.string(),
-  "residentialAddress": zod.string(),
-  "guardianOccupation": zod.string(),
-  "alternativeContact": zod.string(),
-  "previousSchool": zod.string(),
-  "lastClassCompleted": zod.string(),
-  "medicalConditions": zod.string(),
-  "specialNeeds": zod.string(),
-  "knownMedicalNote": zod.string(),
-  "emergencyContactName": zod.string(),
-  "emergencyContactPhone": zod.string(),
-  "emergencyContactRelationship": zod.string(),
-  "declarationAccepted": zod.boolean(),
-  "declarationDate": zod.string(),
-  "enrollmentType": zod.enum(['day', 'boarding']),
+  "dateOfBirth": zod.string().optional(),
+  "gender": zod.string().optional(),
+  "className": zod.string().optional(),
+  "stream": zod.string().optional(),
+  "guardianName": zod.string().min(1),
+  "guardianPhone": zod.string().min(1),
+  "guardianEmail": zod.string().optional(),
+  "religion": zod.string().optional(),
+  "placeOfBirth": zod.string().optional(),
+  "homeVillage": zod.string().optional(),
+  "nationality": zod.string().optional(),
+  "tribe": zod.string().optional(),
+  "guardianRelationship": zod.string().optional(),
+  "guardianNationalId": zod.string().optional(),
+  "residentialAddress": zod.string().optional(),
+  "guardianOccupation": zod.string().optional(),
+  "alternativeContact": zod.string().optional(),
+  "previousSchool": zod.string().optional(),
+  "lastClassCompleted": zod.string().optional(),
+  "medicalConditions": zod.string().optional(),
+  "specialNeeds": zod.string().optional(),
+  "knownMedicalNote": zod.string().optional(),
+  "emergencyContactName": zod.string().optional(),
+  "emergencyContactPhone": zod.string().optional(),
+  "emergencyContactRelationship": zod.string().optional(),
+  "declarationAccepted": zod.boolean().optional(),
+  "declarationDate": zod.string().optional(),
+  "enrollmentType": zod.enum(['day', 'boarding']).optional(),
   "isSponsored": zod.boolean().optional(),
   "termFee": zod.number().min(createStudentBodyTermFeeMin),
   "initialPayment": zod.number().min(createStudentBodyInitialPaymentMin).optional(),
@@ -607,6 +619,10 @@ export const CreateStudentBody = zod.object({
   "paymentMethod": zod.string().optional(),
   "paymentReference": zod.string().optional()
 })
+
+
+
+
 
 export const CreateStudentResponse = zod.object({
   "id": zod.string(),
@@ -638,8 +654,8 @@ export const CreateStudentResponse = zod.object({
   "gender": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
-  "guardianName": zod.string(),
-  "guardianPhone": zod.string(),
+  "guardianName": zod.string().min(1),
+  "guardianPhone": zod.string().min(1),
   "guardianEmail": zod.string().optional(),
   "religion": zod.string().optional(),
   "placeOfBirth": zod.string().optional(),
@@ -681,6 +697,10 @@ export const GetAdmissionFormParams = zod.object({
   "studentId": zod.coerce.string()
 })
 
+
+
+
+
 export const GetAdmissionFormResponse = zod.object({
   "id": zod.string(),
   "studentId": zod.string(),
@@ -690,8 +710,8 @@ export const GetAdmissionFormResponse = zod.object({
   "gender": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
-  "guardianName": zod.string(),
-  "guardianPhone": zod.string(),
+  "guardianName": zod.string().min(1),
+  "guardianPhone": zod.string().min(1),
   "guardianEmail": zod.string().optional(),
   "religion": zod.string().optional(),
   "placeOfBirth": zod.string().optional(),
@@ -732,6 +752,10 @@ export const GetStudentParams = zod.object({
   "studentId": zod.coerce.string()
 })
 
+
+
+
+
 export const GetStudentResponse = zod.object({
   "id": zod.string(),
   "registrationNumber": zod.string(),
@@ -762,8 +786,8 @@ export const GetStudentResponse = zod.object({
   "gender": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
-  "guardianName": zod.string(),
-  "guardianPhone": zod.string(),
+  "guardianName": zod.string().min(1),
+  "guardianPhone": zod.string().min(1),
   "guardianEmail": zod.string().optional(),
   "religion": zod.string().optional(),
   "placeOfBirth": zod.string().optional(),
@@ -866,6 +890,10 @@ export const UpdateStudentBody = zod.object({
   "photoPath": zod.string().optional()
 })
 
+
+
+
+
 export const UpdateStudentResponse = zod.object({
   "id": zod.string(),
   "registrationNumber": zod.string(),
@@ -896,8 +924,8 @@ export const UpdateStudentResponse = zod.object({
   "gender": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
-  "guardianName": zod.string(),
-  "guardianPhone": zod.string(),
+  "guardianName": zod.string().min(1),
+  "guardianPhone": zod.string().min(1),
   "guardianEmail": zod.string().optional(),
   "religion": zod.string().optional(),
   "placeOfBirth": zod.string().optional(),
@@ -1292,6 +1320,10 @@ export const GetReportCardParams = zod.object({
   "studentId": zod.coerce.string()
 })
 
+
+
+
+
 export const GetReportCardResponse = zod.object({
   "student": zod.object({
   "id": zod.string(),
@@ -1323,8 +1355,8 @@ export const GetReportCardResponse = zod.object({
   "gender": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
-  "guardianName": zod.string(),
-  "guardianPhone": zod.string(),
+  "guardianName": zod.string().min(1),
+  "guardianPhone": zod.string().min(1),
   "guardianEmail": zod.string().optional(),
   "religion": zod.string().optional(),
   "placeOfBirth": zod.string().optional(),
@@ -1417,6 +1449,10 @@ export const CreateReportCardBody = zod.object({
 }))
 })
 
+
+
+
+
 export const CreateReportCardResponse = zod.object({
   "student": zod.object({
   "id": zod.string(),
@@ -1448,8 +1484,8 @@ export const CreateReportCardResponse = zod.object({
   "gender": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
-  "guardianName": zod.string(),
-  "guardianPhone": zod.string(),
+  "guardianName": zod.string().min(1),
+  "guardianPhone": zod.string().min(1),
   "guardianEmail": zod.string().optional(),
   "religion": zod.string().optional(),
   "placeOfBirth": zod.string().optional(),

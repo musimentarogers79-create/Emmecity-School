@@ -16,7 +16,9 @@ export interface AdmissionForm {
   gender: string;
   className: string;
   stream: string;
+  /** @minLength 1 */
   guardianName: string;
+  /** @minLength 1 */
   guardianPhone: string;
   guardianEmail?: string;
   religion?: string;
