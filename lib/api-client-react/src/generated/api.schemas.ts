@@ -443,6 +443,7 @@ export interface Payment {
   registrationNumber: string;
   amount: number;
   method: string;
+  reference: string;
   date: string;
   status: PaymentStatus;
   balance: number;
@@ -452,6 +453,14 @@ export interface PaymentInput {
   studentId: string;
   /** @minimum 1 */
   amount: number;
+  method: string;
+  reference: string;
+}
+
+export interface PaymentUpdateInput {
+  /** @minimum 0 */
+  amount: number;
+  /** @minLength 1 */
   method: string;
   reference: string;
 }

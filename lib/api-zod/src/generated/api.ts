@@ -1061,6 +1061,7 @@ export const ListPaymentsResponseItem = zod.object({
   "registrationNumber": zod.string(),
   "amount": zod.number(),
   "method": zod.string(),
+  "reference": zod.string(),
   "date": zod.string(),
   "status": zod.enum(['completed', 'pending', 'reversed']),
   "balance": zod.number()
@@ -1089,6 +1090,40 @@ export const RecordPaymentResponse = zod.object({
   "registrationNumber": zod.string(),
   "amount": zod.number(),
   "method": zod.string(),
+  "reference": zod.string(),
+  "date": zod.string(),
+  "status": zod.enum(['completed', 'pending', 'reversed']),
+  "balance": zod.number()
+})
+
+
+/**
+ * @summary Update a fee payment and recalculate the pupil balance
+ */
+export const UpdatePaymentParams = zod.object({
+  "paymentId": zod.coerce.string()
+})
+
+export const updatePaymentBodyAmountMin = 0;
+
+
+
+
+export const UpdatePaymentBody = zod.object({
+  "amount": zod.number().min(updatePaymentBodyAmountMin),
+  "method": zod.string().min(1),
+  "reference": zod.string()
+})
+
+export const UpdatePaymentResponse = zod.object({
+  "id": zod.string(),
+  "studentId": zod.string(),
+  "receiptNumber": zod.string(),
+  "studentName": zod.string(),
+  "registrationNumber": zod.string(),
+  "amount": zod.number(),
+  "method": zod.string(),
+  "reference": zod.string(),
   "date": zod.string(),
   "status": zod.enum(['completed', 'pending', 'reversed']),
   "balance": zod.number()

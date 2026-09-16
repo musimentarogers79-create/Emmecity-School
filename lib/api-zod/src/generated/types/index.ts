@@ -58,6 +58,7 @@ export * from './operationTransport';
 export * from './payment';
 export * from './paymentInput';
 export * from './paymentStatus';
+export * from './paymentUpdateInput';
 export * from './permissionKey';
 export * from './reportCard';
 export * from './reportCardInput';

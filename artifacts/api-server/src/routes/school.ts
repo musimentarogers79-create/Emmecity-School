@@ -6,7 +6,7 @@ import {
   GetAdmissionFormResponse, GetFinanceSummaryResponse, GetOperationsResponse, GetReportCardParams, GetReportCardResponse, CreateReportCardBody, CreateReportCardResponse, GetStudentParams,
   GetStudentResponse, GetTimetableResponse, CreateTimetableEntryBody, CreateTimetableEntryResponse, ListAnnouncementsResponse, ListExpensesResponse, ListPaymentsResponse,
   ListSalariesResponse, ListStudentsQueryParams, ListStudentsResponse, LoginBody, LoginResponse, LogoutResponse,
-  RecordPaymentBody, RecordPaymentResponse, SaveAttendanceBody, SaveAttendanceResponse, GetSettingsResponse,
+  RecordPaymentBody, RecordPaymentResponse, UpdatePaymentBody, UpdatePaymentResponse, SaveAttendanceBody, SaveAttendanceResponse, GetSettingsResponse,
   UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse, UpdateStudentBody, UpdateStudentResponse,
   CreateUserBody, CreateUserResponse, ListUsersResponse, UpdateUserProfileByAdminBody, UpdateUserProfileByAdminResponse,
   UpdateUserPermissionsBody, UpdateUserPermissionsResponse, DeleteUserResponse,
@@ -17,7 +17,7 @@ import {
   AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, currentUserFromToken, getAdmissionForm,
   clearLoginFailures, deleteSession, findUser, findUserById, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
   listAttendance, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance, updateStudent,
-  createUser, deleteOperation, deleteUser, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserAdmin, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
+  createUser, deleteOperation, deleteUser, updatePayment, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserAdmin, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
 } from "../lib/school-data";
 
 const router: IRouter = Router();
@@ -371,6 +371,19 @@ router.post("/finance/payments", async (req, res): Promise<void> => {
     res.status(201).json(RecordPaymentResponse.parse(payment));
   } catch {
     errorResponse(res, 409, "The payment exceeds the pupil’s current fee balance.");
+  }
+});
+router.patch("/finance/payments/:paymentId", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!user || (!isAdministrator(user) && user.role !== "accountant" && !hasPermission(user, "finance_view"))) { errorResponse(res, 403, "Only users with finance permission can edit payments."); return; }
+  const parsed = UpdatePaymentBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Enter a valid non-negative amount, payment method, and reference."); return; }
+  try {
+    const payment = await updatePayment(req.params.paymentId, parsed.data.amount, parsed.data.method, parsed.data.reference);
+    if (!payment) { errorResponse(res, 404, "Payment not found"); return; }
+    res.json(UpdatePaymentResponse.parse(payment));
+  } catch {
+    errorResponse(res, 409, "The payment could not be updated.");
   }
 });
 

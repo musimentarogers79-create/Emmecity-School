@@ -10,3 +10,4 @@
 - [User-management removal boundary](user-management-removal.md) — remove administrator account CRUD without disabling authentication or internal staff-dependent workflows.
 - [Class access identity](class-access-identity.md) — normalize class-and-stream assignments consistently across teacher access and subject visibility.
 - [Sponsored pupils](sponsored-pupils.md) — school-sponsored pupils remain normal pupils but must have zero payable fees and no opening receipt.
+- [Payment balance recalculation](payment-balance-recalculation.md) — rebuild pupil totals from completed payment rows after edits to prevent balance drift.

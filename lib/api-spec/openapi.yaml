@@ -432,6 +432,30 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Payment"
+  /finance/payments/{paymentId}:
+    patch:
+      operationId: updatePayment
+      tags: [finance]
+      summary: Update a fee payment and recalculate the pupil balance
+      parameters:
+        - name: paymentId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentUpdateInput"
+      responses:
+        "200":
+          description: Updated payment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Payment"
   /finance/expenses:
     get:
       operationId: listExpenses
@@ -1384,6 +1408,8 @@ components:
           type: number
         method:
           type: string
+        reference:
+          type: string
         date:
           type: string
         status:
@@ -1391,7 +1417,7 @@ components:
           enum: [completed, pending, reversed]
         balance:
           type: number
-      required: [id, studentId, receiptNumber, studentName, registrationNumber, amount, method, date, status, balance]
+      required: [id, studentId, receiptNumber, studentName, registrationNumber, amount, method, reference, date, status, balance]
     PaymentInput:
       type: object
       properties:
@@ -1405,6 +1431,18 @@ components:
         reference:
           type: string
       required: [studentId, amount, method, reference]
+    PaymentUpdateInput:
+      type: object
+      properties:
+        amount:
+          type: number
+          minimum: 0
+        method:
+          type: string
+          minLength: 1
+        reference:
+          type: string
+      required: [amount, method, reference]
     ExpenseInput:
       type: object
       properties:

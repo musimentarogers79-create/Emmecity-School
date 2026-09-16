@@ -15,6 +15,7 @@ export interface Payment {
   registrationNumber: string;
   amount: number;
   method: string;
+  reference: string;
   date: string;
   status: PaymentStatus;
   balance: number;

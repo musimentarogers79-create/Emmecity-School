@@ -129,7 +129,7 @@ export const payments = pgTable("payments", {
   uniqueIndex("payments_receipt_idx").on(table.schoolId, table.receiptNumber),
   index("payments_student_idx").on(table.studentId),
   index("payments_school_paid_on_idx").on(table.schoolId, table.paidOn),
-  check("payments_amount_positive", sql`${table.amount} > 0`),
+  check("payments_amount_nonnegative", sql`${table.amount} >= 0`),
   foreignKey({
     name: "payments_school_student_fk",
     columns: [table.schoolId, table.studentId],

@@ -22,7 +22,7 @@ export type SchoolStudent = {
   guardianEmail: string; admissionDate: string; enrollmentType?: "day" | "boarding"; isSponsored: boolean; termFee?: number; amountPaid?: number; photoPath?: string;
 };
 export type AttendanceRecord = { id: string; studentId: string; studentName: string; registrationNumber: string; className: string; date: string; status: AttendanceStatus; arrivalTime?: string | null };
-export type Payment = { id: string; studentId: string; receiptNumber: string; studentName: string; registrationNumber: string; amount: number; method: string; date: string; status: "completed" | "pending" | "reversed"; balance: number };
+export type Payment = { id: string; studentId: string; receiptNumber: string; studentName: string; registrationNumber: string; amount: number; method: string; reference: string; date: string; status: "completed" | "pending" | "reversed"; balance: number };
 export type OperationRecord = Record<string, unknown> & { id: string };
 export const classAssignmentKey = (name: string, stream?: string | null) => {
   const normalizedName = name.trim();
@@ -494,7 +494,7 @@ export async function createStudentWithPayment(data: {
         schoolId, studentId: studentRowValue.id, receiptNumber, amount: String(initialPayment), method: data.paymentMethod || "Cash",
         reference: data.paymentReference || "", paidOn: isoDate(), status: "completed",
       }).returning())[0];
-       payment = paymentRow ? { id: paymentRow.id, studentId: studentRowValue.id, receiptNumber, studentName: `${firstName}${middleName ? ` ${middleName}` : ""} ${lastName}`, registrationNumber, amount: initialPayment, method: paymentRow.method, date: getDateLabel(), status: "completed", balance: Math.max(0, previousFeeBalance + termFee - initialPayment) } : undefined;
+       payment = paymentRow ? { id: paymentRow.id, studentId: studentRowValue.id, receiptNumber, studentName: `${firstName}${middleName ? ` ${middleName}` : ""} ${lastName}`, registrationNumber, amount: initialPayment, method: paymentRow.method, reference: paymentRow.reference, date: getDateLabel(), status: "completed", balance: Math.max(0, previousFeeBalance + termFee - initialPayment) } : undefined;
     }
     const admissionFormData = {
       documentType: "admission_form",
@@ -553,7 +553,7 @@ export async function updateStudentBalance(studentId: string, amount: number) {
 export async function listPayments() {
   const schoolId = await getSchoolId();
   const rows = await db.select({ payment: payments, student: students }).from(payments).innerJoin(students, eq(payments.studentId, students.id)).where(eq(payments.schoolId, schoolId)).orderBy(desc(payments.createdAt));
-  return rows.map(({ payment, student }) => ({ id: payment.id, studentId: student.id, receiptNumber: payment.receiptNumber, studentName: `${student.firstName}${student.middleName ? ` ${student.middleName}` : ""} ${student.lastName}`, registrationNumber: student.registrationNumber, amount: number(payment.amount), method: payment.method, date: new Date(`${payment.paidOn}T00:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }), status: payment.status as Payment["status"], balance: number(student.feeBalance) }));
+  return rows.map(({ payment, student }) => ({ id: payment.id, studentId: student.id, receiptNumber: payment.receiptNumber, studentName: `${student.firstName}${student.middleName ? ` ${student.middleName}` : ""} ${student.lastName}`, registrationNumber: student.registrationNumber, amount: number(payment.amount), method: payment.method, reference: payment.reference, date: new Date(`${payment.paidOn}T00:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }), status: payment.status as Payment["status"], balance: number(student.feeBalance) }));
 }
 export async function recordPayment(studentId: string, amount: number, method: string, reference: string) {
   if (amount <= 0) throw new Error("Payment amount must be positive");
@@ -576,7 +576,35 @@ export async function recordPayment(studentId: string, amount: number, method: s
     const row = (await tx.insert(payments).values({ schoolId, studentId: student.id, receiptNumber, amount: String(amount), method, reference, paidOn: isoDate(), status: "completed" }).returning())[0];
     await tx.update(students).set({ feeBalance: sql`fee_balance - ${amount}`, amountPaid: sql`coalesce(amount_paid, 0) + ${amount}`, updatedAt: new Date() }).where(and(eq(students.schoolId, schoolId), eq(students.id, student.id)));
     const updatedStudent = (await tx.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.id, student.id))).limit(1))[0];
-    return row ? { id: row.id, studentId: student.id, receiptNumber, studentName: student.name, registrationNumber: student.registrationNumber, amount, method, date: getDateLabel(), status: "completed" as const, balance: number(updatedStudent?.feeBalance) } : undefined;
+    return row ? { id: row.id, studentId: student.id, receiptNumber, studentName: student.name, registrationNumber: student.registrationNumber, amount, method, reference, date: getDateLabel(), status: "completed" as const, balance: number(updatedStudent?.feeBalance) } : undefined;
+  });
+}
+
+export async function updatePayment(paymentId: string, amount: number, method: string, reference: string) {
+  if (amount < 0) throw new Error("Payment amount cannot be negative");
+  const schoolId = await getSchoolId();
+  return db.transaction(async (tx) => {
+    const existing = (await tx.select({ payment: payments, student: students }).from(payments).innerJoin(students, eq(payments.studentId, students.id)).where(and(eq(payments.schoolId, schoolId), eq(payments.id, paymentId))).for("update").limit(1))[0];
+    if (!existing) return undefined;
+    const updated = (await tx.update(payments).set({ amount: String(amount), method, reference }).where(and(eq(payments.schoolId, schoolId), eq(payments.id, paymentId))).returning())[0];
+    const totals = (await tx.select({ total: sql<string>`coalesce(sum(${payments.amount}) filter (where ${payments.status} = 'completed'), 0)` }).from(payments).where(and(eq(payments.schoolId, schoolId), eq(payments.studentId, existing.student.id))))[0];
+    const amountPaid = number(totals?.total);
+    const payable = existing.student.isSponsored ? 0 : number(existing.student.previousFeeBalance) + number(existing.student.termFee);
+    const feeBalance = Math.max(0, payable - amountPaid);
+    await tx.update(students).set({ amountPaid: String(amountPaid), feeBalance: String(feeBalance), updatedAt: new Date() }).where(and(eq(students.schoolId, schoolId), eq(students.id, existing.student.id)));
+    return updated ? {
+      id: updated.id,
+      studentId: existing.student.id,
+      receiptNumber: updated.receiptNumber,
+      studentName: `${existing.student.firstName}${existing.student.middleName ? ` ${existing.student.middleName}` : ""} ${existing.student.lastName}`,
+      registrationNumber: existing.student.registrationNumber,
+      amount,
+      method: updated.method,
+      reference: updated.reference,
+      date: new Date(`${updated.paidOn}T00:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+      status: updated.status as Payment["status"],
+      balance: feeBalance,
+    } : undefined;
   });
 }
 
