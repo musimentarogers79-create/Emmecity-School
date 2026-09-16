@@ -39,7 +39,15 @@ const recordAccountAudit = async (actor: SchoolUser, action: string, targetId: s
     actorId: actor.id, targetId, action, details, occurredAt: new Date().toISOString(), visibility: "administrator",
   });
 };
-const roleGreeting = (name: string) => `Good morning, ${name.split(" ")[0]}`;
+const roleGreeting = (name: string) => {
+  const hour = Number(new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Africa/Nairobi",
+    hour: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date()));
+  const period = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  return `${period}, ${name.split(" ")[0]}`;
+};
 const roleActions = (role: SchoolRole, studentId?: string) => role === "teacher"
   ? [{ id: "attendance", label: "Record attendance", description: "Mark today's register for your assigned classes.", href: "/attendance", tone: "green" }, { id: "assignments", label: "Manage assignments", description: "Create and follow up work for your classes.", href: "/operations?view=assignments", tone: "blue" }, { id: "classes", label: "Open my classes", description: "See only the classes and subjects assigned to you.", href: "/operations?view=classes", tone: "violet" }]
   : role === "accountant"

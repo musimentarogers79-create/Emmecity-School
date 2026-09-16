@@ -70,32 +70,36 @@ export async function initializeSchoolData() {
       setting = (await db.select().from(schoolSettings).orderBy(asc(schoolSettings.createdAt)).limit(1))[0];
     }
     if (!setting) throw new Error("Unable to initialize school settings");
-    const admins = await db.select().from(users).where(and(eq(users.schoolId, setting.id), eq(users.identifier, "admin"))).limit(1);
     const production = process.env["NODE_ENV"] === "production";
     const configuredPassword = process.env["SCHOOL_BOOTSTRAP_PASSWORD"];
-    if (production && !configuredPassword && (!admins[0] || verifyPassword("admin123", admins[0].passwordHash))) {
+    const canonicalAdmins = await db.select().from(users).where(and(eq(users.schoolId, setting.id), ilike(users.identifier, "Isingoma"), eq(users.userType, "staff"))).limit(1);
+    const legacyAdmins = await db.select().from(users).where(and(eq(users.schoolId, setting.id), ilike(users.identifier, "admin"), eq(users.userType, "staff"))).limit(1);
+    const bootstrapAdmin = canonicalAdmins[0] || legacyAdmins[0];
+    if (production && !configuredPassword && (!bootstrapAdmin || verifyPassword("admin123", bootstrapAdmin.passwordHash))) {
       throw new Error("SCHOOL_BOOTSTRAP_PASSWORD must be configured before the first production start");
     }
-    if (!admins[0]) {
+    if (canonicalAdmins[0]) {
+      if (legacyAdmins[0]) {
+        await db.delete(users).where(eq(users.id, legacyAdmins[0].id));
+      }
+    } else if (legacyAdmins[0]) {
+      const legacyPassword = production && configuredPassword && verifyPassword("admin123", legacyAdmins[0].passwordHash)
+        ? hashPassword(configuredPassword)
+        : legacyAdmins[0].passwordHash;
+      await db.update(users).set({
+        name: "Isingoma",
+        identifier: "Isingoma",
+        passwordHash: legacyPassword,
+        updatedAt: new Date(),
+      }).where(eq(users.id, legacyAdmins[0].id));
+    } else {
       await db.insert(users).values({
         schoolId: setting.id,
-        name: production ? "Isingoma" : "School administrator",
-        identifier: production ? "Isingoma" : "admin",
+        name: "Isingoma",
+        identifier: "Isingoma",
         passwordHash: hashPassword(configuredPassword || "admin123"),
         userType: "staff", role: "administrator", status: "active", initials: "SA",
       }).onConflictDoNothing({ target: [users.schoolId, users.identifier] });
-    } else if (production && configuredPassword && admins[0]) {
-      const isLegacyBootstrapAdmin = admins[0].identifier === "admin" && admins[0].name === "School administrator";
-      if (isLegacyBootstrapAdmin) {
-        await db.update(users).set({
-          name: "Isingoma",
-          identifier: "Isingoma",
-          passwordHash: verifyPassword("admin123", admins[0].passwordHash) ? hashPassword(configuredPassword) : admins[0].passwordHash,
-          updatedAt: new Date(),
-        }).where(eq(users.id, admins[0].id));
-      } else if (verifyPassword("admin123", admins[0].passwordHash)) {
-        await db.update(users).set({ passwordHash: hashPassword(configuredPassword), updatedAt: new Date() }).where(eq(users.id, admins[0].id));
-      }
     }
     return setting.id;
   })();
@@ -134,11 +138,6 @@ export async function findUser(identifier: string, userType: string) {
   const schoolId = await getSchoolId();
   const normalizedIdentifier = identifier.trim();
   const rows = await db.select().from(users).where(and(eq(users.schoolId, schoolId), eq(users.userType, userType), ilike(users.identifier, normalizedIdentifier))).limit(1);
-  if (!rows[0] && userType === "staff" && ["admin", "isingoma"].includes(normalizedIdentifier.toLowerCase())) {
-    const legacyIdentifier = normalizedIdentifier.toLowerCase() === "admin" ? "Isingoma" : "admin";
-    const legacyRows = await db.select().from(users).where(and(eq(users.schoolId, schoolId), eq(users.userType, userType), ilike(users.identifier, legacyIdentifier))).limit(1);
-    if (legacyRows[0]) rows.push(legacyRows[0]);
-  }
   const setting = await getSchoolSettings();
   return rows[0] ? publicRow(rows[0], setting) : undefined;
 }
