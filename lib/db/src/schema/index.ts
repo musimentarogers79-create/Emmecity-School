@@ -43,6 +43,7 @@ export const students = pgTable("students", {
   guardianEmail: text("guardian_email").notNull().default(""),
   admissionDate: date("admission_date", { mode: "string" }).notNull(),
   enrollmentType: text("enrollment_type"),
+  isSponsored: boolean("is_sponsored").notNull().default(false),
   termFee: numeric("term_fee", { precision: 14, scale: 2 }),
   amountPaid: numeric("amount_paid", { precision: 14, scale: 2 }),
   photoPath: text("photo_path"),

@@ -42,6 +42,7 @@ export interface AdmissionForm {
   declarationDate?: string;
   admissionDate: string;
   enrollmentType: AdmissionFormEnrollmentType;
+  isSponsored: boolean;
   termFee: number;
   amountPaid: number;
   feeBalance: number;

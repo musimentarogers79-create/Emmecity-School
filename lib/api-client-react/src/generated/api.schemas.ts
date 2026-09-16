@@ -226,6 +226,7 @@ export interface AdmissionForm {
   declarationDate?: string;
   admissionDate: string;
   enrollmentType: AdmissionFormEnrollmentType;
+  isSponsored: boolean;
   termFee: number;
   amountPaid: number;
   feeBalance: number;
@@ -249,6 +250,7 @@ export interface Student {
   avatarTone: string;
   photoPath?: string;
   enrollmentType: StudentEnrollmentType;
+  isSponsored: boolean;
   termFee: number;
   amountPaid: number;
   previousFeeBalance: number;
@@ -298,6 +300,7 @@ export interface StudentInput {
   declarationAccepted: boolean;
   declarationDate: string;
   enrollmentType: StudentInputEnrollmentType;
+  isSponsored?: boolean;
   /** @minimum 0 */
   termFee: number;
   /** @minimum 0 */
@@ -358,6 +361,7 @@ export interface StudentUpdateInput {
   declarationAccepted?: boolean;
   declarationDate?: string;
   enrollmentType?: StudentUpdateInputEnrollmentType;
+  isSponsored?: boolean;
   /** @minimum 0 */
   termFee?: number;
   /** @minimum 0 */

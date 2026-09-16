@@ -1,0 +1,1 @@
+ALTER TABLE "students" ADD COLUMN "is_sponsored" boolean DEFAULT false NOT NULL;

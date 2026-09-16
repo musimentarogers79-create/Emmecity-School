@@ -1026,6 +1026,8 @@ components:
         enrollmentType:
           type: string
           enum: [day, boarding]
+        isSponsored:
+          type: boolean
         termFee:
           type: number
         amountPaid:
@@ -1036,7 +1038,7 @@ components:
           type: string
         admissionForm:
           $ref: "#/components/schemas/AdmissionForm"
-      required: [id, registrationNumber, name, firstName, lastName, className, stream, gender, status, attendancePercentage, feeBalance, previousFeeBalance, avatarTone, enrollmentType, termFee, amountPaid]
+      required: [id, registrationNumber, name, firstName, lastName, className, stream, gender, status, attendancePercentage, feeBalance, previousFeeBalance, avatarTone, enrollmentType, isSponsored, termFee, amountPaid]
     AdmissionForm:
       type: object
       properties:
@@ -1109,6 +1111,8 @@ components:
         enrollmentType:
           type: string
           enum: [day, boarding]
+        isSponsored:
+          type: boolean
         termFee:
           type: number
         amountPaid:
@@ -1119,7 +1123,7 @@ components:
           type: number
         generatedAt:
           type: string
-      required: [id, studentId, registrationNumber, pupilName, dateOfBirth, gender, className, stream, guardianName, guardianPhone, admissionDate, enrollmentType, termFee, amountPaid, previousFeeBalance, feeBalance, generatedAt]
+      required: [id, studentId, registrationNumber, pupilName, dateOfBirth, gender, className, stream, guardianName, guardianPhone, admissionDate, enrollmentType, isSponsored, termFee, amountPaid, previousFeeBalance, feeBalance, generatedAt]
     StudentInput:
       type: object
       properties:
@@ -1188,6 +1192,8 @@ components:
         enrollmentType:
           type: string
           enum: [day, boarding]
+        isSponsored:
+          type: boolean
         termFee:
           type: number
           minimum: 0
@@ -1270,6 +1276,8 @@ components:
         enrollmentType:
           type: string
           enum: [day, boarding]
+        isSponsored:
+          type: boolean
         termFee:
           type: number
           minimum: 0

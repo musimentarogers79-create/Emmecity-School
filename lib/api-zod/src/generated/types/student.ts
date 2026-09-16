@@ -25,6 +25,7 @@ export interface Student {
   avatarTone: string;
   photoPath?: string;
   enrollmentType: StudentEnrollmentType;
+  isSponsored: boolean;
   termFee: number;
   amountPaid: number;
   previousFeeBalance: number;

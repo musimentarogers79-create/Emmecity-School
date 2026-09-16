@@ -19,7 +19,7 @@ export type SchoolStudent = {
   id: string; registrationNumber: string; name: string; firstName: string; lastName: string; middleName?: string;
   className: string; stream: string; gender: string; status: "active" | "inactive"; attendancePercentage: number;
   feeBalance: number; previousFeeBalance: number; avatarTone: string; dateOfBirth: string; guardianName: string; guardianPhone: string;
-  guardianEmail: string; admissionDate: string; enrollmentType?: "day" | "boarding"; termFee?: number; amountPaid?: number; photoPath?: string;
+  guardianEmail: string; admissionDate: string; enrollmentType?: "day" | "boarding"; isSponsored: boolean; termFee?: number; amountPaid?: number; photoPath?: string;
 };
 export type AttendanceRecord = { id: string; studentId: string; studentName: string; registrationNumber: string; className: string; date: string; status: AttendanceStatus; arrivalTime?: string | null };
 export type Payment = { id: string; studentId: string; receiptNumber: string; studentName: string; registrationNumber: string; amount: number; method: string; date: string; status: "completed" | "pending" | "reversed"; balance: number };
@@ -288,7 +288,7 @@ function studentRow(row: typeof students.$inferSelect): SchoolStudent {
     firstName: row.firstName, lastName: row.lastName, className: row.className, stream: row.stream, gender: row.gender,
     status: row.status as SchoolStudent["status"], attendancePercentage: row.attendancePercentage, feeBalance: number(row.feeBalance), previousFeeBalance: number(row.previousFeeBalance),
     avatarTone: row.avatarTone, dateOfBirth: row.dateOfBirth, guardianName: row.guardianName, guardianPhone: row.guardianPhone,
-    guardianEmail: row.guardianEmail, admissionDate: row.admissionDate,
+    guardianEmail: row.guardianEmail, admissionDate: row.admissionDate, isSponsored: row.isSponsored,
   };
   if (row.middleName) result.middleName = row.middleName;
   if (row.photoPath) result.photoPath = row.photoPath;
@@ -311,7 +311,7 @@ export async function getStudent(id: string) {
 export async function updateStudent(id: string, data: {
   firstName?: string; middleName?: string; lastName?: string; dateOfBirth?: string; gender?: string;
   className?: string; stream?: string; guardianName?: string; guardianPhone?: string; guardianEmail?: string;
-  enrollmentType?: "day" | "boarding"; termFee?: number; previousFeeBalance?: number; status?: "active" | "inactive"; newPassword?: string;
+  enrollmentType?: "day" | "boarding"; isSponsored?: boolean; termFee?: number; previousFeeBalance?: number; status?: "active" | "inactive"; newPassword?: string;
   religion?: string; placeOfBirth?: string; homeVillage?: string; nationality?: string; tribe?: string;
   guardianRelationship?: string; guardianNationalId?: string; residentialAddress?: string; guardianOccupation?: string;
   alternativeContact?: string; previousSchool?: string; lastClassCompleted?: string; medicalConditions?: string;
@@ -328,16 +328,17 @@ export async function updateStudent(id: string, data: {
       updates[key] = (key === "middleName" && value === "" ? null : value) as never;
     }
   }
-  if (data.termFee !== undefined) {
-    updates.termFee = String(data.termFee);
-  }
-  if (data.previousFeeBalance !== undefined) {
-    updates.previousFeeBalance = String(data.previousFeeBalance);
-  }
+  if (data.isSponsored !== undefined) updates.isSponsored = data.isSponsored;
+  if (data.termFee !== undefined) updates.termFee = String(data.isSponsored === true ? 0 : data.termFee);
+  if (data.previousFeeBalance !== undefined) updates.previousFeeBalance = String(data.isSponsored === true ? 0 : data.previousFeeBalance);
   if (data.photoPath !== undefined) {
     updates.photoPath = data.photoPath?.trim() || null;
   }
-  if (data.termFee !== undefined || data.previousFeeBalance !== undefined) {
+  if (data.isSponsored === true) {
+    updates.termFee = "0";
+    updates.previousFeeBalance = "0";
+    updates.feeBalance = "0";
+  } else if (data.termFee !== undefined || data.previousFeeBalance !== undefined || data.isSponsored === false) {
     const termFee = data.termFee ?? number(current.termFee);
     const previousFeeBalance = data.previousFeeBalance ?? number(current.previousFeeBalance);
     updates.feeBalance = String(Math.max(0, previousFeeBalance + termFee - number(current.amountPaid)));
@@ -373,14 +374,15 @@ export async function updateStudent(id: string, data: {
         gender: updated.gender,
         className: updated.className,
         stream: updated.stream,
-        guardianName: updated.guardianName,
-        guardianPhone: updated.guardianPhone,
-        guardianEmail: updated.guardianEmail,
-        enrollmentType: updated.enrollmentType,
+        isSponsored: updated.isSponsored,
         termFee: number(updated.termFee),
         amountPaid: number(updated.amountPaid),
         previousFeeBalance: number(updated.previousFeeBalance),
         feeBalance: number(updated.feeBalance),
+        guardianName: updated.guardianName,
+        guardianPhone: updated.guardianPhone,
+        guardianEmail: updated.guardianEmail,
+        enrollmentType: updated.enrollmentType,
         photoPath: updated.photoPath || undefined,
         updatedAt: new Date().toISOString(),
       },
@@ -402,6 +404,7 @@ export async function getAdmissionForm(id: string) {
     return {
       ...saved,
       id: row.id,
+      isSponsored: saved.isSponsored ?? student.isSponsored,
       previousFeeBalance: saved.previousFeeBalance === undefined ? student.previousFeeBalance : saved.previousFeeBalance,
       feeBalance: saved.feeBalance === undefined ? student.feeBalance : saved.feeBalance,
       photoPath: saved.photoPath ?? student.photoPath,
@@ -420,6 +423,7 @@ export async function getAdmissionForm(id: string) {
     guardianPhone: student.guardianPhone,
     admissionDate: student.admissionDate,
     enrollmentType: student.enrollmentType || "day",
+    isSponsored: student.isSponsored,
     termFee: student.termFee || 0,
     amountPaid: student.amountPaid || 0,
     previousFeeBalance: student.previousFeeBalance,
@@ -430,7 +434,7 @@ export async function getAdmissionForm(id: string) {
 }
 export async function createStudentWithPayment(data: {
   firstName: string; middleName?: string; lastName: string; className: string; stream: string; gender: string; dateOfBirth: string;
-  guardianName: string; guardianPhone: string; guardianEmail: string; enrollmentType: "day" | "boarding"; termFee: number;
+  guardianName: string; guardianPhone: string; guardianEmail: string; enrollmentType: "day" | "boarding"; isSponsored?: boolean; termFee: number;
   religion: string; placeOfBirth: string; homeVillage: string; nationality: string; tribe: string;
   guardianRelationship: string; guardianNationalId: string; residentialAddress: string; guardianOccupation: string;
   alternativeContact: string; previousSchool: string; lastClassCompleted: string; medicalConditions: string;
@@ -450,15 +454,17 @@ export async function createStudentWithPayment(data: {
     }).returning({ value: recordSequences.value }))[0];
     if (!registrationSequence) throw new Error("Unable to allocate registration number");
     const registrationNumber = `STU-${year}-${String(registrationSequence.value).padStart(4, "0")}`;
-    const initialPayment = data.initialPayment ?? 0;
-    const previousFeeBalance = data.previousFeeBalance ?? 0;
-    if (initialPayment < 0 || initialPayment > data.termFee) throw new Error("Opening payment cannot exceed the term fee");
+    const isSponsored = data.isSponsored === true;
+    const termFee = isSponsored ? 0 : data.termFee;
+    const initialPayment = isSponsored ? 0 : (data.initialPayment ?? 0);
+    const previousFeeBalance = isSponsored ? 0 : (data.previousFeeBalance ?? 0);
+    if (initialPayment < 0 || initialPayment > termFee) throw new Error("Opening payment cannot exceed the term fee");
     if (previousFeeBalance < 0) throw new Error("Previous fee balance cannot be negative");
     const studentRowValue = (await tx.insert(students).values({
       schoolId, registrationNumber, firstName: data.firstName, middleName: data.middleName, lastName: data.lastName,
       className: data.className, stream: data.stream, gender: data.gender, dateOfBirth: data.dateOfBirth,
       guardianName: data.guardianName, guardianPhone: data.guardianPhone, guardianEmail: data.guardianEmail, admissionDate: isoDate(), enrollmentType: data.enrollmentType,
-      termFee: String(data.termFee), amountPaid: String(initialPayment), previousFeeBalance: String(previousFeeBalance), feeBalance: String(Math.max(0, previousFeeBalance + data.termFee - initialPayment)),
+       isSponsored, termFee: String(termFee), amountPaid: String(initialPayment), previousFeeBalance: String(previousFeeBalance), feeBalance: String(Math.max(0, previousFeeBalance + termFee - initialPayment)),
     }).returning())[0];
     if (!studentRowValue) throw new Error("Unable to register pupil");
     let payment: Payment | undefined;
@@ -512,11 +518,12 @@ export async function createStudentWithPayment(data: {
       declarationAccepted: data.declarationAccepted,
       declarationDate: data.declarationDate,
       admissionDate: studentRowValue.admissionDate,
-      enrollmentType: data.enrollmentType,
-      termFee: data.termFee,
+       enrollmentType: data.enrollmentType,
+       isSponsored,
+       termFee,
       amountPaid: initialPayment,
       previousFeeBalance,
-      feeBalance: Math.max(0, previousFeeBalance + data.termFee - initialPayment),
+       feeBalance: Math.max(0, previousFeeBalance + termFee - initialPayment),
       photoPath: undefined,
       generatedAt: new Date().toISOString(),
     };

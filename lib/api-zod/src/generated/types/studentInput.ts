@@ -41,6 +41,7 @@ export interface StudentInput {
   declarationAccepted: boolean;
   declarationDate: string;
   enrollmentType: StudentInputEnrollmentType;
+  isSponsored?: boolean;
   /** @minimum 0 */
   termFee: number;
   /** @minimum 0 */
