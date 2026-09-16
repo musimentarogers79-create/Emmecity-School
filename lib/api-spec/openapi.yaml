@@ -1060,8 +1060,10 @@ components:
           type: string
         guardianName:
           type: string
+          minLength: 1
         guardianPhone:
           type: string
+          minLength: 1
         guardianEmail:
           type: string
         religion:
@@ -1207,7 +1209,7 @@ components:
           type: string
         paymentReference:
           type: string
-      required: [firstName, lastName, dateOfBirth, gender, className, stream, guardianName, guardianPhone, guardianEmail, enrollmentType, termFee, religion, placeOfBirth, homeVillage, nationality, tribe, guardianRelationship, guardianNationalId, residentialAddress, guardianOccupation, alternativeContact, previousSchool, lastClassCompleted, medicalConditions, specialNeeds, knownMedicalNote, emergencyContactName, emergencyContactPhone, emergencyContactRelationship, declarationAccepted, declarationDate]
+      required: [firstName, lastName, guardianName, guardianPhone, termFee]
     StudentUpdateInput:
       type: object
       properties:

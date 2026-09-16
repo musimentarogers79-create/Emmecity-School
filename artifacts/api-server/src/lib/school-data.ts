@@ -433,17 +433,29 @@ export async function getAdmissionForm(id: string) {
   };
 }
 export async function createStudentWithPayment(data: {
-  firstName: string; middleName?: string; lastName: string; className: string; stream: string; gender: string; dateOfBirth: string;
-  guardianName: string; guardianPhone: string; guardianEmail: string; enrollmentType: "day" | "boarding"; isSponsored?: boolean; termFee: number;
-  religion: string; placeOfBirth: string; homeVillage: string; nationality: string; tribe: string;
-  guardianRelationship: string; guardianNationalId: string; residentialAddress: string; guardianOccupation: string;
-  alternativeContact: string; previousSchool: string; lastClassCompleted: string; medicalConditions: string;
-  specialNeeds: string; knownMedicalNote: string; emergencyContactName: string; emergencyContactPhone: string;
-  emergencyContactRelationship: string; declarationAccepted: boolean; declarationDate: string;
+  firstName: string; middleName?: string; lastName: string; className?: string; stream?: string; gender?: string; dateOfBirth?: string;
+  guardianName: string; guardianPhone: string; guardianEmail?: string; enrollmentType?: "day" | "boarding"; isSponsored?: boolean; termFee: number;
+  religion?: string; placeOfBirth?: string; homeVillage?: string; nationality?: string; tribe?: string;
+  guardianRelationship?: string; guardianNationalId?: string; residentialAddress?: string; guardianOccupation?: string;
+  alternativeContact?: string; previousSchool?: string; lastClassCompleted?: string; medicalConditions?: string;
+  specialNeeds?: string; knownMedicalNote?: string; emergencyContactName?: string; emergencyContactPhone?: string;
+  emergencyContactRelationship?: string; declarationAccepted?: boolean; declarationDate?: string;
   initialPayment?: number; previousFeeBalance?: number; paymentMethod?: string; paymentReference?: string;
 }) {
   const schoolId = await getSchoolId();
   return db.transaction(async (tx) => {
+    const text = (value?: string) => value?.trim() || "";
+    const firstName = data.firstName.trim();
+    const middleName = text(data.middleName) || undefined;
+    const lastName = data.lastName.trim();
+    const className = text(data.className) || "Unassigned";
+    const stream = text(data.stream);
+    const gender = text(data.gender) || "Not specified";
+    const dateOfBirth = text(data.dateOfBirth) || isoDate();
+    const guardianName = data.guardianName.trim();
+    const guardianPhone = data.guardianPhone.trim();
+    const guardianEmail = text(data.guardianEmail);
+    const enrollmentType = data.enrollmentType || "day";
     const year = new Date().getFullYear();
     const countRows = await tx.select({ count: sql<number>`count(*)` }).from(students).where(and(eq(students.schoolId, schoolId), ilike(students.registrationNumber, `STU-${year}-%`)));
     const registrationSequence = (await tx.insert(recordSequences).values({
@@ -461,9 +473,9 @@ export async function createStudentWithPayment(data: {
     if (initialPayment < 0 || initialPayment > termFee) throw new Error("Opening payment cannot exceed the term fee");
     if (previousFeeBalance < 0) throw new Error("Previous fee balance cannot be negative");
     const studentRowValue = (await tx.insert(students).values({
-      schoolId, registrationNumber, firstName: data.firstName, middleName: data.middleName, lastName: data.lastName,
-      className: data.className, stream: data.stream, gender: data.gender, dateOfBirth: data.dateOfBirth,
-      guardianName: data.guardianName, guardianPhone: data.guardianPhone, guardianEmail: data.guardianEmail, admissionDate: isoDate(), enrollmentType: data.enrollmentType,
+       schoolId, registrationNumber, firstName, middleName, lastName,
+       className, stream, gender, dateOfBirth,
+       guardianName, guardianPhone, guardianEmail, admissionDate: isoDate(), enrollmentType,
        isSponsored, termFee: String(termFee), amountPaid: String(initialPayment), previousFeeBalance: String(previousFeeBalance), feeBalance: String(Math.max(0, previousFeeBalance + termFee - initialPayment)),
     }).returning())[0];
     if (!studentRowValue) throw new Error("Unable to register pupil");
@@ -482,43 +494,43 @@ export async function createStudentWithPayment(data: {
         schoolId, studentId: studentRowValue.id, receiptNumber, amount: String(initialPayment), method: data.paymentMethod || "Cash",
         reference: data.paymentReference || "", paidOn: isoDate(), status: "completed",
       }).returning())[0];
-       payment = paymentRow ? { id: paymentRow.id, studentId: studentRowValue.id, receiptNumber, studentName: `${data.firstName}${data.middleName ? ` ${data.middleName}` : ""} ${data.lastName}`, registrationNumber, amount: initialPayment, method: paymentRow.method, date: getDateLabel(), status: "completed", balance: Math.max(0, previousFeeBalance + data.termFee - initialPayment) } : undefined;
+       payment = paymentRow ? { id: paymentRow.id, studentId: studentRowValue.id, receiptNumber, studentName: `${firstName}${middleName ? ` ${middleName}` : ""} ${lastName}`, registrationNumber, amount: initialPayment, method: paymentRow.method, date: getDateLabel(), status: "completed", balance: Math.max(0, previousFeeBalance + termFee - initialPayment) } : undefined;
     }
     const admissionFormData = {
       documentType: "admission_form",
       title: "Pupil Admission Form",
       studentId: studentRowValue.id,
       registrationNumber,
-      pupilName: `${data.firstName}${data.middleName ? ` ${data.middleName}` : ""} ${data.lastName}`,
-      dateOfBirth: data.dateOfBirth,
-      gender: data.gender,
-      className: data.className,
-      stream: data.stream,
-      guardianName: data.guardianName,
-      guardianPhone: data.guardianPhone,
-      guardianEmail: data.guardianEmail,
-      religion: data.religion,
-      placeOfBirth: data.placeOfBirth,
-      homeVillage: data.homeVillage,
-      nationality: data.nationality,
-      tribe: data.tribe,
-      guardianRelationship: data.guardianRelationship,
-      guardianNationalId: data.guardianNationalId,
-      residentialAddress: data.residentialAddress,
-      guardianOccupation: data.guardianOccupation,
-      alternativeContact: data.alternativeContact,
-      previousSchool: data.previousSchool,
-      lastClassCompleted: data.lastClassCompleted,
-      medicalConditions: data.medicalConditions,
-      specialNeeds: data.specialNeeds,
-      knownMedicalNote: data.knownMedicalNote,
-      emergencyContactName: data.emergencyContactName,
-      emergencyContactPhone: data.emergencyContactPhone,
-      emergencyContactRelationship: data.emergencyContactRelationship,
-      declarationAccepted: data.declarationAccepted,
-      declarationDate: data.declarationDate,
+       pupilName: `${firstName}${middleName ? ` ${middleName}` : ""} ${lastName}`,
+       dateOfBirth,
+       gender,
+       className,
+       stream,
+       guardianName,
+       guardianPhone,
+       guardianEmail,
+       religion: text(data.religion),
+       placeOfBirth: text(data.placeOfBirth),
+       homeVillage: text(data.homeVillage),
+       nationality: text(data.nationality),
+       tribe: text(data.tribe),
+       guardianRelationship: text(data.guardianRelationship),
+       guardianNationalId: text(data.guardianNationalId),
+       residentialAddress: text(data.residentialAddress),
+       guardianOccupation: text(data.guardianOccupation),
+       alternativeContact: text(data.alternativeContact),
+       previousSchool: text(data.previousSchool),
+       lastClassCompleted: text(data.lastClassCompleted),
+       medicalConditions: text(data.medicalConditions),
+       specialNeeds: text(data.specialNeeds),
+       knownMedicalNote: text(data.knownMedicalNote),
+       emergencyContactName: text(data.emergencyContactName),
+       emergencyContactPhone: text(data.emergencyContactPhone),
+       emergencyContactRelationship: text(data.emergencyContactRelationship),
+       declarationAccepted: data.declarationAccepted === true,
+       declarationDate: text(data.declarationDate) || isoDate(),
       admissionDate: studentRowValue.admissionDate,
-       enrollmentType: data.enrollmentType,
+        enrollmentType,
        isSponsored,
        termFee,
       amountPaid: initialPayment,

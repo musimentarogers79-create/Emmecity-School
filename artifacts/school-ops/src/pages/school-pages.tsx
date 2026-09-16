@@ -37,49 +37,49 @@ function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarati
     <div className="admission-section rounded-2xl border border-[hsl(var(--border))] p-4">
       <p className="admission-section-heading mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Pupil details</p>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Field label="Religion" value={String(form.religion || '')} onChange={(value) => update('religion', value)} placeholder="Religion" />
-        <Field label="Place of birth" value={String(form.placeOfBirth || '')} onChange={(value) => update('placeOfBirth', value)} placeholder="Town, district, or country" />
-        <Field label="Home village" value={String(form.homeVillage || '')} onChange={(value) => update('homeVillage', value)} placeholder="Village or parish" />
-        <Field label="Nationality" value={String(form.nationality || '')} onChange={(value) => update('nationality', value)} placeholder="Ugandan" />
-        <Field label="Tribe" value={String(form.tribe || '')} onChange={(value) => update('tribe', value)} placeholder="Tribe" />
+        <Field label="Religion" value={String(form.religion || '')} onChange={(value) => update('religion', value)} placeholder="Religion" required={false} />
+        <Field label="Place of birth" value={String(form.placeOfBirth || '')} onChange={(value) => update('placeOfBirth', value)} placeholder="Town, district, or country" required={false} />
+        <Field label="Home village" value={String(form.homeVillage || '')} onChange={(value) => update('homeVillage', value)} placeholder="Village or parish" required={false} />
+        <Field label="Nationality" value={String(form.nationality || '')} onChange={(value) => update('nationality', value)} placeholder="Ugandan" required={false} />
+        <Field label="Tribe" value={String(form.tribe || '')} onChange={(value) => update('tribe', value)} placeholder="Tribe" required={false} />
       </div>
     </div>
     <div className="admission-section rounded-2xl border border-[hsl(var(--border))] p-4">
       <p className="admission-section-heading mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Parent or guardian details</p>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Email address" type="email" value={String(form.guardianEmail || '')} onChange={(value) => update('guardianEmail', value)} placeholder="guardian@example.com" />
-        <Field label="Relationship to pupil" value={String(form.guardianRelationship || '')} onChange={(value) => update('guardianRelationship', value)} placeholder="Parent, aunt, uncle..." />
-        <Field label="National ID number" value={String(form.guardianNationalId || '')} onChange={(value) => update('guardianNationalId', value)} placeholder="National ID number" />
-        <Field label="Residential address" value={String(form.residentialAddress || '')} onChange={(value) => update('residentialAddress', value)} placeholder="Home address" />
-        <Field label="Occupation" value={String(form.guardianOccupation || '')} onChange={(value) => update('guardianOccupation', value)} placeholder="Occupation" />
-        <Field label="Alternative contact" value={String(form.alternativeContact || '')} onChange={(value) => update('alternativeContact', value)} placeholder="Name and phone" />
+        <Field label="Email address" type="email" value={String(form.guardianEmail || '')} onChange={(value) => update('guardianEmail', value)} placeholder="guardian@example.com" required={false} />
+        <Field label="Relationship to pupil" value={String(form.guardianRelationship || '')} onChange={(value) => update('guardianRelationship', value)} placeholder="Parent, aunt, uncle..." required={false} />
+        <Field label="National ID number" value={String(form.guardianNationalId || '')} onChange={(value) => update('guardianNationalId', value)} placeholder="National ID number" required={false} />
+        <Field label="Residential address" value={String(form.residentialAddress || '')} onChange={(value) => update('residentialAddress', value)} placeholder="Home address" required={false} />
+        <Field label="Occupation" value={String(form.guardianOccupation || '')} onChange={(value) => update('guardianOccupation', value)} placeholder="Occupation" required={false} />
+        <Field label="Alternative contact" value={String(form.alternativeContact || '')} onChange={(value) => update('alternativeContact', value)} placeholder="Name and phone" required={false} />
       </div>
     </div>
     <div className="admission-section rounded-2xl border border-[hsl(var(--border))] p-4">
       <p className="admission-section-heading mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Previous school and health information</p>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Previous school" value={String(form.previousSchool || '')} onChange={(value) => update('previousSchool', value)} placeholder="Write None if not applicable" />
-        <Field label="Last class completed" value={String(form.lastClassCompleted || '')} onChange={(value) => update('lastClassCompleted', value)} placeholder="For example, Primary 2" />
-        <Field label="Medical conditions or allergies" value={String(form.medicalConditions || '')} onChange={(value) => update('medicalConditions', value)} placeholder="Write None if not applicable" />
-        <Field label="Special needs or disabilities" value={String(form.specialNeeds || '')} onChange={(value) => update('specialNeeds', value)} placeholder="Write None if not applicable" />
-        <Field label="Known medical notes" value={String(form.knownMedicalNote || '')} onChange={(value) => update('knownMedicalNote', value)} placeholder="Medication or other notes" />
+        <Field label="Previous school" value={String(form.previousSchool || '')} onChange={(value) => update('previousSchool', value)} placeholder="Write None if not applicable" required={false} />
+        <Field label="Last class completed" value={String(form.lastClassCompleted || '')} onChange={(value) => update('lastClassCompleted', value)} placeholder="For example, Primary 2" required={false} />
+        <Field label="Medical conditions or allergies" value={String(form.medicalConditions || '')} onChange={(value) => update('medicalConditions', value)} placeholder="Write None if not applicable" required={false} />
+        <Field label="Special needs or disabilities" value={String(form.specialNeeds || '')} onChange={(value) => update('specialNeeds', value)} placeholder="Write None if not applicable" required={false} />
+        <Field label="Known medical notes" value={String(form.knownMedicalNote || '')} onChange={(value) => update('knownMedicalNote', value)} placeholder="Medication or other notes" required={false} />
       </div>
     </div>
     <div className="admission-section rounded-2xl border border-[hsl(var(--border))] p-4">
       <p className="admission-section-heading mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Emergency contact</p>
       <div className="grid gap-4 sm:grid-cols-3">
-        <Field label="Emergency contact name" value={String(form.emergencyContactName || '')} onChange={(value) => update('emergencyContactName', value)} placeholder="Full name" />
-        <Field label="Emergency contact phone" value={String(form.emergencyContactPhone || '')} onChange={(value) => update('emergencyContactPhone', value)} placeholder="+256 7..." />
-        <Field label="Emergency contact relationship" value={String(form.emergencyContactRelationship || '')} onChange={(value) => update('emergencyContactRelationship', value)} placeholder="Relationship" />
+        <Field label="Emergency contact name" value={String(form.emergencyContactName || '')} onChange={(value) => update('emergencyContactName', value)} placeholder="Full name" required={false} />
+        <Field label="Emergency contact phone" value={String(form.emergencyContactPhone || '')} onChange={(value) => update('emergencyContactPhone', value)} placeholder="+256 7..." required={false} />
+        <Field label="Emergency contact relationship" value={String(form.emergencyContactRelationship || '')} onChange={(value) => update('emergencyContactRelationship', value)} placeholder="Relationship" required={false} />
       </div>
     </div>
     <div className="admission-section rounded-2xl bg-[hsl(var(--secondary)/.6)] p-4">
       <p className="admission-section-heading text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Declaration</p>
       <p className="mt-2 text-sm leading-6 text-[hsl(var(--muted-foreground))]">I confirm that the information supplied on this admission form is correct and that I will notify the school of any changes.</p>
       <div className="mt-4 grid gap-4 sm:grid-cols-2">
-        <Field label="Declaration date" type="date" value={String(form.declarationDate || '')} onChange={(value) => update('declarationDate', value)} />
+        <Field label="Declaration date" type="date" value={String(form.declarationDate || '')} onChange={(value) => update('declarationDate', value)} required={false} />
         <label className="flex items-center gap-3 rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3.5 text-sm">
-          <input type="checkbox" checked={declarationAccepted} onChange={(event) => onDeclarationChange(event.target.checked)} required className="size-4 accent-[hsl(var(--primary))]" data-testid="checkbox-declaration-accepted" />
+          <input type="checkbox" checked={declarationAccepted} onChange={(event) => onDeclarationChange(event.target.checked)} className="size-4 accent-[hsl(var(--primary))]" data-testid="checkbox-declaration-accepted" />
           <span>I accept the declaration</span>
         </label>
       </div>
