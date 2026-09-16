@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,600;9..144,700&family=IBM+Plex+Mono:wght@500;600&display=swap');
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @plugin "@tailwindcss/typography";
@@ -113,9 +112,9 @@
   --chart-3: 205 47% 47%;
   --chart-4: 6 58% 48%;
   --chart-5: 274 27% 55%;
-  --app-font-sans: 'DM Sans', sans-serif;
-  --app-font-serif: 'Fraunces', serif;
-  --app-font-mono: 'IBM Plex Mono', monospace;
+  --app-font-sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --app-font-serif: Georgia, "Times New Roman", serif;
+  --app-font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   --radius: 0.7rem;
   --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0); /*replace with H S L */
   --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0); /*replace with H S L */
@@ -577,20 +576,35 @@ summary::-webkit-details-marker { display: none; }
   text-align: center;
 }
 
-/* Keep the login form reachable on short phone viewports. The form can scroll
-   from the top instead of being vertically centered below the fold. */
+/* Keep the login form reachable on short phone viewports. The form appears
+   first without relying on :has(), which older Android browsers may not support. */
 @media (max-width: 767px) {
-  body:has([data-testid="button-sign-in"]) section:has([data-testid="button-sign-in"]) {
-    order: -1;
+  [data-testid="login-brand-panel"] {
+    min-height: 300px;
+    padding: 2rem 1.25rem;
   }
 
-  body:has([data-testid="button-sign-in"]) section:has([data-testid="button-sign-in"]) {
+  [data-testid="login-form-panel"] {
     align-items: flex-start;
-    overflow-y: auto;
-    padding-bottom: 4rem;
+    min-height: 100svh;
+    overflow-y: visible;
+    padding: 1.5rem 1rem 2.5rem;
   }
 
-  body:has([data-testid="button-sign-in"]) [data-testid="button-sign-in"] {
+  [data-testid="login-form-panel"] > div {
+    min-width: 0;
+  }
+
+  [data-testid="login-form-panel"] [data-testid="img-school-logo"] {
+    height: 4rem;
+    width: 4rem;
+  }
+
+  [data-testid="login-form-panel"] input {
+    min-width: 0;
+  }
+
+  [data-testid="login-form-panel"] [data-testid="button-sign-in"] {
     min-height: 3.5rem;
     touch-action: manipulation;
   }
