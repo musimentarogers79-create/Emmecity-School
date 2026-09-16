@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { currentUserFromToken } from "../lib/school-data";
-import { isPupilPhotoPath, requestObjectDownload, requestPupilPhotoUpload } from "../lib/object-storage";
+import { isPupilPhotoPath, MAX_UPLOAD_BYTES, requestObjectDownload, requestPupilPhotoUpload } from "../lib/object-storage";
 
 const router: IRouter = Router();
 const getSession = (req: Parameters<Parameters<IRouter["get"]>[1]>[0]) =>
@@ -13,8 +13,8 @@ router.post("/storage/uploads/request-url", async (req, res): Promise<void> => {
     return;
   }
   const { contentType, name, size } = req.body as { contentType?: unknown; name?: unknown; size?: unknown };
-  if (typeof contentType !== "string" || typeof name !== "string" || !name.trim() || typeof size !== "number" || size < 1 || size > 5 * 1024 * 1024) {
-    res.status(400).json({ error: "Choose an image up to 5 MB." });
+  if (typeof contentType !== "string" || typeof name !== "string" || !name.trim() || typeof size !== "number" || !Number.isFinite(size) || size < 1 || size >= MAX_UPLOAD_BYTES) {
+    res.status(400).json({ error: "Choose an image smaller than 1 MB." });
     return;
   }
   try {

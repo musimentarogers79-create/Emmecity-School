@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
+export const MAX_UPLOAD_BYTES = 1024 * 1024;
 
 const privateObjectDir = () => {
   const value = process.env["PRIVATE_OBJECT_DIR"]?.trim();
