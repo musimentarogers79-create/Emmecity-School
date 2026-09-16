@@ -286,6 +286,7 @@ export interface StudentInput {
   religion?: string;
   placeOfBirth?: string;
   homeVillage?: string;
+  photoPath?: string;
   nationality?: string;
   tribe?: string;
   guardianRelationship?: string;

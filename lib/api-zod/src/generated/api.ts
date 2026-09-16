@@ -594,6 +594,7 @@ export const CreateStudentBody = zod.object({
   "religion": zod.string().optional(),
   "placeOfBirth": zod.string().optional(),
   "homeVillage": zod.string().optional(),
+  "photoPath": zod.string().optional(),
   "nationality": zod.string().optional(),
   "tribe": zod.string().optional(),
   "guardianRelationship": zod.string().optional(),

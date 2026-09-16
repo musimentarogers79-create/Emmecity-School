@@ -426,7 +426,9 @@ export async function getAdmissionForm(id: string) {
       isSponsored: saved.isSponsored ?? student.isSponsored,
       previousFeeBalance: saved.previousFeeBalance === undefined ? student.previousFeeBalance : saved.previousFeeBalance,
       feeBalance: saved.feeBalance === undefined ? student.feeBalance : saved.feeBalance,
-      photoPath: saved.photoPath ?? student.photoPath,
+      // The pupil profile is the source of truth. This keeps already-saved
+      // admission documents current when the profile photo is replaced later.
+      photoPath: student.photoPath ?? saved.photoPath,
     };
   }
   return {
@@ -454,6 +456,7 @@ export async function getAdmissionForm(id: string) {
 export async function createStudentWithPayment(data: {
   firstName: string; middleName?: string; lastName: string; className?: string; stream?: string; gender?: string; dateOfBirth?: string;
   guardianName: string; guardianPhone: string; guardianEmail?: string; enrollmentType?: "day" | "boarding"; isSponsored?: boolean; termFee: number;
+  photoPath?: string;
   religion?: string; placeOfBirth?: string; homeVillage?: string; nationality?: string; tribe?: string;
   guardianRelationship?: string; guardianNationalId?: string; residentialAddress?: string; guardianOccupation?: string;
   alternativeContact?: string; previousSchool?: string; lastClassCompleted?: string; medicalConditions?: string;
@@ -474,6 +477,7 @@ export async function createStudentWithPayment(data: {
     const guardianName = data.guardianName.trim();
     const guardianPhone = data.guardianPhone.trim();
     const guardianEmail = text(data.guardianEmail);
+    const photoPath = text(data.photoPath) || undefined;
     const enrollmentType = data.enrollmentType || "day";
     const year = new Date().getFullYear();
     const countRows = await tx.select({ count: sql<number>`count(*)` }).from(students).where(and(eq(students.schoolId, schoolId), ilike(students.registrationNumber, `STU-${year}-%`)));
@@ -494,7 +498,7 @@ export async function createStudentWithPayment(data: {
     const studentRowValue = (await tx.insert(students).values({
        schoolId, registrationNumber, firstName, middleName, lastName,
        className, stream, gender, dateOfBirth,
-       guardianName, guardianPhone, guardianEmail, admissionDate: isoDate(), enrollmentType,
+        guardianName, guardianPhone, guardianEmail, admissionDate: isoDate(), enrollmentType, photoPath,
        isSponsored, termFee: String(termFee), amountPaid: String(initialPayment), previousFeeBalance: String(previousFeeBalance), feeBalance: String(Math.max(0, previousFeeBalance + termFee - initialPayment)),
     }).returning())[0];
     if (!studentRowValue) throw new Error("Unable to register pupil");
@@ -555,7 +559,7 @@ export async function createStudentWithPayment(data: {
       amountPaid: initialPayment,
       previousFeeBalance,
        feeBalance: Math.max(0, previousFeeBalance + termFee - initialPayment),
-      photoPath: undefined,
+       photoPath,
       generatedAt: new Date().toISOString(),
     };
     const admissionDocument = (await tx.insert(documents).values({ schoolId, data: admissionFormData }).returning())[0];

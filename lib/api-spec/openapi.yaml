@@ -1215,6 +1215,8 @@ components:
           type: string
         homeVillage:
           type: string
+        photoPath:
+          type: string
         nationality:
           type: string
         tribe:
