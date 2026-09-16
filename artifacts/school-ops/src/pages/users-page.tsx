@@ -201,11 +201,6 @@ export function UserAccountPage() {
     setEdit({ name: account.name, identifier: account.identifier, email: account.email, phone: account.phone, department: account.department, role: account.role, status: account.status, permissions: account.permissions, assignedClasses: account.assignedClasses || [] });
   }, [account, userId]);
 
-  const refresh = () => {
-    void users.refetch();
-    void users.data && undefined;
-  };
-
   const submitCreate = (event: React.FormEvent) => {
     event.preventDefault();
     setNotice('');
