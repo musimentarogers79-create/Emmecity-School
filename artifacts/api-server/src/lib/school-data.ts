@@ -86,7 +86,7 @@ export async function initializeSchoolData() {
       await db.update(users).set({
         name: "Isingoma",
         identifier: "Isingoma",
-        ...(configuredPassword ? { passwordHash: hashPassword(configuredPassword) } : {}),
+        ...(configuredPassword && verifyPassword("admin123", canonicalAdmins[0].passwordHash) ? { passwordHash: hashPassword(configuredPassword) } : {}),
         role: "administrator",
         status: "active",
         initials: "SA",
@@ -121,7 +121,6 @@ export async function initializeSchoolData() {
       if (existing) {
         await db.update(users).set({
           identifier,
-          passwordHash: hashPassword(password),
           role,
           status: "active",
           initials: initialsValue,
@@ -153,7 +152,6 @@ export async function initializeSchoolData() {
         await db.update(users).set({
           name: "Asobora",
           identifier: "Asobora",
-          passwordHash: hashPassword(secretaryPassword),
           role: "secretary",
           status: "active",
           initials: "AS",
