@@ -256,9 +256,6 @@ export async function createUser(data: {
     department: data.department?.trim() || null,
   }).returning())[0];
   if (!row) throw new Error("The account could not be created.");
-  if (data.userType === "staff") {
-    await createOperation("staff", { userId: row.id, name: row.name, role: row.role.replace("_", " "), username: row.identifier, phone: row.phone || "Not provided", status: "Active" });
-  }
   return publicRow(row, setting);
 }
 
@@ -289,12 +286,9 @@ export async function updateUserAdmin(id: string, data: {
   const row = (await db.update(users).set(updates).where(and(eq(users.schoolId, schoolId), eq(users.id, id))).returning())[0];
   if (!row) return undefined;
   const staffRecord = (await listOperation("staff")).find((item) => String(item.userId || "") === id);
-  if (row.userType === "staff") {
+  if (row.userType === "staff" && staffRecord) {
     const staffData = { ...(staffRecord || {}), userId: row.id, name: row.name, role: row.role.replace("_", " "), username: row.identifier, phone: row.phone || "Not provided", status: row.status === "active" ? "Active" : "Inactive", updatedAt: new Date().toISOString() };
-    if (staffRecord) await updateOperation("staff", staffRecord.id, staffData);
-    else await createOperation("staff", staffData);
-  } else if (staffRecord) {
-    await deleteOperation("staff", staffRecord.id);
+    await updateOperation("staff", staffRecord.id, staffData);
   }
   return publicRow(row, await getSchoolSettings());
 }
@@ -303,8 +297,6 @@ export async function deleteUser(id: string) {
   const schoolId = await getSchoolId();
   const row = (await db.delete(users).where(and(eq(users.schoolId, schoolId), eq(users.id, id))).returning({ id: users.id }))[0];
   if (!row) return false;
-  const staffRecord = (await listOperation("staff")).find((item) => String(item.userId || "") === id);
-  if (staffRecord) await deleteOperation("staff", staffRecord.id);
   return true;
 }
 
