@@ -46,10 +46,15 @@ const permissions: { value: PermissionKey; label: string }[] = [
 const inputClass = 'focus-ring h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm outline-none';
 const emptyForm = (): UserAccountInput => ({ name: '', identifier: '', password: '', role: 'staff', userType: 'staff', email: '', phone: '', permissions: [] });
 const labelForRole = (role: Role) => roles.find((item) => item.value === role)?.label || role;
-const classAssignmentKey = (name: string, stream?: string | null) => {
+const classDisplayKey = (name: string, stream?: string | null) => {
   const trimmedName = name.trim();
   const trimmedStream = String(stream || '').trim();
   return trimmedStream ? `${trimmedName} ${trimmedStream}` : trimmedName;
+};
+const classAssignmentValue = (name: string, stream?: string | null) => {
+  const trimmedName = name.trim();
+  const trimmedStream = String(stream || '').trim();
+  return trimmedStream ? `${trimmedName}::${trimmedStream}` : trimmedName;
 };
 
 export function UsersPage() {
@@ -122,6 +127,7 @@ export function UserAccountPage() {
   const account = (users.data || []).find((user) => user.id === userId);
   const isAdmin = session.data?.user.role === 'administrator' || session.data?.user.role === 'super_admin';
   const canManage = isAdmin || session.data?.user.permissions.includes('users_manage');
+  const isTeacherAccount = (edit.role || account?.role) === 'teacher';
 
   useEffect(() => {
     if (!account) {
@@ -156,7 +162,10 @@ export function UserAccountPage() {
 
   const savePermissions = () => {
     if (!account) return;
-    updatePermissions.mutate({ userId: account.id, data: { permissions: edit.permissions || [], assignedClasses: edit.assignedClasses || [] } }, { onSuccess: () => { void users.refetch(); setNotice('Permissions and assignments saved.'); }, onError: () => setNotice('Permissions could not be saved.') });
+    const selectedClasses = (operations.data?.modules.classes || [])
+      .filter((item) => (edit.assignedClasses || []).includes(classDisplayKey(String(item.name), item.stream ? String(item.stream) : '')))
+      .map((item) => classAssignmentValue(String(item.name), item.stream ? String(item.stream) : ''));
+    updatePermissions.mutate({ userId: account.id, data: { permissions: edit.permissions || [], assignedClasses: isTeacherAccount ? selectedClasses : [] } }, { onSuccess: () => { void users.refetch(); setNotice('Permissions and assignments saved.'); }, onError: () => setNotice('Permissions could not be saved.') });
   };
 
   if (session.isLoading || (userId && users.isLoading)) return <AppShell><Skeleton className="h-64" /></AppShell>;
@@ -193,7 +202,7 @@ export function UserAccountPage() {
           <div className="flex flex-wrap gap-3"><Button type="submit" disabled={update.isPending} testId="button-save-user">{update.isPending ? 'Saving…' : 'Save account'}<Save className="size-4" /></Button><Button type="button" onClick={toggleStatus} variant="secondary" disabled={update.isPending} testId="button-toggle-user-status">{account?.status === 'active' ? <><UserX className="size-4" /> Deactivate</> : <><UserCheck className="size-4" /> Activate</>}</Button><Button type="button" onClick={deleteAccount} variant="danger" disabled={remove.isPending || session.data.user.role !== 'super_admin'} testId="button-delete-user"><Trash2 className="size-4" /> Delete</Button></div>
         </form>
       </Panel>
-      <Panel className="p-6"><div className="flex items-start gap-3"><span className="flex size-10 items-center justify-center rounded-xl bg-[hsl(var(--primary)/.1)] text-[hsl(var(--primary))]"><LockKeyhole className="size-5" /></span><div><h2 className="font-display text-2xl">Permissions and assignments</h2><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Control what this account can see and which classes a teacher can access.</p></div></div><div className="mt-6 grid gap-3 sm:grid-cols-2">{permissions.map((permission) => <label key={permission.value} className="flex items-center gap-2 text-xs"><input type="checkbox" checked={(edit.permissions || []).includes(permission.value)} onChange={() => setEdit({ ...edit, permissions: (edit.permissions || []).includes(permission.value) ? (edit.permissions || []).filter((item) => item !== permission.value) : [...(edit.permissions || []), permission.value] })} />{permission.label}</label>)}</div><p className="mt-6 text-xs font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Assigned classes</p><div className="mt-3 grid gap-3 sm:grid-cols-2">{(operations.data?.modules.classes || []).map((item) => { const key = classAssignmentKey(String(item.name), item.stream ? String(item.stream) : ''); return <label key={item.id} className="flex items-center gap-2 text-xs"><input type="checkbox" checked={(edit.assignedClasses || []).includes(key)} onChange={() => setEdit({ ...edit, assignedClasses: (edit.assignedClasses || []).includes(key) ? (edit.assignedClasses || []).filter((value) => value !== key) : [...(edit.assignedClasses || []), key] })} />{item.name}{item.stream ? ` · ${item.stream}` : ''}</label>; })}</div><Button onClick={savePermissions} disabled={updatePermissions.isPending} className="mt-5" testId="button-save-permissions">{updatePermissions.isPending ? 'Saving…' : 'Save permissions & assignments'}<Save className="size-4" /></Button></Panel>
+       <Panel className="p-6"><div className="flex items-start gap-3"><span className="flex size-10 items-center justify-center rounded-xl bg-[hsl(var(--primary)/.1)] text-[hsl(var(--primary))]"><LockKeyhole className="size-5" /></span><div><h2 className="font-display text-2xl">Permissions and assignments</h2><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Control what this account can see and which classes a teacher can access.</p></div></div><div className="mt-6 grid gap-3 sm:grid-cols-2">{permissions.map((permission) => <label key={permission.value} className="flex items-center gap-2 text-xs"><input type="checkbox" checked={(edit.permissions || []).includes(permission.value)} onChange={() => setEdit({ ...edit, permissions: (edit.permissions || []).includes(permission.value) ? (edit.permissions || []).filter((item) => item !== permission.value) : [...(edit.permissions || []), permission.value] })} />{permission.label}</label>)}</div><div className="mt-6 border-t border-[hsl(var(--border))] pt-5"><p className="text-xs font-semibold uppercase tracking-wide text-[hsl(var(--muted-foreground))]">Assigned classes</p>{isTeacherAccount ? <><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Select every class and stream this teacher is responsible for.</p><div className="mt-3 grid gap-3 sm:grid-cols-2">{(operations.data?.modules.classes || []).map((item) => { const key = classDisplayKey(String(item.name), item.stream ? String(item.stream) : ''); return <label key={item.id} className="flex items-center gap-2 rounded-lg border border-[hsl(var(--border))] px-3 py-2 text-xs"><input type="checkbox" checked={(edit.assignedClasses || []).includes(key)} onChange={() => setEdit({ ...edit, assignedClasses: (edit.assignedClasses || []).includes(key) ? (edit.assignedClasses || []).filter((value) => value !== key) : [...(edit.assignedClasses || []), key] })} data-testid={`checkbox-assigned-class-${item.id}`} />{item.name}{item.stream ? ` · ${item.stream}` : ''}</label>; })}</div>{!operations.data?.modules.classes?.length && <p className="mt-3 text-xs text-[hsl(var(--muted-foreground))]">Create a class first, then return here to assign it.</p>}</> : <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Choose the Teacher role above to assign classes to this account.</p>}</div><Button onClick={savePermissions} disabled={updatePermissions.isPending} className="mt-5" testId="button-save-permissions">{updatePermissions.isPending ? 'Saving…' : 'Save permissions & assignments'}<Save className="size-4" /></Button></Panel>
     </div>
   </AppShell>;
 }
