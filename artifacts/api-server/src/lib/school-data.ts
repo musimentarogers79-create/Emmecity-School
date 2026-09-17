@@ -849,7 +849,28 @@ export async function createOperation(kind: OperationKind, data: Record<string, 
   const schoolId = await getSchoolId();
   const table = tables[kind];
   const row = (await db.insert(table).values({ schoolId, data } as never).returning())[0];
+  if (row && kind === "events") {
+    const eventTitle = String(data.title || "School event");
+    const eventDate = String(data.date || "");
+    const eventType = String(data.type || "School event");
+    await createOperation("notifications", {
+      title: eventType.toLowerCase().includes("holiday") ? `Public holiday: ${eventTitle}` : eventTitle,
+      body: eventDate ? `${eventType} is scheduled for ${eventDate}.` : `${eventType} has been added to the school calendar.`,
+      read: false,
+      date: getDateLabel(),
+      source: "event",
+    });
+  }
   return row ? { ...(row.data as OperationRecord), id: row.id } : undefined;
+}
+export async function createSchoolNotification(data: { title: string; body: string; source?: string }) {
+  return createOperation("notifications", {
+    title: data.title.trim(),
+    body: data.body.trim(),
+    read: false,
+    date: getDateLabel(),
+    source: data.source || "school",
+  });
 }
 export async function updateOperation(kind: OperationKind, id: string, data: Record<string, unknown>) {
   const schoolId = await getSchoolId();

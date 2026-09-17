@@ -864,6 +864,17 @@ export interface OperationEvent {
   status: string;
 }
 
+export interface EventInput {
+  /** @minLength 1 */
+  title: string;
+  /** @minLength 1 */
+  date: string;
+  /** @minLength 1 */
+  type: string;
+  location: string;
+  status: string;
+}
+
 export interface OperationDocument {
   id: string;
   name: string;

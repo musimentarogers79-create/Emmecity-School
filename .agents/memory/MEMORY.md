@@ -14,3 +14,4 @@
 - [Attendance register deletion](attendance-register-deletion.md) — archive deleted registers with their reason instead of silently removing attendance history.
 - [Production authentication bootstrap](production-auth-bootstrap.md) — production may not contain development users; bootstrap only the canonical Isingoma administrator.
 - [Account and personnel separation](account-personnel-separation.md) — login-account lifecycle must not create or delete real pupil or staff records.
+- [School device notifications](school-device-notifications.md) — browser alerts are permission-based per device; true closed-app delivery requires a Web Push service and VAPID configuration.

@@ -32,6 +32,7 @@ export * from './dashboardSummary';
 export * from './dashboardUpcomingEventsItem';
 export * from './deleteAttendanceRegisterInput';
 export * from './deletedAttendanceRegister';
+export * from './eventInput';
 export * from './expenseInput';
 export * from './financeSummary';
 export * from './financeSummaryMonthlyItem';

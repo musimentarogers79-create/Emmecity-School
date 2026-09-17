@@ -2,7 +2,7 @@ import { gzipSync } from "node:zlib";
 import { randomUUID } from "node:crypto";
 import { Router, type IRouter } from "express";
 import {
-  AttendanceRecord, CreateAnnouncementBody, CreateAnnouncementResponse, CreateAttendanceRegisterBody, CreateAttendanceRegisterResponse, CreateClassBody, CreateExpenseBody, CreateExpenseResponse,
+  AttendanceRecord, CreateAnnouncementBody, CreateAnnouncementResponse, CreateAttendanceRegisterBody, CreateAttendanceRegisterResponse, CreateClassBody, CreateExpenseBody, CreateExpenseResponse, CreateEventBody, CreateEventResponse,
   CreateSalaryPaymentBody, CreateSalaryPaymentResponse, CreateStudentBody, CreateStudentResponse,
   CreateClassResponse, GetAttendanceQueryParams, GetAttendanceResponse, GetCurrentUserResponse, GetDashboardResponse,
   GetAdmissionFormResponse, GetFinanceSummaryResponse, GetOperationsResponse, GetReportCardParams, GetReportCardResponse, CreateReportCardBody, CreateReportCardResponse, GetStudentParams,
@@ -18,7 +18,7 @@ import {
 import {
   AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, currentUserFromToken, getAdmissionForm,
   buildFullBackup, clearLoginFailures, deleteSession, findUser, findUserById, getOperation, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
-  listAttendance, listDeletedAttendanceRegisters, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance, deleteAttendanceRegister, updateStudent,
+  listAttendance, listDeletedAttendanceRegisters, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance, deleteAttendanceRegister, updateStudent, createSchoolNotification,
   createUser, deleteOperation, deleteUser, updatePayment, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserAdmin, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
 } from "../lib/school-data";
 import { isBackupObjectPath, requestBackupDownload, uploadBackupObject } from "../lib/object-storage";
@@ -531,6 +531,11 @@ router.post("/announcements", async (req, res): Promise<void> => {
   const parsed = CreateAnnouncementBody.safeParse(req.body);
   if (!parsed.success) { errorResponse(res, 400, "Add a title and message before publishing."); return; }
   const item = await createOperation("announcements", { ...parsed.data, publishedAt: getDateLabel(), author: user.name });
+  await createSchoolNotification({
+    title: parsed.data.priority === "important" ? `Important: ${parsed.data.title}` : parsed.data.title,
+    body: `${parsed.data.body} · Audience: ${parsed.data.audience}`,
+    source: "announcement",
+  });
   res.status(201).json(CreateAnnouncementResponse.parse(item));
 });
 
@@ -680,6 +685,15 @@ router.post("/operations", async (req, res): Promise<void> => {
     const message = error instanceof Error ? error.message : "The class could not be created.";
     errorResponse(res, message.includes("already exists") ? 409 : 400, message);
   }
+});
+router.post("/operations/events", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!isAdministrator(user)) { errorResponse(res, 403, "Only administrators can add school events."); return; }
+  const parsed = CreateEventBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Complete the event title, date, type, location, and status."); return; }
+  const created = await createOperation("events", parsed.data);
+  if (!created) { errorResponse(res, 400, "The school event could not be created."); return; }
+  res.status(201).json(CreateEventResponse.parse(created));
 });
 router.get("/operations", async (req, res): Promise<void> => {
   const user = await requireUser(req);

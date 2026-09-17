@@ -33,6 +33,7 @@ import type {
   Dashboard,
   DeleteAttendanceRegisterInput,
   DeletedAttendanceRegister,
+  EventInput,
   ExpenseInput,
   FinanceSummary,
   FullBackupResponse,
@@ -42,6 +43,7 @@ import type {
   LoginInput,
   Message,
   OperationClass,
+  OperationEvent,
   OperationExpense,
   OperationSubject,
   OperationsOverview,
@@ -166,8 +168,6 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
 
 
 export const getLoginUrl = () => {
@@ -383,12 +383,6 @@ export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUs
   return withQueryKey(query, queryOptions.queryKey);
 }
 
-
-
-
-
-
-
 export const getUpdateCurrentUserUrl = () => {
 
 
@@ -530,13 +524,6 @@ export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TErr
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
-
-
-
-
-
 export const getCreateUserUrl = () => {
 
 
@@ -3059,6 +3046,77 @@ export function useGetOperations<TData = Awaited<ReturnType<typeof getOperations
 
 
 
+
+export const getCreateEventUrl = () => {
+
+
+
+
+  return `/api/operations/events`
+}
+
+/**
+ * @summary Add a school event or public holiday
+ */
+export const createEvent = async (eventInput: EventInput, options?: Parameters<typeof customFetch>[1]): Promise<OperationEvent> => {
+
+  return customFetch<OperationEvent>(getCreateEventUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(eventInput)
+  }
+);}
+
+
+
+
+
+export const getCreateEventMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEvent>>, TError,{data: BodyType<EventInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createEvent>>, TError,{data: BodyType<EventInput>}, TContext> => {
+
+const mutationKey = ['createEvent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createEvent>>, {data: BodyType<EventInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createEvent(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateEventMutationResult = NonNullable<Awaited<ReturnType<typeof createEvent>>>
+    export type CreateEventMutationBody = BodyType<EventInput>
+    export type CreateEventMutationError = ErrorType<void>
+
+    /**
+ * @summary Add a school event or public holiday
+ */
+export const useCreateEvent = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createEvent>>, TError,{data: BodyType<EventInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createEvent>>,
+        TError,
+        {data: BodyType<EventInput>},
+        TContext
+      > => {
+      return useMutation(getCreateEventMutationOptions(options));
+    }
 
 export const getListSubjectsUrl = () => {
 

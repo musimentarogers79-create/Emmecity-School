@@ -1,5 +1,23 @@
 const CACHE_NAME = 'emmecty-school-shell-v1';
 
+self.addEventListener('push', (event) => {
+  event.waitUntil(self.registration.showNotification('New school notification', {
+    body: 'Sign in to the EMMECTY school portal to view this notification.',
+    icon: `${new URL('./school-logo.png', self.registration.scope).toString()}`,
+    badge: `${new URL('./school-logo.png', self.registration.scope).toString()}`,
+    data: { url: self.registration.scope },
+  }));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  event.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
+    const existing = clients.find((client) => 'focus' in client);
+    if (existing) return existing.focus();
+    return self.clients.openWindow(event.notification.data?.url || self.registration.scope);
+  }));
+});
+
 self.addEventListener('install', (event) => {
   event.waitUntil(self.skipWaiting());
 });

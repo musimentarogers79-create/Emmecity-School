@@ -1798,6 +1798,32 @@ export const GetOperationsResponse = zod.object({
 
 
 /**
+ * @summary Add a school event or public holiday
+ */
+
+
+
+
+
+export const CreateEventBody = zod.object({
+  "title": zod.string().min(1),
+  "date": zod.string().min(1),
+  "type": zod.string().min(1),
+  "location": zod.string(),
+  "status": zod.string()
+})
+
+export const CreateEventResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "date": zod.string(),
+  "type": zod.string(),
+  "location": zod.string(),
+  "status": zod.string()
+})
+
+
+/**
  * @summary List subjects visible to the current user
  */
 export const ListSubjectsResponseItem = zod.object({
