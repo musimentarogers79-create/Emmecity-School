@@ -22,6 +22,8 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/subjects', label: 'Subjects', icon: BookOpen },
     { href: '/users', label: 'Users & Roles', icon: KeyRound },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
+    { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
+    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
   ],
   super_admin: [
@@ -33,6 +35,8 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/subjects', label: 'Subjects', icon: BookOpen },
     { href: '/users', label: 'Users & Roles', icon: KeyRound },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
+    { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
+    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
   ],
   teacher: [
@@ -46,6 +50,8 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/operations?view=assignments', label: 'Assignments', icon: ClipboardList },
     { href: '/subjects', label: 'Subjects', icon: BookOpen },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
+    { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
+    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
   ],
   accountant: [
@@ -56,6 +62,8 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/transactions', label: 'Transactions', icon: ReceiptText },
     { href: '/operations?view=reports', label: 'Reports', icon: FileBarChart },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
+    { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
+    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
   ],
   guardian: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -65,6 +73,7 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
     { href: '/students', label: 'Report card', icon: FileBarChart },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
+    { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
     { href: '/operations?view=library', label: 'Library', icon: BookOpen },
     { href: '/operations?view=transport', label: 'Transport', icon: ReceiptText },
     { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
@@ -77,6 +86,7 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
     { href: '/students', label: 'Report card', icon: FileBarChart },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
+    { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
     { href: '/operations?view=library', label: 'Library', icon: BookOpen },
     { href: '/operations?view=transport', label: 'Transport', icon: ReceiptText },
     { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },

@@ -31,6 +31,7 @@ const setSessionCookie = (res: Parameters<Parameters<IRouter["get"]>[1]>[1], tok
 const requireUser = (req: Parameters<Parameters<IRouter["get"]>[1]>[0]) => currentUserFromToken(getCookie(req, "schoolops_session"));
 const administratorRoles: SchoolRole[] = ["super_admin", "administrator"];
 const isAdministrator = (user?: SchoolUser) => !!user && administratorRoles.includes(user.role);
+const canManageEvents = (user?: SchoolUser) => !!user && (isAdministrator(user) || user.role === "secretary");
 const hasPermission = (user: SchoolUser | undefined, permission: PermissionKey) => !!user && (isAdministrator(user) || user.permissions.includes(permission));
 const canManageUsers = (user?: SchoolUser) => !!user && (user.role === "super_admin" || user.role === "administrator" || user.permissions.includes("users_manage"));
 const canViewUsers = (user?: SchoolUser) => !!user && (canManageUsers(user) || user.permissions.includes("users_view"));
@@ -688,7 +689,7 @@ router.post("/operations", async (req, res): Promise<void> => {
 });
 router.post("/operations/events", async (req, res): Promise<void> => {
   const user = await requireUser(req);
-  if (!isAdministrator(user)) { errorResponse(res, 403, "Only administrators can add school events."); return; }
+  if (!canManageEvents(user)) { errorResponse(res, 403, "Only administrators and secretaries can add school events."); return; }
   const parsed = CreateEventBody.safeParse(req.body);
   if (!parsed.success) { errorResponse(res, 400, "Complete the event title, date, type, location, and status."); return; }
   const created = await createOperation("events", parsed.data);
