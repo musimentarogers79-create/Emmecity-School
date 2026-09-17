@@ -19,6 +19,7 @@ const roleNavigation: Record<string, NavItem[]> = {
   administrator: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
     { href: '/students', label: 'Pupils', icon: Users },
+    { href: '/operations?view=classes', label: 'Classes', icon: Users },
     { href: '/attendance', label: 'Attendance', icon: CalendarDays },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
     { href: '/expenses', label: 'Expenses', icon: ReceiptText },
@@ -33,6 +34,7 @@ const roleNavigation: Record<string, NavItem[]> = {
   super_admin: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
     { href: '/students', label: 'Pupils', icon: Users },
+    { href: '/operations?view=classes', label: 'Classes', icon: Users },
     { href: '/attendance', label: 'Attendance', icon: CalendarDays },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
     { href: '/expenses', label: 'Expenses', icon: ReceiptText },
