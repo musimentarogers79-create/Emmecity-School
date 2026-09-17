@@ -37,6 +37,7 @@ const roleNavigation: Record<string, NavItem[]> = {
   teacher: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
     { href: '/operations?view=classes', label: 'My classes', icon: Users },
+    { href: '/students', label: 'My pupils', icon: UserRound },
     { href: '/attendance', label: 'Attendance', icon: CalendarDays },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
     { href: '/expenses', label: 'Expenses', icon: ReceiptText },
@@ -48,6 +49,7 @@ const roleNavigation: Record<string, NavItem[]> = {
   ],
   accountant: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/students?filter=outstanding', label: 'Pupil balances', icon: Users },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
     { href: '/expenses', label: 'Expenses', icon: ReceiptText },
     { href: '/transactions', label: 'Transactions', icon: ReceiptText },
@@ -56,10 +58,11 @@ const roleNavigation: Record<string, NavItem[]> = {
   ],
   guardian: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-    { href: '/students/stu-001', label: 'My child', icon: UserRound },
+    { href: '/students', label: 'My child', icon: UserRound },
+    { href: '/attendance', label: 'Attendance', icon: CalendarDays },
     { href: '/operations?view=assignments', label: 'Assignments', icon: ClipboardList },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
-    { href: '/students/stu-001', label: 'Report card', icon: FileBarChart },
+    { href: '/students', label: 'Report card', icon: FileBarChart },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/operations?view=library', label: 'Library', icon: BookOpen },
     { href: '/operations?view=transport', label: 'Transport', icon: ReceiptText },
@@ -67,10 +70,11 @@ const roleNavigation: Record<string, NavItem[]> = {
   ],
   student: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
-    { href: '/students/stu-001', label: 'My learning', icon: UserRound },
+    { href: '/students', label: 'My learning', icon: UserRound },
+    { href: '/attendance', label: 'Attendance', icon: CalendarDays },
     { href: '/operations?view=assignments', label: 'Assignments', icon: ClipboardList },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
-    { href: '/students/stu-001', label: 'Report card', icon: FileBarChart },
+    { href: '/students', label: 'Report card', icon: FileBarChart },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/operations?view=library', label: 'Library', icon: BookOpen },
     { href: '/operations?view=transport', label: 'Transport', icon: ReceiptText },
@@ -78,6 +82,8 @@ const roleNavigation: Record<string, NavItem[]> = {
   ],
   secretary: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/students', label: 'Pupils', icon: Users },
+    { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
     { href: '/operations?view=documents', label: 'Documents', icon: FileBarChart },
     { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
@@ -85,6 +91,7 @@ const roleNavigation: Record<string, NavItem[]> = {
   ],
   librarian: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/operations?view=library', label: 'Library', icon: BookOpen },
     { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
     { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
@@ -92,6 +99,7 @@ const roleNavigation: Record<string, NavItem[]> = {
   ],
   nurse: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/operations?view=medical', label: 'Medical', icon: ShieldCheck },
     { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
     { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
@@ -99,6 +107,7 @@ const roleNavigation: Record<string, NavItem[]> = {
   ],
   staff: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
+    { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
     { href: '/expenses', label: 'Expenses', icon: ReceiptText },
     { href: '/transactions', label: 'Transactions', icon: ReceiptText },

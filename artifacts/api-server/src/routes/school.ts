@@ -51,13 +51,48 @@ const roleGreeting = (name: string) => {
   const period = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
   return `${period}, ${name.split(" ")[0]}`;
 };
-const roleActions = (role: SchoolRole, studentId?: string) => role === "teacher"
-  ? [{ id: "attendance", label: "Record attendance", description: "Mark today's register for your assigned classes.", href: "/attendance", tone: "green" }, { id: "assignments", label: "Manage assignments", description: "Create and follow up work for your classes.", href: "/operations?view=assignments", tone: "blue" }, { id: "classes", label: "Open my classes", description: "See only the classes and subjects assigned to you.", href: "/operations?view=classes", tone: "violet" }]
-  : role === "accountant"
-    ? [{ id: "payment", label: "Record a payment", description: "Issue a receipt and update the learner balance.", href: "/finance", tone: "green" }, { id: "expense", label: "Log an expense", description: "Capture school spending for approval and reporting.", href: "/expenses", tone: "amber" }, { id: "reports", label: "Open finance reports", description: "Review collection and expense summaries.", href: "/operations?view=reports", tone: "blue" }]
-    : role === "guardian" || role === "student"
-      ? [{ id: "child", label: "View my child", description: "Open the linked learner profile and progress.", href: studentId ? `/students/${studentId}` : "/students", tone: "green" }, { id: "fees", label: "Check school fees", description: "Review the current balance for your linked learner.", href: studentId ? `/students/${studentId}` : "/students", tone: "amber" }, { id: "notices", label: "Read school notices", description: "Keep up with school notices.", href: "/announcements", tone: "blue" }]
-        : [{ id: "register", label: "Register a pupil", description: "Create a permanent learner record and registration number.", href: "/students", tone: "green" }, { id: "settings", label: "Configure school", description: "Set the academic year and school currency.", href: "/settings", tone: "violet" }];
+const roleActions = (role: SchoolRole, studentId?: string) => {
+  if (role === "teacher") return [
+    { id: "attendance", label: "Record attendance", description: "Mark today's register for your assigned classes.", href: "/attendance", tone: "green" },
+    { id: "assignments", label: "Manage assignments", description: "Create and follow up work for your classes.", href: "/operations?view=assignments", tone: "blue" },
+    { id: "classes", label: "Open my classes", description: "See only the classes and subjects assigned to you.", href: "/operations?view=classes", tone: "violet" },
+  ];
+  if (role === "accountant") return [
+    { id: "payment", label: "Record a payment", description: "Issue a receipt and update the learner balance.", href: "/finance", tone: "green" },
+    { id: "expense", label: "Log an expense", description: "Capture school spending for approval and reporting.", href: "/expenses", tone: "amber" },
+    { id: "reports", label: "Open finance reports", description: "Review collection and expense summaries.", href: "/operations?view=reports", tone: "blue" },
+  ];
+  if (role === "guardian" || role === "student") return [
+    { id: "child", label: role === "guardian" ? "View my child" : "View my learning", description: "Open the linked pupil profile and progress.", href: studentId ? `/students/${studentId}` : "/students", tone: "green" },
+    { id: "fees", label: "Check school fees", description: "Review the current balance for the linked pupil.", href: studentId ? `/students/${studentId}` : "/students", tone: "amber" },
+    { id: "notices", label: "Read school notices", description: "Keep up with school announcements.", href: "/announcements", tone: "blue" },
+  ];
+  if (role === "secretary") return [
+    { id: "register", label: "Register a pupil", description: "Create a permanent pupil record and registration number.", href: "/students", tone: "green" },
+    { id: "documents", label: "Open documents", description: "Review school forms and shared records.", href: "/operations?view=documents", tone: "blue" },
+    { id: "notices", label: "Read announcements", description: "Keep up with school announcements.", href: "/announcements", tone: "violet" },
+  ];
+  if (role === "librarian") return [
+    { id: "library", label: "Open library", description: "Manage the library records available to your role.", href: "/operations?view=library", tone: "green" },
+    { id: "events", label: "View events", description: "Review upcoming school events.", href: "/operations?view=events", tone: "blue" },
+    { id: "notices", label: "Read announcements", description: "Keep up with school announcements.", href: "/announcements", tone: "violet" },
+  ];
+  if (role === "nurse") return [
+    { id: "medical", label: "Open medical records", description: "Review the medical records available to your role.", href: "/operations?view=medical", tone: "green" },
+    { id: "events", label: "View events", description: "Review upcoming school events.", href: "/operations?view=events", tone: "blue" },
+    { id: "notices", label: "Read announcements", description: "Keep up with school announcements.", href: "/announcements", tone: "violet" },
+  ];
+  if (role === "staff") return [
+    { id: "events", label: "View events", description: "Review upcoming school events.", href: "/operations?view=events", tone: "green" },
+    { id: "documents", label: "Open documents", description: "Review shared school documents.", href: "/operations?view=documents", tone: "blue" },
+    { id: "notices", label: "Read announcements", description: "Keep up with school announcements.", href: "/announcements", tone: "violet" },
+  ];
+  return [
+    { id: "register", label: "Register a pupil", description: "Create a permanent pupil record and registration number.", href: "/students", tone: "green" },
+    { id: "users", label: "Manage users and roles", description: "Review account access and staff responsibilities.", href: "/users", tone: "blue" },
+    { id: "notices", label: "Publish an announcement", description: "Share an update with the school community.", href: "/announcements", tone: "violet" },
+  ];
+};
 const gradeForPercentage = (percentage: number) => percentage >= 80 ? "A" : percentage >= 70 ? "B" : percentage >= 60 ? "C" : percentage >= 50 ? "D" : "E";
 const numberValue = (value: unknown) => typeof value === "number" ? value : Number(value || 0);
 const reportCardFor = (student: NonNullable<Awaited<ReturnType<typeof getStudent>>>, saved: OperationRecord | undefined, reports: OperationRecord[]) => {
@@ -254,7 +289,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const payload = {
     role: user.role, greeting: roleGreeting(user.name),
     summary: { students: visibleStudents.length, teachers: teacherCount, staff: staffCount, classes: visibleClasses.length, attendance: visibleAttendance.length ? Math.round((present / visibleAttendance.length) * 100) : 0, absent: visibleAttendance.filter((item) => item.status === "absent").length, feesCollected: isAdministrator(user) || user.role === "accountant" ? allPayments.reduce((sum, item) => sum + item.amount, 0) : 0, outstandingFees: visibleStudents.reduce((sum, item) => sum + item.feeBalance, 0) },
-    attendanceTrend, performance: [], recentAdmissions: visibleStudents.slice(0, 4), upcomingEvents: [], quickActions: ["Register pupil", "Take attendance", "Send announcement", "View reports"],
+    attendanceTrend, performance: [], recentAdmissions: visibleStudents.slice(0, 4), upcomingEvents: [], quickActions: [],
     assignedClasses: user.role === "teacher" ? teacherClasses : undefined, assignedSubjects: user.role === "teacher" ? subjectsRows.filter((item) => item.teacherId === user.id || matchesAssignedClass(teacherClasses, String(item.className), String(item.stream ?? ""))).map((item) => String(item.name)) : undefined,
     children: user.role === "guardian" ? visibleStudents : undefined, feeBalance: user.role === "guardian" || user.role === "student" ? visibleStudents[0]?.feeBalance ?? 0 : undefined, latestResult: user.role === "guardian" || user.role === "student" ? 0 : undefined,
     roleActions: roleActions(user.role, user.studentId), currencyCode: settings.currencyCode, currencySymbol: settings.currencySymbol,
@@ -269,12 +304,13 @@ router.get("/students", async (req, res): Promise<void> => {
   if (!parsed.success) { errorResponse(res, 400, "Invalid student filters."); return; }
   const rows = await listStudents();
   const classesForTeacher = await assignedClassNames(user);
-  const visible = user.studentId ? rows.filter((item) => item.id === user.studentId) : user.role === "teacher" ? rows.filter((item) => matchesAssignedClass(classesForTeacher, item.className, item.stream)) : isAdministrator(user) || user.role === "accountant" ? rows : [];
+  const visible = user.studentId ? rows.filter((item) => item.id === user.studentId) : user.role === "teacher" ? rows.filter((item) => matchesAssignedClass(classesForTeacher, item.className, item.stream)) : isAdministrator(user) || user.role === "accountant" || user.role === "secretary" ? rows : [];
   const search = parsed.data.search?.toLowerCase() ?? "";
   res.json(ListStudentsResponse.parse(visible.filter((item) => (!search || [item.name, item.registrationNumber, item.className, item.guardianName].some((field) => field.toLowerCase().includes(search))) && (!parsed.data.className || item.className === parsed.data.className) && (!parsed.data.status || item.status === parsed.data.status))));
 });
 router.post("/students", async (req, res): Promise<void> => {
-  if (!isAdministrator(await requireUser(req))) { errorResponse(res, 403, "Only administrators can register pupils."); return; }
+  const user = await requireUser(req);
+  if (!user || (!isAdministrator(user) && user.role !== "secretary")) { errorResponse(res, 403, "Only administrators and secretaries can register pupils."); return; }
   // Opening payment is optional at runtime for registrations created by API clients
   // that omit it, while the generated client continues to support its legacy field.
   const parsed = CreateStudentBody.safeParse({ ...req.body, initialPayment: req.body?.initialPayment ?? 0 });
@@ -290,7 +326,7 @@ router.get("/students/:studentId/admission-form", async (req, res): Promise<void
   if (!user) { errorResponse(res, 401, "Not signed in"); return; }
   const student = await getStudent(req.params.studentId);
   if (!student) { errorResponse(res, 404, "Admission form not found."); return; }
-  if (!isAdministrator(user) && user.studentId !== student.id) { errorResponse(res, 403, "You do not have access to this admission form."); return; }
+  if (!isAdministrator(user) && user.role !== "secretary" && user.studentId !== student.id) { errorResponse(res, 403, "You do not have access to this admission form."); return; }
   const form = await getAdmissionForm(req.params.studentId);
   if (!form) { errorResponse(res, 404, "Admission form not found."); return; }
   res.json(GetAdmissionFormResponse.parse(form));
@@ -302,7 +338,7 @@ router.get("/students/:studentId", async (req, res): Promise<void> => {
   const user = await requireUser(req);
   if (!student) { errorResponse(res, 404, "Student not found"); return; }
   if (!user) { errorResponse(res, 401, "Not signed in"); return; }
-  if (!isAdministrator(user) && user.role !== "teacher" && user.studentId !== student.id) { errorResponse(res, 403, "You do not have access to this pupil."); return; }
+  if (!isAdministrator(user) && user.role !== "teacher" && user.role !== "secretary" && user.studentId !== student.id) { errorResponse(res, 403, "You do not have access to this pupil."); return; }
   const assigned = await assignedClassNames(user);
   if ((user.role === "student" || user.role === "guardian") && user.studentId !== student.id) { errorResponse(res, 403, "You do not have access to this pupil."); return; }
   if (user.role === "teacher" && !matchesAssignedClass(assigned, student.className, student.stream)) { errorResponse(res, 403, "You do not have access to this assigned class."); return; }
@@ -477,7 +513,16 @@ router.get("/announcements", async (req, res): Promise<void> => {
   const user = await requireUser(req);
   if (!user) { errorResponse(res, 401, "Not signed in"); return; }
   const rows = await listOperation("announcements");
-  const visible = rows.filter((item) => isAdministrator(user) || user.role === "staff" || (user.role === "teacher" && item.audience !== "Parents & guardians") || (user.role === "guardian" && ["Entire school", "Parents & guardians", "Everyone", "Guardians"].includes(String(item.audience))) || (user.role === "student" && ["Entire school", "Teachers & pupils", "Everyone", "Students"].includes(String(item.audience))));
+  const visible = rows.filter((item) => {
+    if (isAdministrator(user)) return true;
+    const audience = String(item.audience);
+    if (["Entire school", "Everyone"].includes(audience)) return true;
+    if (user.role === "teacher") return ["Teachers", "Teachers & pupils", "Students"].includes(audience);
+    if (user.role === "guardian") return ["Parents & guardians", "Guardians"].includes(audience);
+    if (user.role === "student") return ["Teachers & pupils", "Students"].includes(audience);
+    if (user.role === "accountant") return audience === "Accountants";
+    return user.role === "staff";
+  });
   res.json(ListAnnouncementsResponse.parse(visible));
 });
 router.post("/announcements", async (req, res): Promise<void> => {
