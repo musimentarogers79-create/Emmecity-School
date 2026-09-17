@@ -83,6 +83,15 @@ export async function initializeSchoolData() {
       if (legacyAdmins[0]) {
         await db.delete(users).where(eq(users.id, legacyAdmins[0].id));
       }
+      await db.update(users).set({
+        name: "Isingoma",
+        identifier: "Isingoma",
+        ...(configuredPassword ? { passwordHash: hashPassword(configuredPassword) } : {}),
+        role: "administrator",
+        status: "active",
+        initials: "SA",
+        updatedAt: new Date(),
+      }).where(eq(users.id, canonicalAdmins[0].id));
     } else if (legacyAdmins[0]) {
       const legacyPassword = production && configuredPassword && verifyPassword("admin123", legacyAdmins[0].passwordHash)
         ? hashPassword(configuredPassword)
@@ -101,6 +110,36 @@ export async function initializeSchoolData() {
         passwordHash: hashPassword(configuredPassword || "admin123"),
         userType: "staff", role: "administrator", status: "active", initials: "SA",
       }).onConflictDoNothing({ target: [users.schoolId, users.identifier] });
+    }
+    const secretaryPassword = process.env["SCHOOL_SECRETARY_PASSWORD"];
+    if (secretaryPassword) {
+      const secretary = (await db.select().from(users).where(and(
+        eq(users.schoolId, setting.id),
+        ilike(users.identifier, "Asobora"),
+        eq(users.userType, "staff"),
+      )).limit(1))[0];
+      if (secretary) {
+        await db.update(users).set({
+          name: "Asobora",
+          identifier: "Asobora",
+          passwordHash: hashPassword(secretaryPassword),
+          role: "secretary",
+          status: "active",
+          initials: "AS",
+          updatedAt: new Date(),
+        }).where(eq(users.id, secretary.id));
+      } else {
+        await db.insert(users).values({
+          schoolId: setting.id,
+          name: "Asobora",
+          identifier: "Asobora",
+          passwordHash: hashPassword(secretaryPassword),
+          userType: "staff",
+          role: "secretary",
+          status: "active",
+          initials: "AS",
+        });
+      }
     }
     return setting.id;
   })();
