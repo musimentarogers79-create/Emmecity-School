@@ -174,10 +174,10 @@ export async function listUsers() {
     return user.role === "teacher" ? { ...user, assignedClasses: classRows.filter((item) => item.teacherId === user.id).map((item) => classAssignmentKey(String(item.name), String(item.stream ?? ""))) } : user;
   });
 }
-export async function findUser(identifier: string, userType: string) {
+export async function findUser(identifier: string, _userType?: string) {
   const schoolId = await getSchoolId();
   const normalizedIdentifier = identifier.trim();
-  const rows = await db.select().from(users).where(and(eq(users.schoolId, schoolId), eq(users.userType, userType), ilike(users.identifier, normalizedIdentifier))).limit(1);
+  const rows = await db.select().from(users).where(and(eq(users.schoolId, schoolId), ilike(users.identifier, normalizedIdentifier))).limit(1);
   const setting = await getSchoolSettings();
   return rows[0] ? publicRow(rows[0], setting) : undefined;
 }
