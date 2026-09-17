@@ -7,6 +7,10 @@ import { BookOpen, CalendarDays, CircleDollarSign, ClipboardList, Download, File
 import { NotificationCenter } from './notification-center';
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
+const universalSchoolNavigation: NavItem[] = [
+  { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
+  { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
+];
 export const SCHOOL_NAME = 'EMMECTY NURSERY & PRIMARY SCHOOL';
 export const SCHOOL_POSTAL_ADDRESS = 'P.O. Box 490699, Hoima City';
 export const SCHOOL_PHONE = '0784905399 / 0775705175';
@@ -334,6 +338,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const canFinance = user?.role === 'administrator' || user?.role === 'super_admin' || user?.role === 'accountant' || user?.permissions.includes('finance_view');
   const canExpenses = user?.role === 'administrator' || user?.role === 'super_admin' || user?.role === 'accountant' || user?.permissions.includes('expenses_view');
   const navItems = (roleNavigation[navRole] || roleNavigation.staff).filter((item) => {
+    if (item.href === '/operations?view=events' || item.href === '/operations?view=notifications') return false;
     if (item.href === '/finance' || item.href === '/transactions') return canFinance;
     if (item.href === '/expenses') return canExpenses;
     return true;
@@ -376,6 +381,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             </Link>;
           })}
           <p className={`mb-3 mt-8 px-3 text-[10px] font-semibold uppercase tracking-[.18em] text-[hsl(var(--sidebar-foreground)/.42)] ${collapsed ? 'md:hidden' : ''}`}>School</p>
+           {universalSchoolNavigation.map(({ href, label, icon: Icon }) => {
+             const active = location === href;
+             return <Link href={href} key={href} onClick={() => setMobileOpen(false)} data-testid={`link-nav-${label.toLowerCase()}`} className={`group flex min-h-11 touch-manipulation items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors ${active ? 'bg-[hsl(var(--sidebar-primary))] font-semibold text-[hsl(var(--sidebar-primary-foreground))]' : 'text-[hsl(var(--sidebar-foreground)/.68)] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-foreground))]'} ${collapsed ? 'md:justify-center md:px-2' : ''}`}>
+               <Icon className="size-[18px] shrink-0" strokeWidth={active ? 2.4 : 1.8} /><span className={collapsed ? 'md:hidden' : ''}>{label}</span>{active && !collapsed && <span className="ml-auto size-1.5 rounded-full bg-[hsl(var(--sidebar-primary-foreground)/.55)]" />}
+             </Link>;
+           })}
            <Link href="/manual" onClick={() => setMobileOpen(false)} data-testid="link-nav-user-manual" className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-[hsl(var(--sidebar-foreground)/.82)] transition-colors hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-foreground))] ${location === '/manual' ? 'bg-[hsl(var(--sidebar-primary))] font-semibold text-[hsl(var(--sidebar-primary-foreground))]' : ''} ${collapsed ? 'md:justify-center md:px-2' : ''}`}><BookOpen className="size-[18px] shrink-0" /><span className={collapsed ? 'md:hidden' : ''}>User manual</span></Link>
         </nav>
         <div className={`border-t border-[hsl(var(--sidebar-border))] p-3 ${collapsed ? 'md:px-2' : ''}`}>
