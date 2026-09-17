@@ -111,6 +111,37 @@ export async function initializeSchoolData() {
         userType: "staff", role: "administrator", status: "active", initials: "SA",
       }).onConflictDoNothing({ target: [users.schoolId, users.identifier] });
     }
+    const syncConfiguredStaffAccount = async (identifier: string, role: SchoolRole, initialsValue: string, password: string | undefined) => {
+      if (!password) return;
+      const existing = (await db.select().from(users).where(and(
+        eq(users.schoolId, setting.id),
+        ilike(users.identifier, identifier),
+        eq(users.userType, "staff"),
+      )).limit(1))[0];
+      if (existing) {
+        await db.update(users).set({
+          identifier,
+          passwordHash: hashPassword(password),
+          role,
+          status: "active",
+          initials: initialsValue,
+          updatedAt: new Date(),
+        }).where(eq(users.id, existing.id));
+      } else {
+        await db.insert(users).values({
+          schoolId: setting.id,
+          name: identifier,
+          identifier,
+          passwordHash: hashPassword(password),
+          userType: "staff",
+          role,
+          status: "active",
+          initials: initialsValue,
+        });
+      }
+    };
+    await syncConfiguredStaffAccount("Rogers", "accountant", "RO", process.env["SCHOOL_ACCOUNTANT_PASSWORD"]);
+    await syncConfiguredStaffAccount("Phiona", "teacher", "PH", process.env["SCHOOL_TEACHER_PASSWORD"]);
     const secretaryPassword = process.env["SCHOOL_SECRETARY_PASSWORD"];
     if (secretaryPassword) {
       const secretary = (await db.select().from(users).where(and(
