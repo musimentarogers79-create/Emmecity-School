@@ -45,17 +45,6 @@ function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarati
         <Field label="Tribe" value={String(form.tribe || '')} onChange={(value) => update('tribe', value)} placeholder="Tribe" required={false} />
       </div>
     </div>
-    <div className="admission-section rounded-2xl border border-[hsl(var(--border))] p-4">
-      <p className="admission-section-heading mb-4 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Parent or guardian details</p>
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Email address" type="email" value={String(form.guardianEmail || '')} onChange={(value) => update('guardianEmail', value)} placeholder="guardian@example.com" required={false} />
-        <Field label="Relationship to pupil" value={String(form.guardianRelationship || '')} onChange={(value) => update('guardianRelationship', value)} placeholder="Parent, aunt, uncle..." required={false} />
-        <Field label="National ID number" value={String(form.guardianNationalId || '')} onChange={(value) => update('guardianNationalId', value)} placeholder="National ID number" required={false} />
-        <Field label="Residential address" value={String(form.residentialAddress || '')} onChange={(value) => update('residentialAddress', value)} placeholder="Home address" required={false} />
-        <Field label="Occupation" value={String(form.guardianOccupation || '')} onChange={(value) => update('guardianOccupation', value)} placeholder="Occupation" required={false} />
-        <Field label="Alternative contact" value={String(form.alternativeContact || '')} onChange={(value) => update('alternativeContact', value)} placeholder="Name and phone" required={false} />
-      </div>
-    </div>
     <div className="admission-section rounded-2xl border border-[hsl(var(--primary)/.25)] bg-[hsl(var(--secondary)/.3)] p-4">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
         <div>
