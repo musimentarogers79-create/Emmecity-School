@@ -88,6 +88,19 @@ const roleActions = (role: SchoolRole, studentId?: string) => {
     { id: "documents", label: "Open documents", description: "Review shared school documents.", href: "/operations?view=documents", tone: "blue" },
     { id: "notices", label: "Read announcements", description: "Keep up with school announcements.", href: "/announcements", tone: "violet" },
   ];
+  if (role === "administrator" || role === "super_admin") return [
+    { id: "register", label: "Register a pupil", description: "Create a permanent pupil record and registration number.", href: "/students", tone: "green" },
+    { id: "users", label: "Manage users and roles", description: "Review account access and staff responsibilities.", href: "/users", tone: "blue" },
+    { id: "attendance", label: "Open attendance", description: "Review registers and monitor attendance across the school.", href: "/attendance", tone: "violet" },
+    { id: "payment", label: "Record a payment", description: "Issue a receipt and update the learner balance.", href: "/finance", tone: "green" },
+    { id: "expenses", label: "Review expenses", description: "Track school spending and approvals.", href: "/expenses", tone: "amber" },
+    { id: "transactions", label: "Review transactions", description: "Open payment history, balances, and receipts.", href: "/transactions", tone: "blue" },
+    { id: "classes", label: "Manage classes", description: "Maintain classes, streams, and teacher assignments.", href: "/operations?view=classes", tone: "violet" },
+    { id: "subjects", label: "Manage subjects", description: "Review subjects and their teacher assignments.", href: "/subjects", tone: "green" },
+    { id: "notices", label: "Publish an announcement", description: "Share an update with the school community.", href: "/announcements", tone: "blue" },
+    { id: "events", label: "Manage school events", description: "Create and review the school calendar.", href: "/operations?view=events", tone: "amber" },
+    { id: "timetable", label: "Open timetable", description: "Review the school timetable and scheduled sessions.", href: "/timetable", tone: "violet" },
+  ];
   return [
     { id: "register", label: "Register a pupil", description: "Create a permanent pupil record and registration number.", href: "/students", tone: "green" },
     { id: "users", label: "Manage users and roles", description: "Review account access and staff responsibilities.", href: "/users", tone: "blue" },
