@@ -71,6 +71,46 @@ export async function initializeSchoolData() {
       setting = (await db.select().from(schoolSettings).orderBy(asc(schoolSettings.createdAt)).limit(1))[0];
     }
     if (!setting) throw new Error("Unable to initialize school settings");
+    const production = process.env["NODE_ENV"] === "production";
+    const configuredPassword = process.env["SCHOOL_BOOTSTRAP_PASSWORD"];
+    const canonicalAdmins = await db.select().from(users).where(and(eq(users.schoolId, setting.id), ilike(users.identifier, "Isingoma"), eq(users.userType, "staff"))).limit(1);
+    const legacyAdmins = await db.select().from(users).where(and(eq(users.schoolId, setting.id), ilike(users.identifier, "admin"), eq(users.userType, "staff"))).limit(1);
+    const bootstrapAdmin = canonicalAdmins[0] || legacyAdmins[0];
+    if (production && !configuredPassword && (!bootstrapAdmin || verifyPassword("admin123", bootstrapAdmin.passwordHash))) {
+      throw new Error("SCHOOL_BOOTSTRAP_PASSWORD must be configured before the first production start");
+    }
+    if (canonicalAdmins[0]) {
+      if (legacyAdmins[0]) {
+        await db.delete(users).where(eq(users.id, legacyAdmins[0].id));
+      }
+      await db.update(users).set({
+        name: "Isingoma",
+        identifier: "Isingoma",
+        ...(configuredPassword && verifyPassword("admin123", canonicalAdmins[0].passwordHash) ? { passwordHash: hashPassword(configuredPassword) } : {}),
+        role: "administrator",
+        status: "active",
+        initials: "SA",
+        updatedAt: new Date(),
+      }).where(eq(users.id, canonicalAdmins[0].id));
+    } else if (legacyAdmins[0]) {
+      const legacyPassword = production && configuredPassword && verifyPassword("admin123", legacyAdmins[0].passwordHash)
+        ? hashPassword(configuredPassword)
+        : legacyAdmins[0].passwordHash;
+      await db.update(users).set({
+        name: "Isingoma",
+        identifier: "Isingoma",
+        passwordHash: legacyPassword,
+        updatedAt: new Date(),
+      }).where(eq(users.id, legacyAdmins[0].id));
+    } else {
+      await db.insert(users).values({
+        schoolId: setting.id,
+        name: "Isingoma",
+        identifier: "Isingoma",
+        passwordHash: hashPassword(configuredPassword || "admin123"),
+        userType: "staff", role: "administrator", status: "active", initials: "SA",
+      }).onConflictDoNothing({ target: [users.schoolId, users.identifier] });
+    }
     const syncConfiguredStaffAccount = async (identifier: string, role: SchoolRole, initialsValue: string, password: string | undefined) => {
       if (!password) return;
       const existing = (await db.select().from(users).where(and(

@@ -16,4 +16,4 @@
 - [School device notifications](school-device-notifications.md) — browser alerts are permission-based per device; true closed-app delivery requires a Web Push service and VAPID configuration.
 - [Payroll ledger](payroll-ledger.md) — normalized salary writes protect period balances while legacy salary history remains readable.
 - [Admission parent records](admission-parent-records.md) — parent and guardian details stay in the saved admission document and print as an official register.
-- [Administrator account removal](admin-account-removal.md) — the runtime keeps administrator permissions but no longer creates a default administrator login.
+- [Production authentication bootstrap](production-auth-bootstrap.md) — production may not contain development users; bootstrap only the canonical Isingoma administrator.

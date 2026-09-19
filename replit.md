@@ -11,11 +11,11 @@ This is a role-aware school management platform for EMMECTY NURSERY & PRIMARY SC
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
 - Required env: `DATABASE_URL` — Postgres connection string
 
-### Accounts
+### Bootstrap account
 
-The development workspace does not create a default administrator account. Staff accounts
-are created through the authorized account workflow, and no staff, pupil, guardian, finance,
-attendance, or operational records are seeded.
+The development workspace starts with the bootstrap administrator account. No staff, pupil,
+guardian, finance, attendance, or operational records are seeded. The administrator creates
+all other accounts from Operations → People & accounts.
 
 Pupil and guardian accounts must be linked to a pupil record. Pupil identifiers are permanent
 registration numbers; staff accounts use usernames. Passwords are hashed before storage.
@@ -33,7 +33,7 @@ registration numbers; staff accounts use usernames. Passwords are hashed before 
 
 - `artifacts/school-ops` — responsive school management web app
 - `artifacts/api-server/src/routes/school.ts` — core school API routes
-- `artifacts/api-server/src/lib/school-data.ts` — PostgreSQL/Drizzle repositories and school settings
+- `artifacts/api-server/src/lib/school-data.ts` — PostgreSQL/Drizzle repositories, bootstrap account, and school settings
 - `lib/db/src/schema/index.ts` — PostgreSQL schema for all school domains and hashed sessions
 - `lib/api-spec/openapi.yaml` — source-of-truth API contract
 - `artifacts/school-ops/src/pages/school-pages.tsx` — app pages and core workflows
@@ -44,9 +44,10 @@ registration numbers; staff accounts use usernames. Passwords are hashed before 
 - The permanent pupil-facing identifier is a generated registration number such as `STU-2026-0001`; it is separate from the internal student record id.
 - Login accepts staff usernames and pupil/guardian registration identifiers through the same role-aware entry point.
 - API contracts are defined in OpenAPI first and generated into the shared React client and Zod validation package.
-- The current runtime starts clean apart from default EMMECTY NURSERY & PRIMARY SCHOOL UGX settings; records are created through role-authorized API actions and persist in PostgreSQL.
+- The current runtime starts clean apart from the idempotent bootstrap administrator and default EMMECTY NURSERY & PRIMARY SCHOOL UGX settings; records are created through role-authorized API actions and persist in PostgreSQL.
 - Session cookies contain random bearer tokens while only SHA-256 token digests and expiry timestamps are stored in PostgreSQL.
 - Pupil registration and opening payment use one database transaction. Opening payment is optional; positive payments receive a unique receipt and the response includes `receiptNumber`.
+- Production startup requires the `SCHOOL_BOOTSTRAP_PASSWORD` secret when the bootstrap administrator has not yet been provisioned or still uses the development-only default.
 
 ## Product
 
