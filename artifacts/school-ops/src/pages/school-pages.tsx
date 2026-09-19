@@ -654,6 +654,17 @@ function DashboardPage() {
       { label: 'Attendance today', value: `${summary?.attendance ?? 0}%`, Icon: CalendarDays, color: 'text-[hsl(var(--chart-2))]', href: '/attendance' },
       { label: 'Assignments due', value: modules?.assignments.filter((item) => item.status !== 'completed').length ?? 0, Icon: ClipboardList, color: 'text-[hsl(var(--chart-4))]', href: '/operations?view=assignments' },
     ]
+    : role === 'administrator' || role === 'super_admin'
+      ? [
+        { label: 'Pupils', value: summary?.students ?? 0, Icon: Users, color: 'text-[hsl(var(--primary))]', href: '/students' },
+        { label: 'Teachers', value: summary?.teachers ?? 0, Icon: Users, color: 'text-[hsl(var(--chart-3))]', href: '/operations?view=staff' },
+        { label: 'Staff', value: summary?.staff ?? 0, Icon: Users, color: 'text-[hsl(var(--chart-2))]', href: '/operations?view=staff' },
+        { label: 'Classes', value: summary?.classes ?? modules?.classes.length ?? 0, Icon: GraduationCap, color: 'text-[hsl(var(--chart-4))]', href: '/operations?view=classes' },
+        { label: 'Attendance today', value: `${summary?.attendance ?? 0}%`, Icon: CalendarDays, color: 'text-[hsl(var(--chart-3))]', href: '/attendance' },
+        { label: 'Fees collected', value: money(summary?.feesCollected), Icon: CircleDollarSign, color: 'text-[hsl(var(--primary))]', href: '/transactions?filter=collected', detail: 'Click to see the pupils and receipts' },
+        { label: 'Outstanding fees', value: money(summary?.outstandingFees), Icon: WalletCards, color: 'text-[hsl(var(--chart-4))]', href: '/students?filter=outstanding' },
+        { label: 'Upcoming events', value: modules?.events.length ?? 0, Icon: CalendarDays, color: 'text-[hsl(var(--chart-2))]', href: '/operations?view=events' },
+      ]
     : role === 'accountant'
       ? [
         { label: 'Collected this term', value: money(summary?.feesCollected), Icon: CircleDollarSign, color: 'text-[hsl(var(--primary))]', href: '/transactions?filter=collected', detail: 'Click to see the pupils and receipts' },
