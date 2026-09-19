@@ -8,6 +8,8 @@
 
 export * from './admissionForm';
 export * from './admissionFormEnrollmentType';
+export * from './admissionFormFatherStatus';
+export * from './admissionFormMotherStatus';
 export * from './announcement';
 export * from './announcementInput';
 export * from './announcementInputPriority';
@@ -81,11 +83,15 @@ export * from './student';
 export * from './studentEnrollmentType';
 export * from './studentInput';
 export * from './studentInputEnrollmentType';
+export * from './studentInputFatherStatus';
+export * from './studentInputMotherStatus';
 export * from './studentProfile';
 export * from './studentProfileAcademicHistoryItem';
 export * from './studentStatus';
 export * from './studentUpdateInput';
 export * from './studentUpdateInputEnrollmentType';
+export * from './studentUpdateInputFatherStatus';
+export * from './studentUpdateInputMotherStatus';
 export * from './studentUpdateInputStatus';
 export * from './subjectInput';
 export * from './timetableEntry';

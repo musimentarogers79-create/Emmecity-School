@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.2.0
  */
 import type { AdmissionFormEnrollmentType } from './admissionFormEnrollmentType';
+import type { AdmissionFormFatherStatus } from './admissionFormFatherStatus';
+import type { AdmissionFormMotherStatus } from './admissionFormMotherStatus';
 
 export interface AdmissionForm {
   id: string;
@@ -32,6 +34,22 @@ export interface AdmissionForm {
   residentialAddress?: string;
   guardianOccupation?: string;
   alternativeContact?: string;
+  motherName?: string;
+  motherStatus?: AdmissionFormMotherStatus;
+  motherPhone?: string;
+  motherAlternativePhone?: string;
+  motherEmail?: string;
+  motherOccupation?: string;
+  motherNationalId?: string;
+  motherAddress?: string;
+  fatherName?: string;
+  fatherStatus?: AdmissionFormFatherStatus;
+  fatherPhone?: string;
+  fatherAlternativePhone?: string;
+  fatherEmail?: string;
+  fatherOccupation?: string;
+  fatherNationalId?: string;
+  fatherAddress?: string;
   previousSchool?: string;
   lastClassCompleted?: string;
   medicalConditions?: string;

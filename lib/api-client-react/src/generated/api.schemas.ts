@@ -183,6 +183,22 @@ export const StudentEnrollmentType = {
   boarding: 'boarding',
 } as const;
 
+export type AdmissionFormMotherStatus = typeof AdmissionFormMotherStatus[keyof typeof AdmissionFormMotherStatus];
+
+
+export const AdmissionFormMotherStatus = {
+  alive: 'alive',
+  deceased: 'deceased',
+} as const;
+
+export type AdmissionFormFatherStatus = typeof AdmissionFormFatherStatus[keyof typeof AdmissionFormFatherStatus];
+
+
+export const AdmissionFormFatherStatus = {
+  alive: 'alive',
+  deceased: 'deceased',
+} as const;
+
 export type AdmissionFormEnrollmentType = typeof AdmissionFormEnrollmentType[keyof typeof AdmissionFormEnrollmentType];
 
 
@@ -216,6 +232,22 @@ export interface AdmissionForm {
   residentialAddress?: string;
   guardianOccupation?: string;
   alternativeContact?: string;
+  motherName?: string;
+  motherStatus?: AdmissionFormMotherStatus;
+  motherPhone?: string;
+  motherAlternativePhone?: string;
+  motherEmail?: string;
+  motherOccupation?: string;
+  motherNationalId?: string;
+  motherAddress?: string;
+  fatherName?: string;
+  fatherStatus?: AdmissionFormFatherStatus;
+  fatherPhone?: string;
+  fatherAlternativePhone?: string;
+  fatherEmail?: string;
+  fatherOccupation?: string;
+  fatherNationalId?: string;
+  fatherAddress?: string;
   previousSchool?: string;
   lastClassCompleted?: string;
   medicalConditions?: string;
@@ -260,6 +292,22 @@ export interface Student {
   admissionForm?: AdmissionForm;
 }
 
+export type StudentInputMotherStatus = typeof StudentInputMotherStatus[keyof typeof StudentInputMotherStatus];
+
+
+export const StudentInputMotherStatus = {
+  alive: 'alive',
+  deceased: 'deceased',
+} as const;
+
+export type StudentInputFatherStatus = typeof StudentInputFatherStatus[keyof typeof StudentInputFatherStatus];
+
+
+export const StudentInputFatherStatus = {
+  alive: 'alive',
+  deceased: 'deceased',
+} as const;
+
 export type StudentInputEnrollmentType = typeof StudentInputEnrollmentType[keyof typeof StudentInputEnrollmentType];
 
 
@@ -294,6 +342,22 @@ export interface StudentInput {
   residentialAddress?: string;
   guardianOccupation?: string;
   alternativeContact?: string;
+  motherName?: string;
+  motherStatus?: StudentInputMotherStatus;
+  motherPhone?: string;
+  motherAlternativePhone?: string;
+  motherEmail?: string;
+  motherOccupation?: string;
+  motherNationalId?: string;
+  motherAddress?: string;
+  fatherName?: string;
+  fatherStatus?: StudentInputFatherStatus;
+  fatherPhone?: string;
+  fatherAlternativePhone?: string;
+  fatherEmail?: string;
+  fatherOccupation?: string;
+  fatherNationalId?: string;
+  fatherAddress?: string;
   previousSchool?: string;
   lastClassCompleted?: string;
   medicalConditions?: string;
@@ -315,6 +379,22 @@ export interface StudentInput {
   paymentMethod?: string;
   paymentReference?: string;
 }
+
+export type StudentUpdateInputMotherStatus = typeof StudentUpdateInputMotherStatus[keyof typeof StudentUpdateInputMotherStatus];
+
+
+export const StudentUpdateInputMotherStatus = {
+  alive: 'alive',
+  deceased: 'deceased',
+} as const;
+
+export type StudentUpdateInputFatherStatus = typeof StudentUpdateInputFatherStatus[keyof typeof StudentUpdateInputFatherStatus];
+
+
+export const StudentUpdateInputFatherStatus = {
+  alive: 'alive',
+  deceased: 'deceased',
+} as const;
 
 export type StudentUpdateInputEnrollmentType = typeof StudentUpdateInputEnrollmentType[keyof typeof StudentUpdateInputEnrollmentType];
 
@@ -355,6 +435,22 @@ export interface StudentUpdateInput {
   residentialAddress?: string;
   guardianOccupation?: string;
   alternativeContact?: string;
+  motherName?: string;
+  motherStatus?: StudentUpdateInputMotherStatus;
+  motherPhone?: string;
+  motherAlternativePhone?: string;
+  motherEmail?: string;
+  motherOccupation?: string;
+  motherNationalId?: string;
+  motherAddress?: string;
+  fatherName?: string;
+  fatherStatus?: StudentUpdateInputFatherStatus;
+  fatherPhone?: string;
+  fatherAlternativePhone?: string;
+  fatherEmail?: string;
+  fatherOccupation?: string;
+  fatherNationalId?: string;
+  fatherAddress?: string;
   previousSchool?: string;
   lastClassCompleted?: string;
   medicalConditions?: string;

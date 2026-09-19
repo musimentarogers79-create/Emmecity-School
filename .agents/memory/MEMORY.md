@@ -16,3 +16,4 @@
 - [Account and personnel separation](account-personnel-separation.md) — login-account lifecycle must not create or delete real pupil or staff records.
 - [School device notifications](school-device-notifications.md) — browser alerts are permission-based per device; true closed-app delivery requires a Web Push service and VAPID configuration.
 - [Payroll ledger](payroll-ledger.md) — normalized salary writes protect period balances while legacy salary history remains readable.
+- [Admission parent records](admission-parent-records.md) — parent and guardian details stay in the saved admission document and print as an official register.

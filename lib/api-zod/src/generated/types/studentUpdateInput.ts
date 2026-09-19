@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.2.0
  */
 import type { StudentUpdateInputEnrollmentType } from './studentUpdateInputEnrollmentType';
+import type { StudentUpdateInputFatherStatus } from './studentUpdateInputFatherStatus';
+import type { StudentUpdateInputMotherStatus } from './studentUpdateInputMotherStatus';
 import type { StudentUpdateInputStatus } from './studentUpdateInputStatus';
 
 export interface StudentUpdateInput {
@@ -31,6 +33,22 @@ export interface StudentUpdateInput {
   residentialAddress?: string;
   guardianOccupation?: string;
   alternativeContact?: string;
+  motherName?: string;
+  motherStatus?: StudentUpdateInputMotherStatus;
+  motherPhone?: string;
+  motherAlternativePhone?: string;
+  motherEmail?: string;
+  motherOccupation?: string;
+  motherNationalId?: string;
+  motherAddress?: string;
+  fatherName?: string;
+  fatherStatus?: StudentUpdateInputFatherStatus;
+  fatherPhone?: string;
+  fatherAlternativePhone?: string;
+  fatherEmail?: string;
+  fatherOccupation?: string;
+  fatherNationalId?: string;
+  fatherAddress?: string;
   previousSchool?: string;
   lastClassCompleted?: string;
   medicalConditions?: string;

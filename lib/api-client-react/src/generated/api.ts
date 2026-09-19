@@ -168,8 +168,6 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
   return withQueryKey(query, queryOptions.queryKey);
 }
-
-
 export const getLoginUrl = () => {
 
 
@@ -383,6 +381,12 @@ export function useGetCurrentUser<TData = Awaited<ReturnType<typeof getCurrentUs
   return withQueryKey(query, queryOptions.queryKey);
 }
 
+
+
+
+
+
+
 export const getUpdateCurrentUserUrl = () => {
 
 
@@ -524,6 +528,13 @@ export function useListUsers<TData = Awaited<ReturnType<typeof listUsers>>, TErr
 
   return withQueryKey(query, queryOptions.queryKey);
 }
+
+
+
+
+
+
+
 export const getCreateUserUrl = () => {
 
 

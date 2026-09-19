@@ -1212,6 +1212,40 @@ components:
           type: string
         alternativeContact:
           type: string
+        motherName:
+          type: string
+        motherStatus:
+          type: string
+          enum: [alive, deceased]
+        motherPhone:
+          type: string
+        motherAlternativePhone:
+          type: string
+        motherEmail:
+          type: string
+        motherOccupation:
+          type: string
+        motherNationalId:
+          type: string
+        motherAddress:
+          type: string
+        fatherName:
+          type: string
+        fatherStatus:
+          type: string
+          enum: [alive, deceased]
+        fatherPhone:
+          type: string
+        fatherAlternativePhone:
+          type: string
+        fatherEmail:
+          type: string
+        fatherOccupation:
+          type: string
+        fatherNationalId:
+          type: string
+        fatherAddress:
+          type: string
         previousSchool:
           type: string
         lastClassCompleted:
@@ -1299,6 +1333,40 @@ components:
           type: string
         alternativeContact:
           type: string
+        motherName:
+          type: string
+        motherStatus:
+          type: string
+          enum: [alive, deceased]
+        motherPhone:
+          type: string
+        motherAlternativePhone:
+          type: string
+        motherEmail:
+          type: string
+        motherOccupation:
+          type: string
+        motherNationalId:
+          type: string
+        motherAddress:
+          type: string
+        fatherName:
+          type: string
+        fatherStatus:
+          type: string
+          enum: [alive, deceased]
+        fatherPhone:
+          type: string
+        fatherAlternativePhone:
+          type: string
+        fatherEmail:
+          type: string
+        fatherOccupation:
+          type: string
+        fatherNationalId:
+          type: string
+        fatherAddress:
+          type: string
         previousSchool:
           type: string
         lastClassCompleted:
@@ -1382,6 +1450,40 @@ components:
         guardianOccupation:
           type: string
         alternativeContact:
+          type: string
+        motherName:
+          type: string
+        motherStatus:
+          type: string
+          enum: [alive, deceased]
+        motherPhone:
+          type: string
+        motherAlternativePhone:
+          type: string
+        motherEmail:
+          type: string
+        motherOccupation:
+          type: string
+        motherNationalId:
+          type: string
+        motherAddress:
+          type: string
+        fatherName:
+          type: string
+        fatherStatus:
+          type: string
+          enum: [alive, deceased]
+        fatherPhone:
+          type: string
+        fatherAlternativePhone:
+          type: string
+        fatherEmail:
+          type: string
+        fatherOccupation:
+          type: string
+        fatherNationalId:
+          type: string
+        fatherAddress:
           type: string
         previousSchool:
           type: string

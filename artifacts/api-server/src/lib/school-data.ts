@@ -394,6 +394,10 @@ export async function updateStudent(id: string, data: {
   enrollmentType?: "day" | "boarding"; isSponsored?: boolean; termFee?: number; previousFeeBalance?: number; status?: "active" | "inactive"; newPassword?: string;
   religion?: string; placeOfBirth?: string; homeVillage?: string; nationality?: string; tribe?: string;
   guardianRelationship?: string; guardianNationalId?: string; residentialAddress?: string; guardianOccupation?: string;
+   motherName?: string; motherStatus?: "alive" | "deceased"; motherPhone?: string; motherAlternativePhone?: string; motherEmail?: string;
+   motherOccupation?: string; motherNationalId?: string; motherAddress?: string;
+   fatherName?: string; fatherStatus?: "alive" | "deceased"; fatherPhone?: string; fatherAlternativePhone?: string; fatherEmail?: string;
+   fatherOccupation?: string; fatherNationalId?: string; fatherAddress?: string;
   alternativeContact?: string; previousSchool?: string; lastClassCompleted?: string; medicalConditions?: string;
   specialNeeds?: string; knownMedicalNote?: string; emergencyContactName?: string; emergencyContactPhone?: string;
   emergencyContactRelationship?: string; declarationAccepted?: boolean; declarationDate?: string; photoPath?: string | null;
@@ -439,6 +443,8 @@ export async function updateStudent(id: string, data: {
     const admissionFields = [
       "guardianEmail", "religion", "placeOfBirth", "homeVillage", "nationality", "tribe",
       "guardianRelationship", "guardianNationalId", "residentialAddress", "guardianOccupation",
+      "motherName", "motherStatus", "motherPhone", "motherAlternativePhone", "motherEmail", "motherOccupation", "motherNationalId", "motherAddress",
+      "fatherName", "fatherStatus", "fatherPhone", "fatherAlternativePhone", "fatherEmail", "fatherOccupation", "fatherNationalId", "fatherAddress",
       "alternativeContact", "previousSchool", "lastClassCompleted", "medicalConditions", "specialNeeds",
       "knownMedicalNote", "emergencyContactName", "emergencyContactPhone", "emergencyContactRelationship",
       "declarationAccepted", "declarationDate",
@@ -520,6 +526,10 @@ export async function createStudentWithPayment(data: {
   photoPath?: string;
   religion?: string; placeOfBirth?: string; homeVillage?: string; nationality?: string; tribe?: string;
   guardianRelationship?: string; guardianNationalId?: string; residentialAddress?: string; guardianOccupation?: string;
+   motherName?: string; motherStatus?: "alive" | "deceased"; motherPhone?: string; motherAlternativePhone?: string; motherEmail?: string;
+   motherOccupation?: string; motherNationalId?: string; motherAddress?: string;
+   fatherName?: string; fatherStatus?: "alive" | "deceased"; fatherPhone?: string; fatherAlternativePhone?: string; fatherEmail?: string;
+   fatherOccupation?: string; fatherNationalId?: string; fatherAddress?: string;
   alternativeContact?: string; previousSchool?: string; lastClassCompleted?: string; medicalConditions?: string;
   specialNeeds?: string; knownMedicalNote?: string; emergencyContactName?: string; emergencyContactPhone?: string;
   emergencyContactRelationship?: string; declarationAccepted?: boolean; declarationDate?: string;
@@ -603,6 +613,22 @@ export async function createStudentWithPayment(data: {
        residentialAddress: text(data.residentialAddress),
        guardianOccupation: text(data.guardianOccupation),
        alternativeContact: text(data.alternativeContact),
+       motherName: text(data.motherName),
+       motherStatus: data.motherStatus === "deceased" ? "deceased" : data.motherStatus === "alive" ? "alive" : "",
+       motherPhone: text(data.motherPhone),
+       motherAlternativePhone: text(data.motherAlternativePhone),
+       motherEmail: text(data.motherEmail),
+       motherOccupation: text(data.motherOccupation),
+       motherNationalId: text(data.motherNationalId),
+       motherAddress: text(data.motherAddress),
+       fatherName: text(data.fatherName),
+       fatherStatus: data.fatherStatus === "deceased" ? "deceased" : data.fatherStatus === "alive" ? "alive" : "",
+       fatherPhone: text(data.fatherPhone),
+       fatherAlternativePhone: text(data.fatherAlternativePhone),
+       fatherEmail: text(data.fatherEmail),
+       fatherOccupation: text(data.fatherOccupation),
+       fatherNationalId: text(data.fatherNationalId),
+       fatherAddress: text(data.fatherAddress),
        previousSchool: text(data.previousSchool),
        lastClassCompleted: text(data.lastClassCompleted),
        medicalConditions: text(data.medicalConditions),
