@@ -7,4 +7,4 @@ The school portal can persist in-app notification records and show OS-level brow
 
 **Why:** Shared or locked devices can expose notification text, and browser permission/service-worker support do not by themselves deliver a notification when no portal tab is running; both privacy and reliability need to be explicit.
 
-**How to apply:** Keep announcement, event, and public-holiday records as the source of notification content. When implementing background delivery, add per-device subscriptions, expired-endpoint cleanup, secure VAPID configuration, and cross-platform tests without changing pupil, staff, or guardian records.
+**How to apply:** Keep announcement, event, and public-holiday records as the source of notification content. The school portal has no global Notifications button or service-worker notification center; event reminders are handled only from the event flow. If background delivery is reintroduced, add per-device subscriptions, expired-endpoint cleanup, secure VAPID configuration, and cross-platform tests without changing pupil, staff, or guardian records.
