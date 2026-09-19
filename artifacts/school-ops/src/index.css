@@ -638,3 +638,100 @@ body:has([data-testid="button-sign-in"]) [data-testid="link-user-manual-login"] 
 body:has([data-testid="button-sign-in"]) li:has([data-testid="link-user-manual-login"]) {
   display: none;
 }
+
+.print-only-school-heading {
+  display: none;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 14mm;
+  }
+
+  body {
+    background: #fff !important;
+    color: #17231f !important;
+  }
+
+  aside,
+  body > * header,
+  aside + div,
+  [data-testid="button-print-student-directory"],
+  [data-testid="panel-student-filters"],
+  [data-testid="button-open-register"],
+  [data-testid="button-generate-all-admission-forms"] {
+    display: none !important;
+  }
+
+  .print-only-school-heading {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    border-bottom: 3px solid #1d7056;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    text-align: center;
+    color: #17231f;
+  }
+
+  .print-only-school-heading ~ p,
+  .print-only-school-heading ~ h1 {
+    display: none !important;
+  }
+
+  .print-only-school-heading strong {
+    font-family: Georgia, serif;
+    font-size: 20px;
+    letter-spacing: .04em;
+  }
+
+  .print-only-school-heading span {
+    color: #52645d;
+    font-size: 9px;
+  }
+
+  .print-only-school-heading b {
+    margin-top: 4px;
+    color: #1d7056;
+    font-size: 12px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  [data-testid="panel-students-table"] {
+    overflow: visible !important;
+    border: 1px solid #9aaba3 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  [data-testid="panel-students-table"] > div:first-child {
+    display: grid !important;
+    background: #e9f1ed !important;
+    color: #17231f !important;
+  }
+
+  [data-testid="panel-students-table"] > div:last-child {
+    display: block !important;
+  }
+
+  [data-testid="panel-students-table"] > div:last-child > a {
+    display: grid !important;
+    grid-template-columns: 1.8fr 1.1fr .7fr .9fr .7fr !important;
+    border-top: 1px solid #d0dbd5 !important;
+    border-radius: 0 !important;
+    padding: 8px 10px !important;
+    color: #17231f !important;
+    text-decoration: none !important;
+    break-inside: avoid;
+  }
+
+  [data-testid="panel-students-table"] > div:last-child > a > svg {
+    display: none !important;
+  }
+
+  [data-testid="panel-students-table"] > div:last-child > a span {
+    color: #17231f !important;
+  }
+}

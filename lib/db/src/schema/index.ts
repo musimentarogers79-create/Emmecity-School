@@ -173,6 +173,31 @@ export const recordSequences = pgTable("school_record_sequences", {
 
 export const expenses = pgTable("expenses", auditColumns, (table) => [index("expenses_school_idx").on(table.schoolId)]);
 export const salaryPayments = pgTable("salary_payments", auditColumns, (table) => [index("salary_payments_school_idx").on(table.schoolId)]);
+
+export const payrollPayments = pgTable("payroll_payments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  schoolId: uuid("school_id").notNull().references(() => schoolSettings.id, { onDelete: "cascade" }),
+  staffId: uuid("staff_id").notNull(),
+  period: text("period").notNull(),
+  amount: numeric("amount", { precision: 14, scale: 2 }).notNull(),
+  method: text("method").notNull(),
+  reference: text("reference").notNull().default(""),
+  receiptNumber: text("receipt_number").notNull(),
+  paidOn: date("paid_on", { mode: "string" }).notNull(),
+  status: text("status").notNull().default("paid"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  uniqueIndex("payroll_payments_receipt_idx").on(table.schoolId, table.receiptNumber),
+  index("payroll_payments_staff_period_idx").on(table.schoolId, table.staffId, table.period),
+  foreignKey({
+    name: "payroll_payments_school_staff_fk",
+    columns: [table.staffId],
+    foreignColumns: [users.id],
+  }).onDelete("restrict"),
+  check("payroll_payments_amount_positive", sql`${table.amount} > 0`),
+  check("payroll_payments_period_nonblank", sql`length(btrim(${table.period})) > 0`),
+  check("payroll_payments_status_valid", sql`${table.status} in ('paid', 'reversed')`),
+]);
 export const announcements = pgTable("announcements", auditColumns, (table) => [index("announcements_school_idx").on(table.schoolId)]);
 export const classes = pgTable("classes", auditColumns, (table) => [index("classes_school_idx").on(table.schoolId)]);
 export const subjects = pgTable("subjects", auditColumns, (table) => [index("subjects_school_idx").on(table.schoolId)]);
@@ -199,3 +224,4 @@ export type Student = typeof students.$inferSelect;
 export type Payment = typeof payments.$inferSelect;
 export type Attendance = typeof attendance.$inferSelect;
 export type OperationRecord = typeof expenses.$inferSelect;
+export type PayrollPayment = typeof payrollPayments.$inferSelect;

@@ -3,7 +3,7 @@ import { and, asc, desc, eq, gt, ilike, inArray, isNotNull, isNull, lt, sql } fr
 import { db } from "@workspace/db";
 import {
   announcements, attendance, assignments, classes, discipline, documents, events, expenses,
-  inventory, library, loginAttempts, medical, notifications, parents, payments, reports, salaryPayments, schoolSettings,
+  inventory, library, loginAttempts, medical, notifications, parents, payments, payrollPayments, reports, salaryPayments, schoolSettings,
   recordSequences, sessions, staff, students, subjects, timetable, transport, users,
 } from "@workspace/db";
 import type { SchoolSettings, User } from "@workspace/db";
@@ -693,9 +693,41 @@ export async function updatePayment(paymentId: string, amount: number, method: s
 }
 
 export async function listSalaryPayments() {
-  const [rows, usersRows] = await Promise.all([listOperation("salaryPayments"), listUsers()]);
+  const [legacyRows, normalizedRows, usersRows] = await Promise.all([
+    listOperation("salaryPayments"),
+    db.select().from(payrollPayments).where(eq(payrollPayments.schoolId, await getSchoolId())).orderBy(desc(payrollPayments.createdAt)),
+    listUsers(),
+  ]);
+  const rows = [
+    ...legacyRows.map((item) => ({
+      id: item.id,
+      staffId: String(item.staffId || ""),
+      staffName: String(item.staffName || ""),
+      monthlySalary: number(item.monthlySalary as number | string | undefined),
+      period: String(item.period || ""),
+      amount: number(item.amount as number | string | undefined),
+      receiptNumber: String(item.receiptNumber || ""),
+      paymentDate: String(item.paymentDate || ""),
+      method: String(item.method || ""),
+      reference: String(item.reference || ""),
+      status: String(item.status || "Paid"),
+    })),
+    ...normalizedRows.map((item) => ({
+      id: item.id,
+      staffId: item.staffId,
+      staffName: "",
+      monthlySalary: 0,
+      period: item.period,
+      amount: number(item.amount),
+      receiptNumber: item.receiptNumber,
+      paymentDate: new Date(`${item.paidOn}T00:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+      method: item.method,
+      reference: item.reference,
+      status: item.status === "reversed" ? "Reversed" : "Paid",
+    })),
+  ];
   const totals = new Map<string, number>();
-  rows.forEach((item) => {
+  rows.filter((item) => item.status !== "Reversed").forEach((item) => {
     const key = `${String(item.staffId || "")}::${String(item.period || "")}`;
     totals.set(key, (totals.get(key) || 0) + number(item.amount as number | string | undefined));
   });
@@ -729,28 +761,46 @@ export async function listSalaryStaff() {
 
 export async function recordSalaryPayment(data: { staffId: string; period: string; amount: number; method: string; reference: string }) {
   if (data.amount <= 0) throw new Error("Salary payment must be positive");
+  const period = data.period.trim();
+  if (!period) throw new Error("Enter a salary period.");
   const schoolId = await getSchoolId();
-  const staffUser = (await db.select().from(users).where(and(eq(users.schoolId, schoolId), eq(users.id, data.staffId))).limit(1))[0];
-  if (!staffUser || !["teacher", "staff"].includes(staffUser.role)) throw new Error("Choose a registered teacher or staff member.");
-  const monthlySalary = number(staffUser.monthlySalary);
-  if (monthlySalary <= 0) throw new Error("Register a monthly salary for this staff member before paying them.");
-  const existing = await listOperation("salaryPayments");
-  const paidForPeriod = existing.filter((item) => String(item.staffId || "") === data.staffId && String(item.period || "") === data.period).reduce((sum, item) => sum + number(item.amount as number | string | undefined), 0);
-  const balance = Math.max(0, monthlySalary - paidForPeriod);
-  if (data.amount > balance) throw new Error(`Payment exceeds the ${data.period} salary balance of ${balance}.`);
-  const year = new Date().getFullYear();
-  const sequence = (await db.insert(recordSequences).values({ schoolId, year, kind: "salary_receipt", value: 1 }).onConflictDoUpdate({
-    target: [recordSequences.schoolId, recordSequences.year, recordSequences.kind],
-    set: { value: sql`${recordSequences.value} + 1`, updatedAt: new Date() },
-  }).returning({ value: recordSequences.value }))[0];
-  if (!sequence) throw new Error("Unable to allocate salary receipt number");
-  const receiptNumber = `SAL-${year}-${String(sequence.value).padStart(4, "0")}`;
-  const row = (await db.insert(salaryPayments).values({
-    schoolId,
-    data: { staffId: staffUser.id, staffName: staffUser.name, monthlySalary, period: data.period, amount: data.amount, receiptNumber, paymentDate: getDateLabel(), method: data.method, reference: data.reference, status: "Paid" },
-  }).returning())[0];
-  if (!row) throw new Error("Unable to record salary payment");
-  return (await listSalaryPayments()).find((item) => item.id === row.id);
+  const rowId = await db.transaction(async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${`${schoolId}:${data.staffId}:${period}`}))`);
+    const staffUser = (await tx.select().from(users).where(and(eq(users.schoolId, schoolId), eq(users.id, data.staffId))).limit(1))[0];
+    if (!staffUser || !["teacher", "staff"].includes(staffUser.role)) throw new Error("Choose a registered teacher or staff member.");
+    const monthlySalary = number(staffUser.monthlySalary);
+    if (monthlySalary <= 0) throw new Error("Register a monthly salary for this staff member before paying them.");
+    const [legacyRows, normalizedRows] = await Promise.all([
+      listOperation("salaryPayments"),
+      tx.select().from(payrollPayments).where(and(eq(payrollPayments.schoolId, schoolId), eq(payrollPayments.staffId, data.staffId), eq(payrollPayments.period, period))),
+    ]);
+    const paidForPeriod = [
+      ...legacyRows.filter((item) => String(item.staffId || "") === data.staffId && String(item.period || "") === period && String(item.status || "Paid") !== "Reversed").map((item) => number(item.amount as number | string | undefined)),
+      ...normalizedRows.filter((item) => item.status !== "reversed").map((item) => number(item.amount)),
+    ].reduce((sum, amount) => sum + amount, 0);
+    const balance = Math.max(0, monthlySalary - paidForPeriod);
+    if (data.amount > balance) throw new Error(`Payment exceeds the ${period} salary balance of ${balance}.`);
+    const year = new Date().getFullYear();
+    const sequence = (await tx.insert(recordSequences).values({ schoolId, year, kind: "salary_receipt", value: 1 }).onConflictDoUpdate({
+      target: [recordSequences.schoolId, recordSequences.year, recordSequences.kind],
+      set: { value: sql`${recordSequences.value} + 1`, updatedAt: new Date() },
+    }).returning({ value: recordSequences.value }))[0];
+    if (!sequence) throw new Error("Unable to allocate salary receipt number");
+    const inserted = (await tx.insert(payrollPayments).values({
+      schoolId,
+      staffId: staffUser.id,
+      period,
+      amount: String(data.amount),
+      method: data.method.trim(),
+      reference: data.reference.trim(),
+      receiptNumber: `SAL-${year}-${String(sequence.value).padStart(4, "0")}`,
+      paidOn: new Date().toISOString().slice(0, 10),
+      status: "paid",
+    }).returning({ id: payrollPayments.id }))[0];
+    if (!inserted) throw new Error("Unable to record salary payment");
+    return inserted.id;
+  });
+  return (await listSalaryPayments()).find((item) => item.id === rowId);
 }
 
 const tables = { announcements, assignments, classes, discipline, documents, events, expenses, inventory, library, medical, notifications, parents, reports, salaryPayments, staff, subjects, timetable, transport } as const;
