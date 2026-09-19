@@ -656,7 +656,8 @@ body:has([data-testid="button-sign-in"]) li:has([data-testid="link-user-manual-l
 
   aside,
   body > * header,
-  aside + div,
+  .screen-only,
+  .sticky.top-0,
   [data-testid="button-print-student-directory"],
   [data-testid="panel-student-filters"],
   [data-testid="button-open-register"],
@@ -665,36 +666,23 @@ body:has([data-testid="button-sign-in"]) li:has([data-testid="link-user-manual-l
   }
 
   .print-only-school-heading {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    border-bottom: 3px solid #1d7056;
-    margin-bottom: 14px;
-    padding-bottom: 10px;
+    display: block;
+    margin: 0 0 14px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #d5b51b;
     text-align: center;
-    color: #17231f;
   }
 
-  .print-only-school-heading ~ p,
-  .print-only-school-heading ~ h1 {
-    display: none !important;
-  }
-
-  .print-only-school-heading strong {
-    font-family: Georgia, serif;
-    font-size: 20px;
-    letter-spacing: .04em;
-  }
-
+  .print-only-school-heading strong,
   .print-only-school-heading span {
-    color: #52645d;
-    font-size: 9px;
+    display: none;
   }
 
   .print-only-school-heading b {
-    margin-top: 4px;
-    color: #1d7056;
-    font-size: 12px;
+    display: block;
+    font-family: Georgia, serif;
+    color: #062d72;
+    font-size: 16px;
     letter-spacing: .12em;
     text-transform: uppercase;
   }
@@ -733,5 +721,103 @@ body:has([data-testid="button-sign-in"]) li:has([data-testid="link-user-manual-l
 
   [data-testid="panel-students-table"] > div:last-child > a span {
     color: #17231f !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  main {
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  main > div:first-child {
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  main > div:first-child [data-testid="print-school-letterhead"] {
+    display: flex !important;
+    align-items: center;
+    gap: 18px;
+    border-bottom: 4px solid #1d7056;
+    padding: 0 0 14px;
+    margin-bottom: 20px;
+  }
+
+  main > div:first-child [data-testid="print-school-letterhead"] img {
+    width: 82px;
+    height: 82px;
+    object-fit: contain;
+  }
+
+  main > div:first-child [data-testid="print-school-letterhead"] h1 {
+    color: #062d72 !important;
+    font-family: Georgia, serif;
+    font-size: 23px;
+  }
+
+  main > div:first-child [data-testid="print-school-letterhead"] p {
+    color: #52645d !important;
+    font-size: 10px;
+  }
+
+  [data-testid="panel-attendance-register"] {
+    overflow: visible !important;
+    border: 1px solid #9aaba3 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  [data-testid="panel-attendance-register"] > div:last-child > div {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto !important;
+    align-items: center;
+    border-top: 1px solid #d0dbd5 !important;
+    padding: 8px 10px !important;
+  }
+
+  [data-testid="panel-attendance-register"] > div:last-child > div > div:last-child {
+    display: flex !important;
+    gap: 4px !important;
+  }
+
+  [data-testid="panel-attendance-register"] button {
+    display: inline-flex !important;
+    min-width: 46px;
+    padding: 4px 6px !important;
+    border: 1px solid #afc0b7 !important;
+    background: #f8fbf9 !important;
+    color: #173d31 !important;
+    font-size: 8px !important;
+  }
+
+  [data-testid="panel-attendance-register"] input {
+    display: none !important;
+  }
+
+  [data-testid^="panel-timetable-"] {
+    overflow: visible !important;
+    border: 1px solid #9aaba3 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+
+  [data-testid^="panel-timetable-"] > div:first-child {
+    background: #e9f1ed !important;
+    color: #062d72 !important;
+  }
+
+  [data-testid^="panel-timetable-"] > div:last-child > div {
+    display: grid !important;
+    grid-template-columns: 76px 1fr !important;
+    border-top: 1px solid #d0dbd5 !important;
+    padding: 8px 10px !important;
+  }
+
+  [data-testid^="panel-timetable-"] > div:last-child > div > span:nth-child(2) {
+    display: none !important;
   }
 }
