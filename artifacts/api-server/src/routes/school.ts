@@ -320,7 +320,7 @@ router.get("/students", async (req, res): Promise<void> => {
   const classesForTeacher = await assignedClassNames(user);
   const visible = user.studentId ? rows.filter((item) => item.id === user.studentId) : user.role === "teacher" ? rows.filter((item) => matchesAssignedClass(classesForTeacher, item.className, item.stream)) : isAdministrator(user) || user.role === "accountant" || user.role === "secretary" ? rows : [];
   const search = parsed.data.search?.toLowerCase() ?? "";
-  res.json(ListStudentsResponse.parse(visible.filter((item) => (!search || [item.name, item.registrationNumber, item.className, item.guardianName].some((field) => field.toLowerCase().includes(search))) && (!parsed.data.className || item.className === parsed.data.className) && (!parsed.data.status || item.status === parsed.data.status))));
+  res.json(ListStudentsResponse.parse(visible.filter((item) => (!search || [item.name, item.registrationNumber, item.className, item.stream, item.guardianName].some((field) => field.toLowerCase().includes(search))) && (!parsed.data.className || classAssignmentKey(item.className, item.stream) === parsed.data.className || item.className === parsed.data.className) && (!parsed.data.status || item.status === parsed.data.status))));
 });
 router.post("/students", async (req, res): Promise<void> => {
   const user = await requireUser(req);

@@ -1,6 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, KeyRound, LockKeyhole, Pencil, Plus, Save, ShieldCheck, Trash2, UserCheck, UserX } from 'lucide-react';
 import {
+  getGetOperationsQueryKey,
+  getListSalaryStaffQueryKey,
+  getListSalariesQueryKey,
   getListUsersQueryKey,
   type PermissionKey,
   type Role,
@@ -44,7 +48,7 @@ const permissions: { value: PermissionKey; label: string }[] = [
 ];
 
 const inputClass = 'focus-ring h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm outline-none';
-const emptyForm = (): UserAccountInput => ({ name: '', identifier: '', password: '', role: 'staff', userType: 'staff', email: '', phone: '', permissions: [] });
+const emptyForm = (): UserAccountInput => ({ name: '', identifier: '', password: '', role: 'staff', userType: 'staff', email: '', phone: '', monthlySalary: undefined, permissions: [] });
 const labelForRole = (role: Role) => roles.find((item) => item.value === role)?.label || role;
 const classDisplayKey = (name: string, stream?: string | null) => {
   const trimmedName = name.trim();
@@ -111,6 +115,7 @@ export function UsersPage() {
 
 export function UserAccountPage() {
   const [, navigate] = useLocation();
+  const client = useQueryClient();
   const [isNewRoute] = useRoute('/users/new');
   const [, routeParams] = useRoute('/users/:userId');
   const userId = isNewRoute ? undefined : routeParams?.userId;
@@ -135,20 +140,20 @@ export function UserAccountPage() {
       if (userId) setEdit({});
       return;
     }
-    setEdit({ name: account.name, identifier: account.identifier, email: account.email, phone: account.phone, department: account.department, role: account.role, status: account.status, permissions: account.permissions, assignedClasses: account.assignedClasses || [] });
+    setEdit({ name: account.name, identifier: account.identifier, email: account.email, phone: account.phone, department: account.department, role: account.role, status: account.status, monthlySalary: account.monthlySalary, permissions: account.permissions, assignedClasses: account.assignedClasses || [] });
   }, [account, userId]);
 
   const submitCreate = (event: React.FormEvent) => {
     event.preventDefault();
     setNotice('');
-    create.mutate({ data: form }, { onSuccess: () => { void users.refetch(); navigate('/users'); }, onError: () => setNotice('The account could not be created. Check the identifier and password.') });
+    create.mutate({ data: form }, { onSuccess: () => { void users.refetch(); client.invalidateQueries({ queryKey: getListSalaryStaffQueryKey() }); client.invalidateQueries({ queryKey: getGetOperationsQueryKey() }); navigate('/users'); }, onError: () => setNotice('The account could not be created. Check the identifier and password.') });
   };
 
   const submitEdit = (event: React.FormEvent) => {
     event.preventDefault();
     if (!account) return;
     setNotice('');
-    update.mutate({ userId: account.id, data: edit }, { onSuccess: () => { void users.refetch(); setNotice('Account details saved.'); }, onError: () => setNotice('The account could not be updated.') });
+    update.mutate({ userId: account.id, data: edit }, { onSuccess: () => { void users.refetch(); client.invalidateQueries({ queryKey: getListUsersQueryKey() }); client.invalidateQueries({ queryKey: getListSalaryStaffQueryKey() }); client.invalidateQueries({ queryKey: getListSalariesQueryKey() }); client.invalidateQueries({ queryKey: getGetOperationsQueryKey() }); setNotice('Account details saved.'); }, onError: () => setNotice('The account could not be updated.') });
   };
 
   const toggleStatus = () => {
@@ -179,12 +184,13 @@ export function UserAccountPage() {
     <Panel className="p-6">
       <div className="mb-6 flex items-start gap-3"><span className="flex size-10 items-center justify-center rounded-xl bg-[hsl(var(--primary)/.1)] text-[hsl(var(--primary))]"><Plus className="size-5" /></span><div><h2 className="font-display text-2xl">Account details</h2><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Staff use usernames. Guardian and pupil accounts can use permanent registration numbers.</p></div></div>
       <form onSubmit={submitCreate} className="space-y-6">
-        <div className="grid gap-4 md:grid-cols-2">
-          <label className="space-y-2 text-sm font-semibold">Full name<input className={inputClass} required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Full name" data-testid="input-account-name" /></label>
-          <label className="space-y-2 text-sm font-semibold">Username or registration number<input className={inputClass} required value={form.identifier} onChange={(e) => setForm({ ...form, identifier: e.target.value })} placeholder="Unique identifier" data-testid="input-account-identifier" /></label>
-          <label className="space-y-2 text-sm font-semibold">Temporary password<input className={inputClass} required minLength={8} type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="At least 8 characters" data-testid="input-account-password" /></label>
-          <label className="space-y-2 text-sm font-semibold">Account role<select className={inputClass} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role, userType: ['guardian', 'student'].includes(e.target.value) ? 'learner' : 'staff' })}>{roles.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}</select></label>
-        </div>
+         <div className="grid gap-4 md:grid-cols-2">
+           <label className="space-y-2 text-sm font-semibold">Full name<input className={inputClass} required value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Full name" data-testid="input-account-name" /></label>
+           <label className="space-y-2 text-sm font-semibold">Username or registration number<input className={inputClass} required value={form.identifier} onChange={(e) => setForm({ ...form, identifier: e.target.value })} placeholder="Unique identifier" data-testid="input-account-identifier" /></label>
+           <label className="space-y-2 text-sm font-semibold">Temporary password<input className={inputClass} required minLength={8} type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} placeholder="At least 8 characters" data-testid="input-account-password" /></label>
+           <label className="space-y-2 text-sm font-semibold">Account role<select className={inputClass} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role, userType: ['guardian', 'student'].includes(e.target.value) ? 'learner' : 'staff' })}>{roles.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}</select></label>
+           {(form.role === 'teacher' || form.role === 'staff') && <label className="space-y-2 text-sm font-semibold">Monthly salary (UGX)<input className={inputClass} min={0} type="number" value={form.monthlySalary ?? ''} onChange={(e) => setForm({ ...form, monthlySalary: e.target.value === '' ? undefined : Number(e.target.value) })} placeholder="0" data-testid="input-account-monthly-salary" /><span className="block text-xs font-normal text-[hsl(var(--muted-foreground))]">Required before a salary payment can be recorded.</span></label>}
+         </div>
         <div className="border-t border-[hsl(var(--border))] pt-5"><p className="text-xs font-semibold uppercase tracking-[.14em] text-[hsl(var(--primary))]">Contact and linking</p><div className="mt-4 grid gap-4 md:grid-cols-2"><label className="space-y-2 text-sm font-semibold">Email <span className="font-normal text-[hsl(var(--muted-foreground))]">(optional)</span><input className={inputClass} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="name@example.com" /></label><label className="space-y-2 text-sm font-semibold">Phone <span className="font-normal text-[hsl(var(--muted-foreground))]">(optional)</span><input className={inputClass} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+256 ..." /></label><label className="space-y-2 text-sm font-semibold">Department or responsibility <span className="font-normal text-[hsl(var(--muted-foreground))]">(optional)</span><input className={inputClass} value={form.department || ''} onChange={(e) => setForm({ ...form, department: e.target.value })} placeholder="For example, Finance" /></label><label className="space-y-2 text-sm font-semibold">Linked pupil ID <span className="font-normal text-[hsl(var(--muted-foreground))]">(optional)</span><input className={inputClass} value={form.studentId || ''} onChange={(e) => setForm({ ...form, studentId: e.target.value || null })} placeholder="Pupil record ID" /></label></div></div>
         <div className="flex flex-wrap justify-end gap-3"><Button type="button" variant="secondary" onClick={() => navigate('/users')}>Cancel</Button><Button type="submit" disabled={create.isPending} testId="button-create-user">{create.isPending ? 'Creating…' : 'Create account'}<Save className="size-4" /></Button></div>
       </form>
@@ -198,7 +204,7 @@ export function UserAccountPage() {
       <Panel className="p-6">
         <div className="mb-6 flex items-start justify-between gap-4"><div><p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.18em] text-[hsl(var(--primary))]">Account profile</p><h2 className="mt-2 font-display text-2xl">{account?.name}</h2><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">{account ? `${account.identifier} · ${labelForRole(account.role)}` : ''}</p></div><span className={`rounded-full px-3 py-1 text-xs font-semibold uppercase tracking-wide ${account?.status === 'active' ? 'bg-emerald-500/10 text-emerald-700' : 'bg-[hsl(var(--muted))] text-[hsl(var(--muted-foreground))]'}`}>{account?.status}</span></div>
         <form onSubmit={submitEdit} className="space-y-5">
-          <div className="grid gap-4 md:grid-cols-2"><label className="space-y-2 text-sm font-semibold">Full name<input className={inputClass} required value={edit.name || ''} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></label><label className="space-y-2 text-sm font-semibold">Username or registration number<input className={inputClass} required value={edit.identifier || ''} onChange={(e) => setEdit({ ...edit, identifier: e.target.value })} /></label><label className="space-y-2 text-sm font-semibold">Email<input className={inputClass} type="email" value={edit.email || ''} onChange={(e) => setEdit({ ...edit, email: e.target.value })} /></label><label className="space-y-2 text-sm font-semibold">Phone<input className={inputClass} value={edit.phone || ''} onChange={(e) => setEdit({ ...edit, phone: e.target.value })} /></label><label className="space-y-2 text-sm font-semibold">Department or responsibility<input className={inputClass} value={edit.department || ''} onChange={(e) => setEdit({ ...edit, department: e.target.value })} /></label><label className="space-y-2 text-sm font-semibold">New password <span className="font-normal text-[hsl(var(--muted-foreground))]">(optional)</span><input className={inputClass} minLength={8} type="password" value={edit.newPassword || ''} onChange={(e) => setEdit({ ...edit, newPassword: e.target.value })} placeholder="Leave blank to keep current" /></label></div>
+          <div className="grid gap-4 md:grid-cols-2"><label className="space-y-2 text-sm font-semibold">Full name<input className={inputClass} required value={edit.name || ''} onChange={(e) => setEdit({ ...edit, name: e.target.value })} /></label><label className="space-y-2 text-sm font-semibold">Username or registration number<input className={inputClass} required value={edit.identifier || ''} onChange={(e) => setEdit({ ...edit, identifier: e.target.value })} /></label><label className="space-y-2 text-sm font-semibold">Email<input className={inputClass} type="email" value={edit.email || ''} onChange={(e) => setEdit({ ...edit, email: e.target.value })} /></label><label className="space-y-2 text-sm font-semibold">Phone<input className={inputClass} value={edit.phone || ''} onChange={(e) => setEdit({ ...edit, phone: e.target.value })} /></label><label className="space-y-2 text-sm font-semibold">Department or responsibility<input className={inputClass} value={edit.department || ''} onChange={(e) => setEdit({ ...edit, department: e.target.value })} /></label>{isTeacherAccount || account?.role === 'staff' ? <label className="space-y-2 text-sm font-semibold">Monthly salary (UGX)<input className={inputClass} min={0} type="number" value={edit.monthlySalary ?? ''} onChange={(e) => setEdit({ ...edit, monthlySalary: e.target.value === '' ? undefined : Number(e.target.value) })} placeholder="0" data-testid="input-edit-monthly-salary" /><span className="block text-xs font-normal text-[hsl(var(--muted-foreground))]">Update the monthly payroll amount used for payment limits.</span></label> : null}<label className="space-y-2 text-sm font-semibold">New password <span className="font-normal text-[hsl(var(--muted-foreground))]">(optional)</span><input className={inputClass} minLength={8} type="password" value={edit.newPassword || ''} onChange={(e) => setEdit({ ...edit, newPassword: e.target.value })} placeholder="Leave blank to keep current" /></label></div>
           <div className="grid gap-4 border-t border-[hsl(var(--border))] pt-5 md:grid-cols-2"><label className="space-y-2 text-sm font-semibold">Role<select className={inputClass} value={edit.role || account?.role} onChange={(e) => setEdit({ ...edit, role: e.target.value as Role })} disabled={session.data.user.role !== 'super_admin'}>{roles.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}</select></label><label className="space-y-2 text-sm font-semibold">Status<select className={inputClass} value={edit.status || account?.status} onChange={(e) => setEdit({ ...edit, status: e.target.value as 'active' | 'inactive' })}><option value="active">Active</option><option value="inactive">Inactive</option></select></label></div>
           <div className="flex flex-wrap gap-3"><Button type="submit" disabled={update.isPending} testId="button-save-user">{update.isPending ? 'Saving…' : 'Save account'}<Save className="size-4" /></Button><Button type="button" onClick={toggleStatus} variant="secondary" disabled={update.isPending} testId="button-toggle-user-status">{account?.status === 'active' ? <><UserX className="size-4" /> Deactivate</> : <><UserCheck className="size-4" /> Activate</>}</Button><Button type="button" onClick={deleteAccount} variant="danger" disabled={remove.isPending || session.data.user.role !== 'super_admin'} testId="button-delete-user"><Trash2 className="size-4" /> Delete</Button></div>
         </form>

@@ -15,6 +15,11 @@ const money = (n = 0) => new Intl.NumberFormat('en-UG', { style: 'currency', cur
 const dateLabel = (value?: string) => value ? new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }).format(new Date(value)) : '—';
 const todayLabel = new Intl.DateTimeFormat('en-GB', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' }).format(new Date());
 const pupilClassOptions = ['Baby Class', 'Middle Class', 'Top Class', 'Daycare', 'Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6', 'Primary 7'];
+const classDisplayName = (name: string, stream?: string | null) => {
+  const className = name.trim();
+  const streamName = String(stream || '').trim();
+  return streamName ? `${className} ${streamName}` : className;
+};
 
 function AdmissionDetailsFields({ form, update, declarationAccepted, onDeclarationChange }: {
   form: Record<string, string | boolean>;
@@ -972,7 +977,7 @@ function AttendanceCreatePage() {
   const params = new URLSearchParams(location.split('?')[1] || '');
   const [date, setDate] = useState(params.get('date') || new Date().toISOString().slice(0, 10));
   const [selectedClass, setSelectedClass] = useState(params.get('className') || '');
-  const classes = useMemo(() => (operations.data?.modules?.classes || []).map((item) => ({ id: String(item.id), name: String(item.name) })), [operations.data]);
+  const classes = useMemo(() => (operations.data?.modules?.classes || []).map((item) => ({ id: String(item.id), name: classDisplayName(String(item.name), item.stream ? String(item.stream) : '') })), [operations.data]);
   const students = useListStudents({ className: selectedClass, status: 'active' }, { query: { enabled: Boolean(selectedClass), queryKey: getListStudentsQueryKey({ className: selectedClass, status: 'active' }) } });
   const canCreate = session?.user.role === 'administrator' || session?.user.role === 'super_admin' || session?.user.role === 'teacher';
 
@@ -1000,7 +1005,7 @@ function AttendanceCreatePage() {
       <Panel className="p-6" testId="panel-attendance-class-selection">
         <div className="flex items-center gap-3"><span className="flex size-10 items-center justify-center rounded-xl bg-[hsl(var(--secondary))] text-[hsl(var(--primary))]"><CalendarDays className="size-5" /></span><div><h2 className="font-display text-2xl">Choose a class</h2><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">Teachers see only their assigned classes.</p></div></div>
         <label className="mt-6 block"><span className="mb-1.5 block text-xs font-semibold">Attendance date</span><input type="date" value={date} onChange={(event) => setDate(event.target.value)} className="focus-ring h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3.5 text-sm outline-none" data-testid="input-create-attendance-date" /></label>
-        <div className="mt-5"><span className="mb-1.5 block text-xs font-semibold">Class <span className="text-[hsl(var(--destructive))]">*</span></span>{operations.isLoading ? <Skeleton className="h-11 w-full" /> : classes.length ? <div className="grid gap-2">{classes.map((item) => <label key={item.id} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm transition ${selectedClass === item.name ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.08)] font-semibold' : 'border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/.45)]'}`}><input type="radio" name="attendance-class" value={item.name} checked={selectedClass === item.name} onChange={() => setSelectedClass(item.name)} className="accent-[hsl(var(--primary))]" data-testid={`radio-attendance-class-${item.id}`} /><span>{item.name}</span></label>)}</div> : <div className="rounded-xl border border-dashed border-[hsl(var(--border))] p-4 text-sm text-[hsl(var(--muted-foreground))]">No assigned classes are available. Ask an administrator to create a class and assign it to you.</div>}</div>
+         <div className="mt-5"><span className="mb-1.5 block text-xs font-semibold">Class and stream <span className="text-[hsl(var(--destructive))]">*</span></span>{operations.isLoading ? <Skeleton className="h-11 w-full" /> : classes.length ? <div className="grid gap-2">{classes.map((item) => <label key={item.id} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 text-sm transition ${selectedClass === item.name ? 'border-[hsl(var(--primary))] bg-[hsl(var(--primary)/.08)] font-semibold' : 'border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/.45)]'}`}><input type="radio" name="attendance-class" value={item.name} checked={selectedClass === item.name} onChange={() => setSelectedClass(item.name)} className="accent-[hsl(var(--primary))]" data-testid={`radio-attendance-class-${item.id}`} /><span>{item.name}</span></label>)}</div> : <div className="rounded-xl border border-dashed border-[hsl(var(--border))] p-4 text-sm text-[hsl(var(--muted-foreground))]">No assigned classes are available. Ask an administrator to create a class and assign it to you.</div>}</div>
         {selectedClass && <div className="mt-6 rounded-2xl bg-[hsl(var(--secondary)/.6)] p-4"><p className="text-xs text-[hsl(var(--muted-foreground))]">Selected class</p><p className="mt-1 font-display text-2xl text-[hsl(var(--primary))]">{selectedClass}</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">{students.isLoading ? 'Loading pupils…' : `${students.data?.length || 0} active pupil${students.data?.length === 1 ? '' : 's'} found`}</p></div>}
       </Panel>
       <Panel className="overflow-hidden" testId="panel-attendance-pupil-preview">
@@ -1021,7 +1026,7 @@ function AttendancePage() {
   const [local, setLocal] = useState<Record<string, AttendanceStatus>>({});
   const [arrivalTimes, setArrivalTimes] = useState<Record<string, string>>({});
   const operations = useGetOperations();
-  const classOptions = useMemo(() => (operations.data?.modules?.classes || []).map((item) => String(item.name)), [operations.data]);
+   const classOptions = useMemo(() => (operations.data?.modules?.classes || []).map((item) => classDisplayName(String(item.name), item.stream ? String(item.stream) : '')), [operations.data]);
   const query = useGetAttendance({ date, className }, { query: { queryKey: getGetAttendanceQueryKey({ date, className }) } });
   const save = useSaveAttendance();
   const records = query.data || [];
