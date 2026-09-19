@@ -568,7 +568,7 @@ export function OperationsPage() {
   const baseViews = roleViews[role] || roleViews.staff;
   const isExpensesRoute = location.split('?')[0] === '/expenses';
   const visibleViews = views.filter((item) => (isExpensesRoute ? item.key === 'expenses' : baseViews.includes(item.key) || ((item.key === 'expenses') && session?.user.permissions.includes('expenses_view'))));
-  const queryString = location.includes('?') ? location.slice(location.indexOf('?') + 1) : '';
+  const queryString = typeof window !== 'undefined' ? window.location.search.slice(1) : location.includes('?') ? location.slice(location.indexOf('?') + 1) : '';
   const queryParams = new URLSearchParams(queryString);
   const requested = queryParams.get('view') as ViewKey | null;
   const isEventsView = requested === 'events';

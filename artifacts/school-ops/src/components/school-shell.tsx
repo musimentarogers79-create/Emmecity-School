@@ -320,7 +320,8 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [profileOpen, setProfileOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
   const client = useQueryClient();
-  const { data: session } = useGetCurrentUser();
+  const sessionQuery = useGetCurrentUser();
+  const { data: session } = sessionQuery;
   const logout = useLogout();
   const user = session?.user;
   const displayName = user?.name || 'School administrator';
@@ -352,6 +353,13 @@ export function AppShell({ children }: { children: ReactNode }) {
     document.addEventListener('mousedown', closeMenu);
     return () => document.removeEventListener('mousedown', closeMenu);
   }, [profileOpen]);
+  useEffect(() => {
+    if (sessionQuery.isError) setLocation('/');
+  }, [sessionQuery.isError, setLocation]);
+  if (sessionQuery.isLoading) {
+    return <div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(var(--background))] p-6 text-sm text-[hsl(var(--muted-foreground))]">Loading secure school workspace…</div>;
+  }
+  if (sessionQuery.isError || !user) return null;
   return (
     <div className="flex min-h-[100dvh] bg-[hsl(var(--background))] text-[hsl(var(--foreground))]">
       {mobileOpen && <button aria-label="Close navigation" data-testid="button-close-mobile-nav" onClick={() => setMobileOpen(false)} className="fixed inset-0 z-30 bg-[hsl(var(--foreground)/.32)] md:hidden" />}

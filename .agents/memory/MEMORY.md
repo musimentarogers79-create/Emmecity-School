@@ -18,3 +18,4 @@
 - [Admission parent records](admission-parent-records.md) — parent and guardian details stay in the saved admission document and print as an official register.
 - [Production authentication bootstrap](production-auth-bootstrap.md) — production may not contain development users; bootstrap only the canonical Isingoma administrator.
 - [Event RSVP boundary](event-rsvp-boundary.md) — browser reminders can be device-scoped; authoritative attendee registration needs persisted account-level records.
+- [Wouter query routing](wouter-query-routing.md) — read operations view parameters from the browser search string, not only the pathname returned by the router hook.
