@@ -221,11 +221,12 @@ export async function updateUserProfile(user: SchoolUser, data: {
 }) {
   const schoolId = await getSchoolId();
   const updates: Partial<User> = { updatedAt: new Date() };
-  if (data.name !== undefined) {
+  const isCanonicalAdministrator = user.role === "administrator" && user.identifier.trim().toLowerCase() === "isingoma";
+  if (data.name !== undefined && !isCanonicalAdministrator) {
     updates.name = data.name.trim();
     updates.initials = initials(data.name);
   }
-  if (data.identifier !== undefined) updates.identifier = data.identifier.trim();
+  if (data.identifier !== undefined && !isCanonicalAdministrator) updates.identifier = data.identifier.trim();
   if (data.email !== undefined) updates.email = data.email.trim();
   if (data.phone !== undefined) updates.phone = data.phone.trim();
   if (data.newPassword !== undefined) updates.passwordHash = hashPassword(data.newPassword);

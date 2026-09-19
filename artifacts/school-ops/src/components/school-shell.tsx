@@ -4,7 +4,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import type { AttendanceRecord, DeletedAttendanceRegister, OperationExpense, Payment, Student } from '@workspace/api-client-react';
 import { getGetAttendanceQueryKey, getGetCurrentUserQueryKey, getGetDeletedAttendanceRegistersQueryKey, getGetOperationsQueryKey, getListPaymentsQueryKey, getListStudentsQueryKey, useDeleteAttendanceRegister, useGetAttendance, useGetCurrentUser, useGetDeletedAttendanceRegisters, useGetOperations, useListPayments, useListStudents, useLogout } from '@workspace/api-client-react';
 import { BookOpen, CalendarDays, CircleDollarSign, ClipboardList, Download, FileBarChart, KeyRound, LayoutDashboard, LogOut, Menu, Megaphone, PanelLeftClose, PanelLeftOpen, ReceiptText, Search, Settings, ShieldCheck, UserRound, Users, X } from 'lucide-react';
-import { NotificationCenter } from './notification-center';
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
 const universalSchoolNavigation: NavItem[] = [
@@ -324,7 +323,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const { data: session } = sessionQuery;
   const logout = useLogout();
   const user = session?.user;
-  const displayName = user?.name || 'School administrator';
+  const displayName = user?.name || user?.identifier || 'Isingoma';
   const roleLabel = (user?.role || 'administrator').replace('_', ' ');
   const navRole = user?.role === 'super_admin' ? 'administrator' : user?.role || 'staff';
   const canFinance = user?.role === 'administrator' || user?.role === 'super_admin' || user?.role === 'accountant' || user?.permissions.includes('finance_view');
@@ -409,7 +408,7 @@ export function AppShell({ children }: { children: ReactNode }) {
                </div>}
              </div>
         </header>
-          <main className="flex-1 overflow-x-hidden"><div className="hidden print:block print:px-8 print:pt-6"><SchoolLetterhead /></div><div className="mx-auto w-full max-w-[1480px] p-5 md:p-8">{user && (user.role === 'administrator' || user.role === 'super_admin') && location.startsWith('/students/') && !location.endsWith('/report') && <div className="mb-5 flex flex-wrap justify-end gap-2 print:hidden"><Link href={`${location}/report`} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-semibold text-[hsl(var(--primary-foreground))] hover:brightness-110" data-testid="link-create-report-card"><FileBarChart className="size-4" /> Create report card</Link></div>}<PupilExportToolbar /><AttendanceRegisterHistory /><ExpenseReportToolbar /><NotificationCenter />{children}</div></main>
+          <main className="flex-1 overflow-x-hidden"><div className="hidden print:block print:px-8 print:pt-6"><SchoolLetterhead /></div><div className="mx-auto w-full max-w-[1480px] p-5 md:p-8">{user && (user.role === 'administrator' || user.role === 'super_admin') && location.startsWith('/students/') && !location.endsWith('/report') && <div className="mb-5 flex flex-wrap justify-end gap-2 print:hidden"><Link href={`${location}/report`} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-semibold text-[hsl(var(--primary-foreground))] hover:brightness-110" data-testid="link-create-report-card"><FileBarChart className="size-4" /> Create report card</Link></div>}<PupilExportToolbar /><AttendanceRegisterHistory /><ExpenseReportToolbar />{children}</div></main>
       </div>
     </div>
   );
