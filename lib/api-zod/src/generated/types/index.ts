@@ -51,6 +51,8 @@ export * from './operationClass';
 export * from './operationDiscipline';
 export * from './operationDocument';
 export * from './operationEvent';
+export * from './operationEventAttendeesItem';
+export * from './operationEventAttendeesItemResponse';
 export * from './operationExpense';
 export * from './operationInventory';
 export * from './operationLibrary';

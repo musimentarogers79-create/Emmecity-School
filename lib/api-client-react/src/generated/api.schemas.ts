@@ -951,6 +951,19 @@ export interface OperationInventory {
   status: string;
 }
 
+export type OperationEventAttendeesItemResponse = typeof OperationEventAttendeesItemResponse[keyof typeof OperationEventAttendeesItemResponse];
+
+
+export const OperationEventAttendeesItemResponse = {
+  attending: 'attending',
+  interested: 'interested',
+} as const;
+
+export type OperationEventAttendeesItem = {
+  name: string;
+  response: OperationEventAttendeesItemResponse;
+};
+
 export interface OperationEvent {
   id: string;
   title: string;
@@ -958,6 +971,13 @@ export interface OperationEvent {
   type: string;
   location: string;
   status: string;
+  description?: string;
+  host?: string;
+  hostRole?: string;
+  hostContact?: string;
+  /** @minimum 1 */
+  attendeeLimit?: number;
+  attendees?: OperationEventAttendeesItem[];
 }
 
 export interface EventInput {
@@ -969,6 +989,12 @@ export interface EventInput {
   type: string;
   location: string;
   status: string;
+  description?: string;
+  host?: string;
+  hostRole?: string;
+  hostContact?: string;
+  /** @minimum 1 */
+  attendeeLimit?: number;
 }
 
 export interface OperationDocument {

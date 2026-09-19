@@ -9,7 +9,6 @@ import { NotificationCenter } from './notification-center';
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
 const universalSchoolNavigation: NavItem[] = [
   { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
-  { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
 ];
 export const SCHOOL_NAME = 'EMMECTY NURSERY & PRIMARY SCHOOL';
 export const SCHOOL_POSTAL_ADDRESS = 'P.O. Box 490699, Hoima City';
@@ -28,7 +27,6 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/users', label: 'Users & Roles', icon: KeyRound },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
-    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
   ],
   super_admin: [
@@ -42,7 +40,6 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/users', label: 'Users & Roles', icon: KeyRound },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
-    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
   ],
   teacher: [
@@ -57,7 +54,6 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/subjects', label: 'Subjects', icon: BookOpen },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
-    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
   ],
   accountant: [
@@ -69,7 +65,6 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/operations?view=reports', label: 'Reports', icon: FileBarChart },
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
-    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
   ],
   guardian: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -82,7 +77,6 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
     { href: '/operations?view=library', label: 'Library', icon: BookOpen },
     { href: '/operations?view=transport', label: 'Transport', icon: ReceiptText },
-    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
   ],
   student: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -95,7 +89,6 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
     { href: '/operations?view=library', label: 'Library', icon: BookOpen },
     { href: '/operations?view=transport', label: 'Transport', icon: ReceiptText },
-    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
   ],
   secretary: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -103,7 +96,6 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
     { href: '/operations?view=documents', label: 'Documents', icon: FileBarChart },
-    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
   ],
   librarian: [
@@ -111,7 +103,6 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/operations?view=library', label: 'Library', icon: BookOpen },
     { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
-    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
   ],
   nurse: [
@@ -119,7 +110,6 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/announcements', label: 'Announcements', icon: Megaphone },
     { href: '/operations?view=medical', label: 'Medical', icon: ShieldCheck },
     { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
-    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
   ],
   staff: [
@@ -130,7 +120,6 @@ const roleNavigation: Record<string, NavItem[]> = {
     { href: '/transactions', label: 'Transactions', icon: ReceiptText },
     { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
     { href: '/operations?view=documents', label: 'Documents', icon: FileBarChart },
-    { href: '/operations?view=notifications', label: 'Notifications', icon: ClipboardList },
     { href: '/timetable', label: 'Timetable', icon: BookOpen },
   ],
 };
@@ -340,7 +329,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const canFinance = user?.role === 'administrator' || user?.role === 'super_admin' || user?.role === 'accountant' || user?.permissions.includes('finance_view');
   const canExpenses = user?.role === 'administrator' || user?.role === 'super_admin' || user?.role === 'accountant' || user?.permissions.includes('expenses_view');
   const navItems = (roleNavigation[navRole] || roleNavigation.staff).filter((item) => {
-    if (item.href === '/operations?view=events' || item.href === '/operations?view=notifications') return false;
+    if (item.href === '/operations?view=events') return false;
     if (item.href === '/finance' || item.href === '/transactions') return canFinance;
     if (item.href === '/expenses') return canExpenses;
     return true;

@@ -15,4 +15,10 @@ export interface EventInput {
   type: string;
   location: string;
   status: string;
+  description?: string;
+  host?: string;
+  hostRole?: string;
+  hostContact?: string;
+  /** @minimum 1 */
+  attendeeLimit?: number;
 }

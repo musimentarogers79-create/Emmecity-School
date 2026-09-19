@@ -1821,6 +1821,9 @@ export const CreateClassResponse = zod.object({
 /**
  * @summary Get role-filtered school operations
  */
+
+
+
 export const GetOperationsResponse = zod.object({
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
   "currencyCode": zod.string(),
@@ -1946,7 +1949,16 @@ export const GetOperationsResponse = zod.object({
   "date": zod.string(),
   "type": zod.string(),
   "location": zod.string(),
-  "status": zod.string()
+  "status": zod.string(),
+  "description": zod.string().optional(),
+  "host": zod.string().optional(),
+  "hostRole": zod.string().optional(),
+  "hostContact": zod.string().optional(),
+  "attendeeLimit": zod.number().min(1).optional(),
+  "attendees": zod.array(zod.object({
+  "name": zod.string(),
+  "response": zod.enum(['attending', 'interested'])
+})).optional()
 })),
   "documents": zod.array(zod.object({
   "id": zod.string(),
@@ -1981,13 +1993,22 @@ export const GetOperationsResponse = zod.object({
 
 
 
+
 export const CreateEventBody = zod.object({
   "title": zod.string().min(1),
   "date": zod.string().min(1),
   "type": zod.string().min(1),
   "location": zod.string(),
-  "status": zod.string()
+  "status": zod.string(),
+  "description": zod.string().optional(),
+  "host": zod.string().optional(),
+  "hostRole": zod.string().optional(),
+  "hostContact": zod.string().optional(),
+  "attendeeLimit": zod.number().min(1).optional()
 })
+
+
+
 
 export const CreateEventResponse = zod.object({
   "id": zod.string(),
@@ -1995,7 +2016,16 @@ export const CreateEventResponse = zod.object({
   "date": zod.string(),
   "type": zod.string(),
   "location": zod.string(),
-  "status": zod.string()
+  "status": zod.string(),
+  "description": zod.string().optional(),
+  "host": zod.string().optional(),
+  "hostRole": zod.string().optional(),
+  "hostContact": zod.string().optional(),
+  "attendeeLimit": zod.number().min(1).optional(),
+  "attendees": zod.array(zod.object({
+  "name": zod.string(),
+  "response": zod.enum(['attending', 'interested'])
+})).optional()
 })
 
 

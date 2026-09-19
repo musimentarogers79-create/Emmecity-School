@@ -5,6 +5,7 @@
  * EMMECTY Nursery & Primary School management API
  * OpenAPI spec version: 0.2.0
  */
+import type { OperationEventAttendeesItem } from './operationEventAttendeesItem';
 
 export interface OperationEvent {
   id: string;
@@ -13,4 +14,11 @@ export interface OperationEvent {
   type: string;
   location: string;
   status: string;
+  description?: string;
+  host?: string;
+  hostRole?: string;
+  hostContact?: string;
+  /** @minimum 1 */
+  attendeeLimit?: number;
+  attendees?: OperationEventAttendeesItem[];
 }

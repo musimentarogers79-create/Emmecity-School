@@ -17,3 +17,4 @@
 - [Payroll ledger](payroll-ledger.md) — normalized salary writes protect period balances while legacy salary history remains readable.
 - [Admission parent records](admission-parent-records.md) — parent and guardian details stay in the saved admission document and print as an official register.
 - [Production authentication bootstrap](production-auth-bootstrap.md) — production may not contain development users; bootstrap only the canonical Isingoma administrator.
+- [Event RSVP boundary](event-rsvp-boundary.md) — browser reminders can be device-scoped; authoritative attendee registration needs persisted account-level records.

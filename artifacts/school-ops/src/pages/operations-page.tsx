@@ -2,10 +2,11 @@ import { useMemo, useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import { useQueryClient } from '@tanstack/react-query';
  import { type ClassInput, type EventInput, type ExpenseInput, type SalaryPaymentInput, useApproveExpense, useCreateClass, useCreateEvent, useCreateExpense, useCreateSalaryPayment, useCreateSubject, useDeleteExpense, useGetCurrentUser, useGetOperations, getGetOperationsQueryKey, useListAnnouncements, useListSalaryStaff, useListSalaries, getListSalaryStaffQueryKey, getListSalariesQueryKey } from '@workspace/api-client-react';
-import { Archive, ArrowRight, BarChart3, Bell, BookOpen, BusFront, CalendarDays, Check, ClipboardList, Download, FileText, HeartPulse, KeyRound, Library, Megaphone, Package, Pencil, Plus, Printer, Receipt, RefreshCcw, Search, ShieldAlert, UserRound, Users, WalletCards, X } from 'lucide-react';
+import { Archive, ArrowRight, BarChart3, BookOpen, BusFront, CalendarDays, Check, ClipboardList, Download, FileText, HeartPulse, KeyRound, Library, Megaphone, Package, Pencil, Plus, Printer, Receipt, RefreshCcw, Search, ShieldAlert, UserRound, Users, WalletCards, X } from 'lucide-react';
 import { AppShell, Button, EmptyState, ErrorState, PageHeader, Panel, Skeleton } from '@/components/school-shell';
 import { trackEvent } from '@/lib/analytics';
 import { brandedPdf } from './school-pages';
+import { EventsPage } from './events-page';
 
  type ViewKey = 'classes' | 'subjects' | 'assignments' | 'staff' | 'parents' | 'expenses' | 'salaries' | 'discipline' | 'medical' | 'library' | 'transport' | 'inventory' | 'events' | 'documents' | 'reports' | 'notifications';
 type Row = Record<string, string | number | boolean>;
@@ -15,20 +16,20 @@ const views: { key: ViewKey; label: string; icon: typeof ClipboardList }[] = [
   { key: 'staff', label: 'Staff', icon: Users }, { key: 'parents', label: 'Parents', icon: Users }, { key: 'expenses', label: 'Expenses', icon: Receipt },
   { key: 'salaries', label: 'Salaries', icon: WalletCards }, { key: 'discipline', label: 'Discipline', icon: ShieldAlert }, { key: 'medical', label: 'Medical', icon: HeartPulse },
   { key: 'library', label: 'Library', icon: Library }, { key: 'transport', label: 'Transport', icon: BusFront }, { key: 'inventory', label: 'Inventory', icon: Package },
-  { key: 'events', label: 'Events', icon: CalendarDays }, { key: 'documents', label: 'Documents', icon: FileText }, { key: 'reports', label: 'Reports', icon: BarChart3 }, { key: 'notifications', label: 'Notifications', icon: Bell },
+  { key: 'events', label: 'Events', icon: CalendarDays }, { key: 'documents', label: 'Documents', icon: FileText }, { key: 'reports', label: 'Reports', icon: BarChart3 },
 ];
 
 const roleViews: Record<string, ViewKey[]> = {
   administrator: views.map((item) => item.key),
   super_admin: views.map((item) => item.key),
-  teacher: ['classes', 'subjects', 'assignments', 'discipline', 'medical', 'events', 'documents', 'notifications'],
-  accountant: ['expenses', 'salaries', 'reports', 'documents', 'events', 'notifications'],
-  guardian: ['assignments', 'discipline', 'medical', 'library', 'transport', 'events', 'notifications'],
-  student: ['assignments', 'library', 'transport', 'events', 'notifications'],
-  secretary: ['events', 'documents', 'notifications'],
-  librarian: ['library', 'events', 'notifications'],
-  nurse: ['medical', 'events', 'notifications'],
-  staff: ['events', 'documents', 'notifications'],
+  teacher: ['classes', 'subjects', 'assignments', 'discipline', 'medical', 'events', 'documents'],
+  accountant: ['expenses', 'salaries', 'reports', 'documents', 'events'],
+  guardian: ['assignments', 'discipline', 'medical', 'library', 'transport', 'events'],
+  student: ['assignments', 'library', 'transport', 'events'],
+  secretary: ['events', 'documents'],
+  librarian: ['library', 'events'],
+  nurse: ['medical', 'events'],
+  staff: ['events', 'documents'],
 };
 
 const pretty = (value: string) => value.replace(/([A-Z])/g, ' $1').replace(/^./, (letter) => letter.toUpperCase());
@@ -570,6 +571,7 @@ export function OperationsPage() {
   const queryString = location.includes('?') ? location.slice(location.indexOf('?') + 1) : '';
   const queryParams = new URLSearchParams(queryString);
   const requested = queryParams.get('view') as ViewKey | null;
+  const isEventsView = requested === 'events';
   const view = isExpensesRoute ? 'expenses' : visibleViews.some((item) => item.key === requested) ? requested as ViewKey : visibleViews[0]?.key || 'events';
   const selected = views.find((item) => item.key === view) || views[0];
   const rows = useMemo(() => {
@@ -594,6 +596,7 @@ export function OperationsPage() {
   const availableActions = query.data?.actions || [];
   const today = new Date().toISOString().slice(0, 10);
   const publicHolidays = rows.filter((row) => String(row.type || '').toLowerCase().includes('holiday') && String(row.date || '') >= today && String(row.status || '').toLowerCase() !== 'cancelled').sort((a, b) => String(a.date || '').localeCompare(String(b.date || ''))).slice(0, 4);
+  if (isEventsView) return <EventsPage />;
    return (
      <AppShell>
        <PageHeader

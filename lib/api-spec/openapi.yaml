@@ -2298,6 +2298,28 @@ components:
           type: string
         status:
           type: string
+        description:
+          type: string
+        host:
+          type: string
+        hostRole:
+          type: string
+        hostContact:
+          type: string
+        attendeeLimit:
+          type: number
+          minimum: 1
+        attendees:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              response:
+                type: string
+                enum: [attending, interested]
+            required: [name, response]
       required: [id, title, date, type, location, status]
     EventInput:
       type: object
@@ -2315,6 +2337,17 @@ components:
           type: string
         status:
           type: string
+        description:
+          type: string
+        host:
+          type: string
+        hostRole:
+          type: string
+        hostContact:
+          type: string
+        attendeeLimit:
+          type: number
+          minimum: 1
       required: [title, date, type, location, status]
     OperationDocument:
       type: object
