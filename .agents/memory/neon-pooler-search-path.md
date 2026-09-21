@@ -7,4 +7,4 @@ When the app uses the Neon pooler connection string, configure each newly opened
 
 **Why:** The copied public tables existed and row counts matched, but unqualified Drizzle queries failed until the session search path was set.
 
-**How to apply:** Keep the application tables in PostgreSQL's public schema and apply the per-connection setup only when the Neon connection is active. Do not expose or log the connection string.
+**How to apply:** Keep the application tables in PostgreSQL's public schema and apply the per-connection setup only when the Neon connection is active. Use node-postgres Pool's `verify` hook so the setup query completes before Drizzle receives a client; an async `connect` listener can race with the first application query. Do not expose or log the connection string.

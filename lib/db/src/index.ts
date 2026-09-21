@@ -6,6 +6,7 @@ const { Pool } = pg;
 
 const databaseUrl =
   process.env.NEON_DATABASE_URL?.trim() || process.env.DATABASE_URL?.trim();
+const usingNeon = Boolean(process.env.NEON_DATABASE_URL?.trim());
 
 if (!databaseUrl) {
   throw new Error(
@@ -13,14 +14,20 @@ if (!databaseUrl) {
   );
 }
 
-export const pool = new Pool({ connectionString: databaseUrl });
-
-if (process.env.NEON_DATABASE_URL?.trim()) {
-  pool.options = {
-    ...pool.options,
-    options: "-c search_path=public",
-  };
-}
+export const pool = new Pool({
+  connectionString: databaseUrl,
+  max: 10,
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 10_000,
+  keepAlive: true,
+  ...(usingNeon
+    ? {
+        verify: (client: { query: (text: string, callback: (error: Error | undefined) => void) => void }, callback: (error?: Error) => void) => {
+          client.query("SET search_path TO public", (error) => callback(error));
+        },
+      }
+    : {}),
+});
 export const db = drizzle(pool, { schema });
 
 export * from "./schema";
