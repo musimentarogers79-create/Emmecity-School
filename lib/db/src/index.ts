@@ -16,12 +16,10 @@ if (!databaseUrl) {
 export const pool = new Pool({ connectionString: databaseUrl });
 
 if (process.env.NEON_DATABASE_URL?.trim()) {
-  pool.on("connect", (client) => {
-    void client.query("SET search_path TO public").catch((error) => {
-      console.error("Failed to configure the Neon PostgreSQL search path.", error);
-      client.release(true);
-    });
-  });
+  pool.options = {
+    ...pool.options,
+    options: "-c search_path=public",
+  };
 }
 export const db = drizzle(pool, { schema });
 
