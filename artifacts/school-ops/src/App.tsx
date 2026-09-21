@@ -1,37 +1,38 @@
-import { type ReactNode } from 'react';
+import { lazy, Suspense, type ReactNode } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import NotFound from '@/pages/not-found';
-import { ExpenseCreatePage, OperationsPage } from '@/pages/operations-page';
-import { ProfilePage } from '@/pages/profile-page';
-import { SubjectsPage } from '@/pages/subjects-page';
-import { UserAccountPage, UsersPage } from '@/pages/users-page';
-import {
-  AnnouncementsPage,
-  AttendanceCreatePage,
-  AttendancePage,
-  DashboardPage,
-  FinancePage,
-  LoginPage,
-  SalaryReceiptPage,
-  SettingsPage,
-  StudentProfilePage,
-  ReportCardPage,
-  StudentsPage,
-  SupportPage,
-  TransactionDetailPage,
-  TransactionsPage,
-  TimetablePage,
-  UserManualPage,
-} from '@/pages/school-pages';
 import {
   Route,
   Switch,
   useLocation,
   Router as WouterRouter,
 } from 'wouter';
+
+const AnnouncementsPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.AnnouncementsPage })));
+const AttendanceCreatePage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.AttendanceCreatePage })));
+const AttendancePage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.AttendancePage })));
+const DashboardPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.DashboardPage })));
+const FinancePage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.FinancePage })));
+const LoginPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.LoginPage })));
+const SalaryReceiptPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.SalaryReceiptPage })));
+const SettingsPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.SettingsPage })));
+const StudentProfilePage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.StudentProfilePage })));
+const ReportCardPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.ReportCardPage })));
+const StudentsPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.StudentsPage })));
+const SupportPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.SupportPage })));
+const TimetablePage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.TimetablePage })));
+const TransactionDetailPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.TransactionDetailPage })));
+const TransactionsPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.TransactionsPage })));
+const UserManualPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.UserManualPage })));
+const ExpenseCreatePage = lazy(() => import('@/pages/operations-page').then((module) => ({ default: module.ExpenseCreatePage })));
+const OperationsPage = lazy(() => import('@/pages/operations-page').then((module) => ({ default: module.OperationsPage })));
+const ProfilePage = lazy(() => import('@/pages/profile-page').then((module) => ({ default: module.ProfilePage })));
+const SubjectsPage = lazy(() => import('@/pages/subjects-page').then((module) => ({ default: module.SubjectsPage })));
+const UserAccountPage = lazy(() => import('@/pages/users-page').then((module) => ({ default: module.UserAccountPage })));
+const UsersPage = lazy(() => import('@/pages/users-page').then((module) => ({ default: module.UsersPage })));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -49,7 +50,8 @@ function Router() {
     // Keep a shared shell (sidebar, navbar) outside the boundary so it
     // survives a page crash.
     <RoutedErrorBoundary>
-      <Switch>
+      <Suspense fallback={<RouteLoading />}>
+        <Switch>
         <Route path="/" component={LoginPage} />
         <Route path="/support" component={SupportPage} />
         <Route path="/manual" component={UserManualPage} />
@@ -75,8 +77,17 @@ function Router() {
         <Route path="/settings" component={SettingsPage} />
         <Route path="/profile" component={ProfilePage} />
         <Route component={NotFound} />
-      </Switch>
+        </Switch>
+      </Suspense>
     </RoutedErrorBoundary>
+  );
+}
+
+function RouteLoading() {
+  return (
+    <main className="grid min-h-screen place-items-center bg-[hsl(var(--background))] p-6 text-sm text-[hsl(var(--muted-foreground))]">
+      Loading workspace…
+    </main>
   );
 }
 

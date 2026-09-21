@@ -66,6 +66,15 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
+/* Keep long operational directories responsive while scrolling. Browsers can
+   skip layout and paint work for rows that are outside the viewport. */
+[data-testid^="link-student-"],
+[data-testid^="agenda-event-"],
+[data-testid^="button-select-user-"] {
+  content-visibility: auto;
+  contain-intrinsic-size: 72px;
+}
+
 /* LIGHT MODE */
 :root {
   --button-outline: rgba(0, 0, 0, 0.1);
