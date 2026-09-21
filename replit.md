@@ -9,7 +9,8 @@ This is a role-aware school management platform for EMMECTY NURSERY & PRIMARY SC
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- Required env: `DATABASE_URL` — existing managed Postgres fallback connection.
+- Optional env: `NEON_DATABASE_URL` — Neon Postgres connection; when present, the app and Drizzle tooling use Neon first without deleting or altering the fallback database.
 
 ### Bootstrap account
 
