@@ -21,3 +21,4 @@
 - [Wouter query routing](wouter-query-routing.md) — read operations view parameters from the browser search string, not only the pathname returned by the router hook.
 - [Neon pooler search path](neon-pooler-search-path.md) — Neon pooler sessions may need an explicit public search path before Drizzle queries can resolve tables.
 - [Replit production versus Neon](replit-production-neon-migration.md) — managed production can diverge from the development database copied into Neon; verify production before cutover.
+- [Student registration response validation](student-registration-response-validation.md) — omit unset parent-status enums; post-transaction response failures can create misleading errors and duplicates.
