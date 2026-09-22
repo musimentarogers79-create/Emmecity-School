@@ -12,7 +12,7 @@ const universalSchoolNavigation: NavItem[] = [
 export const SCHOOL_NAME = 'EMMECTY NURSERY & PRIMARY SCHOOL';
 export const SCHOOL_POSTAL_ADDRESS = 'P.O. Box 490699, Hoima City';
 export const SCHOOL_PHONE = '0784905399 / 0775705175';
-export const SCHOOL_LOCATION = 'Kasasa Road behind Kabago Fuel Station';
+export const SCHOOL_LOCATION = 'Kasasa Road behind Kabagambe Fuel Station';
 const roleNavigation: Record<string, NavItem[]> = {
   administrator: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },

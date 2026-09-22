@@ -186,7 +186,7 @@ function LoginPage() {
   };
   return <div className="min-h-[100dvh] bg-[#f6f3eb] text-[hsl(var(--foreground))]">
     <div className="grid min-h-[100dvh] lg:grid-cols-2">
-      <section className="order-2 flex min-h-[300px] flex-col justify-between px-5 py-8 sm:px-14 md:px-20 lg:order-1 lg:min-h-[100dvh] lg:px-[12%] lg:py-16" data-testid="login-brand-panel">
+       <section className="order-2 flex min-h-[300px] flex-col justify-between px-5 py-8 sm:px-14 md:px-20 lg:order-2 lg:min-h-[100dvh] lg:px-[12%] lg:py-16" data-testid="login-brand-panel">
         <div className="mx-auto w-full max-w-md">
           <img src="/corenexa-systems-logo-transparent.png" alt="Corenexa Systems" loading="lazy" className="h-20 w-full object-contain object-left sm:h-36" data-testid="img-corenexa-logo" />
           <h1 className="mt-10 max-w-sm font-display text-4xl leading-[1.08] tracking-[-.04em] sm:text-5xl">Digital systems made for better work.</h1>
@@ -195,7 +195,7 @@ function LoginPage() {
         </div>
         <p className="mx-auto mt-12 w-full max-w-md text-xs text-[hsl(var(--muted-foreground))]">© 2024 CoreNexa Systems. All rights reserved.</p>
       </section>
-      <section className="order-1 flex min-h-[100dvh] items-start justify-center bg-white px-4 py-6 sm:px-12 sm:py-12 lg:order-2 lg:min-h-0 lg:items-center lg:px-[12%] lg:py-16" data-testid="login-form-panel">
+       <section className="order-1 flex min-h-[100dvh] items-start justify-center bg-white px-4 py-6 sm:px-12 sm:py-12 lg:order-1 lg:min-h-0 lg:items-center lg:px-[12%] lg:py-16" data-testid="login-form-panel">
         <div className="w-full max-w-[430px] animate-rise-in">
           <div className="mb-8"><p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.22em] text-[hsl(var(--primary))]">Secure school workspace</p><h2 className="mt-3 font-display text-4xl leading-none tracking-[-.04em] sm:text-5xl">Welcome back</h2></div>
           <div className="rounded-3xl border border-[hsl(var(--border))] bg-white p-5 shadow-[0_20px_60px_rgba(27,67,57,.10)] sm:p-7">
