@@ -648,6 +648,116 @@ body:has([data-testid="button-sign-in"]) li:has([data-testid="link-user-manual-l
   display: none;
 }
 
+/* Login-only polish. Keep these selectors scoped to the existing sign-in
+   screen so the shared form styles on the rest of the system remain intact. */
+body:has([data-testid="button-sign-in"]) [data-testid="login-brand-panel"] > div > img {
+  width: auto;
+  max-width: 88%;
+  height: clamp(5rem, 10vw, 8rem);
+  object-fit: contain;
+  object-position: left center;
+}
+
+body:has([data-testid="button-sign-in"]) [data-testid="login-form-panel"] > div {
+  width: 100%;
+  max-width: 460px;
+}
+
+body:has([data-testid="button-sign-in"]) [data-testid="login-form-panel"] [data-testid="img-school-logo"] {
+  width: 5rem;
+  height: 5rem;
+  padding: .35rem;
+  border: 1px solid hsl(var(--primary) / .16);
+  border-radius: 1rem;
+  background: hsl(var(--secondary) / .35);
+}
+
+body:has([data-testid="button-sign-in"]) [data-testid="img-school-logo"] + div h3 {
+  letter-spacing: -.01em;
+}
+
+body:has([data-testid="button-sign-in"]) [data-testid="img-school-logo"] + div h3::after {
+  content: "School Management Portal";
+  display: block;
+  margin-top: .35rem;
+  color: hsl(var(--primary));
+  font-family: var(--app-font-sans);
+  font-size: .68rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+body:has([data-testid="button-sign-in"]) [data-testid="img-school-logo"] + div > div::after {
+  content: "Powered by CoreNexa Systems";
+  display: block;
+  margin-top: .35rem;
+  color: hsl(var(--muted-foreground));
+  font-size: .64rem;
+  font-weight: 600;
+}
+
+body:has([data-testid="button-sign-in"]) [data-testid="button-role-staff"],
+body:has([data-testid="button-sign-in"]) [data-testid="button-role-learner"] {
+  min-height: 2.75rem;
+  border: 1px solid transparent;
+  border-radius: .8rem;
+  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease, color 160ms ease;
+}
+
+body:has([data-testid="button-sign-in"]) [data-testid="button-role-staff"].bg-white,
+body:has([data-testid="button-sign-in"]) [data-testid="button-role-learner"].bg-white {
+  border-color: hsl(var(--primary) / .2);
+  box-shadow: 0 2px 8px hsl(var(--foreground) / .08);
+  color: hsl(var(--foreground));
+}
+
+body:has([data-testid="button-sign-in"]) [data-testid="button-role-staff"]:not(.bg-white),
+body:has([data-testid="button-sign-in"]) [data-testid="button-role-learner"]:not(.bg-white) {
+  color: hsl(var(--muted-foreground));
+}
+
+body:has([data-testid="button-sign-in"]) [data-testid="checkbox-remember"] {
+  width: 1rem;
+  height: 1rem;
+  min-width: 1rem;
+  min-height: 1rem;
+  flex: 0 0 1rem;
+  appearance: none;
+  border: 1px solid hsl(var(--input));
+  border-radius: .3rem;
+  background: hsl(var(--background));
+  cursor: pointer;
+}
+
+body:has([data-testid="button-sign-in"]) [data-testid="checkbox-remember"]:checked {
+  border-color: hsl(var(--primary));
+  background: hsl(var(--primary));
+  box-shadow: inset 0 0 0 3px hsl(var(--background));
+}
+
+body:has([data-testid="button-sign-in"]) [data-testid="checkbox-remember"]:focus-visible {
+  outline: 2px solid hsl(var(--ring));
+  outline-offset: 2px;
+}
+
+@media (max-width: 767px) {
+  body:has([data-testid="button-sign-in"]) [data-testid="login-brand-panel"] > div > img {
+    max-width: 78%;
+    height: 5rem;
+  }
+
+  body:has([data-testid="button-sign-in"]) [data-testid="login-form-panel"] > div {
+    max-width: 100%;
+  }
+
+  body:has([data-testid="button-sign-in"]) [data-testid="login-form-panel"] [data-testid="img-school-logo"] {
+    width: 4.5rem;
+    height: 4.5rem;
+  }
+}
+
 .print-only-school-heading {
   display: none;
 }

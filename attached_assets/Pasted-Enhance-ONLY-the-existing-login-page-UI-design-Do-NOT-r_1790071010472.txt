@@ -1,0 +1,105 @@
+Enhance ONLY the existing login page UI/design. Do NOT rebuild the system, change the database, authentication logic, routes, APIs, dashboard functionality, or any existing working features.
+
+Use the current login page as the foundation and make it look more polished, premium, modern, and professional while keeping the existing overall two-column layout and CoreNexa branding.
+
+Make these specific improvements:
+
+1. CORENEXA LOGO
+- Reduce the CoreNexa logo size slightly so it does not dominate the page.
+- Keep it clearly visible and professionally positioned.
+- Do not remove or replace the logo.
+- Maintain proper proportions and image quality.
+
+2. LOGIN CARD
+- Increase the login card width by approximately 5–10%.
+- Give the form fields, labels, tabs, and buttons slightly more breathing room.
+- Maintain the existing rounded corners, clean appearance, and subtle shadow.
+- Do not make the card excessively large.
+- Improve typography and spacing where necessary while maintaining the current design style.
+
+3. REMEMBER DEVICE CHECKBOX
+- Replace the oversized checkbox with a normal, professionally sized checkbox.
+- Align it properly with the "Remember device" text.
+- Keep the "Forgot password?" link aligned appropriately on the same row.
+- Make sure the checkbox remains fully functional.
+
+4. LOGIN TABS
+Improve the "Staff & Teachers" and "Pupils & Guardians" tabs.
+- Make the active tab much clearer through subtle background, border, shadow, or typography changes.
+- Keep the design elegant and not overly colorful.
+- If icons are already supported by the project, use appropriate small icons such as:
+  Staff & Teachers — teacher/staff icon
+  Pupils & Guardians — students/family icon
+- Do not use oversized emojis.
+- Make sure both tabs remain fully functional and switch to the correct login forms.
+- Maintain accessibility and good contrast.
+
+5. SCHOOL BRANDING
+Strengthen the school's identity because this is the school's official management portal.
+
+The hierarchy should communicate:
+
+"EMMECTY NURSERY & PRIMARY SCHOOL"
+"School Management Portal"
+"Powered by CoreNexa Systems"
+
+Do NOT make CoreNexa disappear. Instead, make the school identity the primary identity of the login card while CoreNexa remains the technology/platform provider.
+
+- Give the school logo slightly stronger visual prominence.
+- Make the school name clear and readable.
+- Improve spacing between the school logo, school name, contact information, and divider.
+- Keep the existing school information accurate.
+- Do NOT invent or change school contact details.
+
+6. OVERALL POLISH
+- Preserve the current clean white/cream background and existing professional blue/green color direction.
+- Improve spacing, alignment, typography, proportions, and visual hierarchy.
+- Keep the page elegant and suitable for a professional school management system.
+- Avoid unnecessary animations, excessive gradients, excessive shadows, or decorative elements.
+- Do not overcrowd the page.
+- Ensure the design works properly on desktop, tablet, and mobile.
+- On mobile, ensure the login card, school information, tabs, inputs, checkbox, and buttons fit correctly without horizontal scrolling.
+
+7. IMPORTANT FUNCTIONALITY RULE
+This is a UI enhancement only.
+DO NOT:
+- change authentication
+- change login credentials
+- change database structure
+- change APIs
+- change routes
+- change dashboard functionality
+- remove existing buttons
+- remove existing login options
+- change permissions or roles
+- break Staff & Teachers login
+- break Pupils & Guardians login
+- break Forgot Password
+- break Remember Device
+
+Before finishing:
+- Inspect the existing implementation first.
+- Modify only the necessary frontend/UI files.
+- Reuse the existing components, assets, logos, fonts, and styles where possible.
+- Do not create duplicate login pages or unnecessary files.
+- Test both login tabs and all existing controls.
+- Test desktop, tablet, and mobile responsiveness.
+- Check for console errors.
+- Make sure the final result looks like a polished commercial school management product.
+
+The final visual hierarchy should be:
+
+CORENEXA branding
+        ↓
+Welcome back
+        ↓
+School logo + EMMECTY NURSERY & PRIMARY SCHOOL
+School Management Portal
+        ↓
+Staff & Teachers | Pupils & Guardians
+        ↓
+Login form
+        ↓
+Sign In
+
+Keep the existing functionality exactly as it is and focus only on making the existing login page more professional, balanced, modern, and visually refined.
