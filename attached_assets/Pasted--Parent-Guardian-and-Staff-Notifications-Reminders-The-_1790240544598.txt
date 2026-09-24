@@ -1,0 +1,186 @@
+### Parent, Guardian and Staff Notifications & Reminders
+
+The school management system must have a complete **automated communication and notification system** that keeps parents, guardians, staff, and other authorized users informed about all important school activities and financial information.
+
+The system should automatically send notifications through **SMS, email, and in-system notifications** where available.
+
+#### 1. School Events and Announcements
+
+* When the school creates an event, the system should automatically notify the relevant parents/guardians and staff.
+* Remind them before the event according to the school's configured schedule, for example:
+
+  * 7 days before
+  * 3 days before
+  * 1 day before
+  * On the event day
+* Examples include:
+
+  * Parents' meetings
+  * Staff meetings
+  * Sports days
+  * Academic days
+  * School trips
+  * Examinations
+  * Graduation
+  * School closures
+  * Opening and closing dates
+  * Religious or cultural events
+  * Important school announcements
+
+#### 2. School Fees Balance Reminders
+
+The system should automatically notify parents/guardians about their child's outstanding school fees balance.
+
+Notifications should include:
+
+* Student's name
+* Student registration number
+* Class
+* Total fees required
+* Amount paid
+* Outstanding balance
+* Payment deadline
+* Available payment methods
+
+The system should be able to send configurable reminders, such as:
+
+* Before the payment deadline
+* On the payment deadline
+* After the deadline
+* Periodic balance reminders until the balance is cleared
+
+#### 3. Payment Confirmation
+
+Whenever a payment is recorded, the system must automatically notify the parent/guardian.
+
+The confirmation should include:
+
+* Student's name
+* Registration number
+* Amount paid
+* Payment date and time
+* Payment method
+* Receipt/payment reference number
+* Previous balance
+* New remaining balance
+* Staff/user who recorded the payment, where appropriate
+
+The parent/guardian should receive the confirmation immediately after the payment is successfully recorded.
+
+#### 4. Other Important Notifications
+
+The system should also support automated notifications for:
+
+* Student registration confirmation
+* Student admission
+* New student account creation
+* Password reset/OTP
+* Attendance alerts
+* Student absence notifications
+* Late-coming notifications
+* Examination results
+* Report cards/results availability
+* Assignment or academic updates
+* Disciplinary notices
+* Medical/health-related school alerts where appropriate
+* School timetable changes
+* Class changes
+* Teacher changes
+* Fee structure changes
+* Important school announcements
+* School closure/opening reminders
+* Emergency announcements
+* Lost-and-found notices
+* Transport/bus updates where applicable
+
+#### 5. Staff Notifications
+
+Staff should receive relevant notifications about:
+
+* Staff meetings
+* School events
+* Assigned duties
+* Timetable changes
+* Leave/approval decisions
+* Important administrative announcements
+* Payroll/salary notifications where applicable
+* Department or class responsibilities
+* Upcoming deadlines
+* Tasks assigned to them
+
+#### 6. Notification Management
+
+Administrators should have a dedicated **Notifications & Communication** section where authorized users can:
+
+* Create announcements
+* Schedule notifications
+* Select recipients
+* Send notifications immediately
+* Send to all parents/guardians
+* Send to selected classes
+* Send to selected students
+* Send to selected staff
+* Send to individual users
+* Schedule recurring reminders
+* Create notification templates
+* Enable/disable specific automatic notifications
+* Choose SMS, email, in-system notification, or multiple channels
+* View sent notifications
+* View delivery status
+* View failed messages
+* Resend failed notifications
+* Maintain a communication history
+
+#### 7. Automatic Financial Communication
+
+The system must connect the **fees/payment module directly to the notification system**.
+
+Whenever a financial event occurs, the appropriate parent/guardian should automatically be informed.
+
+Examples:
+
+**Payment recorded → Confirmation sent**
+
+**Balance remains outstanding → Reminder sent**
+
+**Payment deadline approaching → Reminder sent**
+
+**Balance cleared → Payment-complete notification sent**
+
+**Incorrect/reversed payment → Notification sent**
+
+**Refund recorded → Refund notification sent**
+
+This communication must happen automatically without requiring staff to manually send a message each time.
+
+#### 8. Notification Safety and Accuracy
+
+The system must ensure that financial and student information is only sent to the **authorized parent/guardian or staff member associated with that student/account**.
+
+The system should:
+
+* Keep notification records
+* Prevent duplicate notifications where possible
+* Track delivery status
+* Log the date and time each notification was generated and sent
+* Allow administrators to review communication history
+* Never expose one student's information to another parent/guardian
+* Allow authorized administrators to configure reminder frequency and notification channels
+
+#### 9. Notification Dashboard
+
+Create a dedicated dashboard showing:
+
+* Total notifications sent
+* Successfully delivered
+* Failed notifications
+* Pending notifications
+* SMS usage
+* Email usage
+* Recent payment notifications
+* Upcoming event reminders
+* Outstanding fee reminders
+* Scheduled notifications
+* Communication history
+
+The entire notification system must be fully connected to the **students, parents/guardians, staff, fees, payments, attendance, examinations, events, accounts, and school administration modules** so that important information is communicated automatically and accurately.
