@@ -17,6 +17,7 @@ const AttendancePage = lazy(() => import('@/pages/school-pages').then((module) =
 const DashboardPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.DashboardPage })));
 const FinancePage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.FinancePage })));
 const LoginPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.LoginPage })));
+const MessagesPage = lazy(() => import('@/pages/messages-page'));
 const SalaryReceiptPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.SalaryReceiptPage })));
 const SettingsPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.SettingsPage })));
 const StudentProfilePage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.StudentProfilePage })));
@@ -68,6 +69,7 @@ function Router() {
         <Route path="/expenses/create" component={ExpenseCreatePage} />
         <Route path="/expenses" component={OperationsPage} />
         <Route path="/announcements" component={AnnouncementsPage} />
+        <Route path="/messages" component={MessagesPage} />
         <Route path="/timetable" component={TimetablePage} />
         <Route path="/subjects" component={SubjectsPage} />
         <Route path="/users/new" component={UserAccountPage} />

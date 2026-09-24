@@ -33,6 +33,8 @@ import type {
   Dashboard,
   DeleteAttendanceRegisterInput,
   DeletedAttendanceRegister,
+  DirectMessageInput,
+  DirectMessageResult,
   EventInput,
   ExpenseInput,
   FeeReminderSmsAuthorization,
@@ -44,6 +46,7 @@ import type {
   ListStudentsParams,
   LoginInput,
   Message,
+  MessageRecipients,
   OperationClass,
   OperationEvent,
   OperationExpense,
@@ -2620,6 +2623,154 @@ export const useCreateAnnouncement = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateAnnouncementMutationOptions(options));
+    }
+
+export const getListMessageRecipientsUrl = () => {
+
+
+
+
+  return `/api/communications/message-recipients`
+}
+
+/**
+ * @summary List active teachers and parents with available phone numbers
+ */
+export const listMessageRecipients = async ( options?: Parameters<typeof customFetch>[1]): Promise<MessageRecipients> => {
+
+  return customFetch<MessageRecipients>(getListMessageRecipientsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMessageRecipientsQueryKey = () => {
+    return [
+    `/api/communications/message-recipients`
+    ] as const;
+    }
+
+
+export const getListMessageRecipientsQueryOptions = <TData = Awaited<ReturnType<typeof listMessageRecipients>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMessageRecipients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMessageRecipientsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMessageRecipients>>> = ({ signal }) => listMessageRecipients({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMessageRecipients>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMessageRecipientsQueryResult = NonNullable<Awaited<ReturnType<typeof listMessageRecipients>>>
+export type ListMessageRecipientsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List active teachers and parents with available phone numbers
+ */
+
+export function useListMessageRecipients<TData = Awaited<ReturnType<typeof listMessageRecipients>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMessageRecipients>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMessageRecipientsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSendDirectMessageUrl = () => {
+
+
+
+
+  return `/api/communications/direct-message`
+}
+
+/**
+ * @summary Send a school-branded SMS to selected teachers and parents
+ */
+export const sendDirectMessage = async (directMessageInput: DirectMessageInput, options?: Parameters<typeof customFetch>[1]): Promise<DirectMessageResult> => {
+
+  return customFetch<DirectMessageResult>(getSendDirectMessageUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(directMessageInput)
+  }
+);}
+
+
+
+
+
+export const getSendDirectMessageMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendDirectMessage>>, TError,{data: BodyType<DirectMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendDirectMessage>>, TError,{data: BodyType<DirectMessageInput>}, TContext> => {
+
+const mutationKey = ['sendDirectMessage'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendDirectMessage>>, {data: BodyType<DirectMessageInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  sendDirectMessage(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendDirectMessageMutationResult = NonNullable<Awaited<ReturnType<typeof sendDirectMessage>>>
+    export type SendDirectMessageMutationBody = BodyType<DirectMessageInput>
+    export type SendDirectMessageMutationError = ErrorType<void>
+
+    /**
+ * @summary Send a school-branded SMS to selected teachers and parents
+ */
+export const useSendDirectMessage = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendDirectMessage>>, TError,{data: BodyType<DirectMessageInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendDirectMessage>>,
+        TError,
+        {data: BodyType<DirectMessageInput>},
+        TContext
+      > => {
+      return useMutation(getSendDirectMessageMutationOptions(options));
     }
 
 export const getGetTimetableUrl = () => {

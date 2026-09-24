@@ -668,6 +668,53 @@ export interface AnnouncementInput {
   priority: AnnouncementInputPriority;
 }
 
+export interface MessageRecipient {
+  id: string;
+  name: string;
+  detail: string;
+}
+
+export interface MessageRecipients {
+  teachers: MessageRecipient[];
+  parents: MessageRecipient[];
+}
+
+export interface DirectMessageInput {
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
+  requestId: string;
+  /** @maxItems 500 */
+  teacherIds: string[];
+  /** @maxItems 500 */
+  parentIds: string[];
+  /**
+     * @minLength 1
+     * @maxLength 1000
+     */
+  message: string;
+}
+
+export type DirectMessageResultStatus = typeof DirectMessageResultStatus[keyof typeof DirectMessageResultStatus];
+
+
+export const DirectMessageResultStatus = {
+  accepted: 'accepted',
+  partial: 'partial',
+  failed: 'failed',
+  disabled: 'disabled',
+  duplicate: 'duplicate',
+} as const;
+
+export interface DirectMessageResult {
+  status: DirectMessageResultStatus;
+  recipientCount: number;
+  acceptedCount: number;
+  failedCount: number;
+  duplicateCount: number;
+}
+
 export interface TimetableEntry {
   id: string;
   day: string;

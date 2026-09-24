@@ -1482,6 +1482,52 @@ export const CreateAnnouncementResponse = zod.object({
 
 
 /**
+ * @summary List active teachers and parents with available phone numbers
+ */
+export const ListMessageRecipientsResponse = zod.object({
+  "teachers": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "detail": zod.string()
+})),
+  "parents": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "detail": zod.string()
+}))
+})
+
+
+/**
+ * @summary Send a school-branded SMS to selected teachers and parents
+ */
+export const sendDirectMessageBodyRequestIdMax = 64;
+
+export const sendDirectMessageBodyTeacherIdsMax = 500;
+
+export const sendDirectMessageBodyParentIdsMax = 500;
+
+export const sendDirectMessageBodyMessageMax = 1000;
+
+
+
+export const SendDirectMessageBody = zod.object({
+  "requestId": zod.string().min(1).max(sendDirectMessageBodyRequestIdMax),
+  "teacherIds": zod.array(zod.string()).max(sendDirectMessageBodyTeacherIdsMax),
+  "parentIds": zod.array(zod.string()).max(sendDirectMessageBodyParentIdsMax),
+  "message": zod.string().min(1).max(sendDirectMessageBodyMessageMax)
+})
+
+export const SendDirectMessageResponse = zod.object({
+  "status": zod.enum(['accepted', 'partial', 'failed', 'disabled', 'duplicate']),
+  "recipientCount": zod.number(),
+  "acceptedCount": zod.number(),
+  "failedCount": zod.number(),
+  "duplicateCount": zod.number()
+})
+
+
+/**
  * @summary Get the current user's timetable
  */
 export const GetTimetableResponseItem = zod.object({

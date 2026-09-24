@@ -11,8 +11,9 @@ const SCHOOL_TIME_ZONE = "Africa/Kampala";
 const FEE_REMINDER_HOUR = 9;
 const FEE_REMINDER_BATCH_SIZE = 100;
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000;
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
 
-type SmsChannel = "payment_confirmation" | "announcement" | "event" | "fee_reminder";
+type SmsChannel = "payment_confirmation" | "announcement" | "event" | "fee_reminder" | "direct_message";
 type SmsPayment = {
   id: string;
   studentId: string;
@@ -21,6 +22,14 @@ type SmsPayment = {
   amount: number;
   balance: number;
   status?: string;
+};
+type DirectMessageRecipient = { id: string; name: string; detail: string; phone: string };
+type SmsDispatchSummary = {
+  recipientCount: number;
+  acceptedCount: number;
+  failedCount: number;
+  duplicateCount: number;
+  disabled: boolean;
 };
 
 function hash(value: string): string {
@@ -88,6 +97,7 @@ async function reserveSmsDelivery(
   deliveryKey: string,
   channel: SmsChannel,
   recipientCount: number,
+  actorId?: string,
 ): Promise<{ id: string; schoolId: string } | undefined> {
   const schoolId = await getSchoolId();
   const id = deterministicUuid(`${schoolId}:${deliveryKey}`);
@@ -101,6 +111,7 @@ async function reserveSmsDelivery(
       status: "sending",
       deliveryKeyHash: hash(deliveryKey),
       recipientCount,
+      ...(actorId ? { initiatedBy: actorId } : {}),
     },
   }).onConflictDoNothing({ target: notifications.id }).returning({ id: notifications.id }))[0];
   return inserted ? { id, schoolId } : undefined;
@@ -132,27 +143,39 @@ async function dispatchSms(
   deliveryKey: string,
   rawPhones: string[],
   rawMessage: string,
-): Promise<void> {
-  if (!isYoolaSmsConfigured()) return;
-
+  actorId?: string,
+): Promise<SmsDispatchSummary> {
   const message = compactSingleSegmentSms(rawMessage);
   const phones = [...new Set(rawPhones.map(normalizeYoolaPhone).filter((phone): phone is string => Boolean(phone)))].sort();
-  if (!message || !phones.length) return;
+  const summary: SmsDispatchSummary = {
+    recipientCount: phones.length,
+    acceptedCount: 0,
+    failedCount: 0,
+    duplicateCount: 0,
+    disabled: false,
+  };
+  if (!message || !phones.length) return summary;
+  if (!isYoolaSmsConfigured()) return { ...summary, disabled: true };
 
   for (let offset = 0; offset < phones.length; offset += FEE_REMINDER_BATCH_SIZE) {
     const batch = phones.slice(offset, offset + FEE_REMINDER_BATCH_SIZE);
     const batchKey = `${channel}:${deliveryKey}:${hash(batch.join(","))}`;
     let reservation: { id: string; schoolId: string } | undefined;
     try {
-      reservation = await reserveSmsDelivery(batchKey, channel, batch.length);
+      reservation = await reserveSmsDelivery(batchKey, channel, batch.length, actorId);
     } catch {
+      summary.failedCount += batch.length;
       logger.error({ channel, recipientCount: batch.length }, "Could not reserve Yoola SMS delivery; message not sent");
       continue;
     }
-    if (!reservation) continue;
+    if (!reservation) {
+      summary.duplicateCount += batch.length;
+      continue;
+    }
 
     const result = await sendYoolaSms(batch, message);
     if (result.status === "sent") {
+      summary.acceptedCount += result.recipientCount;
       try {
         await finishSmsDelivery(reservation, result);
       } catch {
@@ -162,6 +185,8 @@ async function dispatchSms(
     }
 
     const failureCode = result.status === "failed" ? result.reason : result.status;
+    if (result.status === "disabled") summary.disabled = true;
+    else summary.failedCount += batch.length;
     try {
       await finishSmsDelivery(reservation, { status: "failed", reason: failureCode });
     } catch {
@@ -169,6 +194,7 @@ async function dispatchSms(
     }
     logger.warn({ channel, recipientCount: batch.length, reason: failureCode }, "Yoola SMS batch failed; automatic retry suppressed");
   }
+  return summary;
 }
 
 function guardianAccountPhone(studentId: string, users: SchoolUser[]): string | undefined {
@@ -202,6 +228,135 @@ function activeStaffPhones(users: SchoolUser[], roles?: string[]): string[] {
     )
     .map((user) => normalizeYoolaPhone(user.phone))
     .filter((phone): phone is string => Boolean(phone)))];
+}
+
+function directMessageRecipients(
+  students: SchoolStudent[],
+  users: SchoolUser[],
+  schoolId: string,
+): { teachers: DirectMessageRecipient[]; parents: DirectMessageRecipient[] } {
+  const teachers = users.flatMap((user) => {
+    if (user.status !== "active" || user.userType !== "staff" || user.role !== "teacher") return [];
+    const phone = normalizeYoolaPhone(user.phone);
+    if (!phone) return [];
+    return [{
+      id: user.id,
+      name: user.name.trim() || "Teacher",
+      detail: user.department?.trim() || "Teacher",
+      phone,
+    }];
+  });
+  const guardiansByPhone = new Map<string, { guardianNames: Set<string>; pupilNames: Set<string> }>();
+  for (const student of students) {
+    if (student.status !== "active") continue;
+    const phone = guardianPhone(student, users);
+    if (!phone) continue;
+    const group = guardiansByPhone.get(phone) ?? { guardianNames: new Set<string>(), pupilNames: new Set<string>() };
+    if (student.guardianName.trim()) group.guardianNames.add(student.guardianName.trim());
+    group.pupilNames.add(student.name.trim() || "Active pupil");
+    guardiansByPhone.set(phone, group);
+  }
+  const parents = [...guardiansByPhone.entries()].map(([phone, group]): DirectMessageRecipient => {
+    const pupilNames = [...group.pupilNames].sort((left, right) => left.localeCompare(right));
+    const guardianNames = [...group.guardianNames].sort((left, right) => left.localeCompare(right));
+    const additionalPupils = pupilNames.length - 3;
+    const pupilSummary = `${pupilNames.slice(0, 3).join(", ")}${additionalPupils > 0 ? `, +${additionalPupils} more` : ""}`;
+    return {
+      id: deterministicUuid(`${schoolId}:direct-message-parent:${phone}`),
+      name: guardianNames.join(" / ") || `Parent/guardian of ${pupilNames[0] || "active pupil"}`,
+      detail: `Parent/guardian of ${pupilSummary}`,
+      phone,
+    };
+  });
+  const byName = (left: DirectMessageRecipient, right: DirectMessageRecipient) => left.name.localeCompare(right.name);
+  return { teachers: teachers.sort(byName), parents: parents.sort(byName) };
+}
+
+export async function listMessageRecipients(): Promise<{
+  teachers: Array<{ id: string; name: string; detail: string }>;
+  parents: Array<{ id: string; name: string; detail: string }>;
+}> {
+  const [students, users, schoolId] = await Promise.all([listStudents(), listUsers(), getSchoolId()]);
+  const contacts = directMessageRecipients(students, users, schoolId);
+  return {
+    teachers: contacts.teachers.map(({ id, name, detail }) => ({ id, name, detail })),
+    parents: contacts.parents.map(({ id, name, detail }) => ({ id, name, detail })),
+  };
+}
+
+export async function sendDirectSchoolMessage(
+  input: { requestId: string; teacherIds: string[]; parentIds: string[]; message: string },
+  actorId: string,
+): Promise<
+  | { ok: false; error: string }
+  | {
+      ok: true;
+      result: {
+        status: "accepted" | "partial" | "failed" | "disabled" | "duplicate";
+        recipientCount: number;
+        acceptedCount: number;
+        failedCount: number;
+        duplicateCount: number;
+      };
+    }
+> {
+  if (!UUID_PATTERN.test(input.requestId)) return { ok: false, error: "Invalid send request. Refresh the page and try again." };
+  const teacherIds = [...new Set(input.teacherIds)];
+  const parentIds = [...new Set(input.parentIds)];
+  if (!teacherIds.length && !parentIds.length) return { ok: false, error: "Select at least one teacher or parent/guardian." };
+
+  const [students, users, settings, schoolId] = await Promise.all([
+    listStudents(),
+    listUsers(),
+    getSchoolSettings(),
+    getSchoolId(),
+  ]);
+  const contacts = directMessageRecipients(students, users, schoolId);
+  const teachersById = new Map(contacts.teachers.map((recipient) => [recipient.id, recipient]));
+  const parentsById = new Map(contacts.parents.map((recipient) => [recipient.id, recipient]));
+  const selectedTeachers = teacherIds.map((id) => teachersById.get(id));
+  const selectedParents = parentIds.map((id) => parentsById.get(id));
+  if (selectedTeachers.some((recipient) => !recipient) || selectedParents.some((recipient) => !recipient)) {
+    return { ok: false, error: "Some contacts changed or no longer have a usable phone number. Refresh the recipient list and try again." };
+  }
+
+  const schoolName = settings.schoolName.replace(/\s+/gu, " ").trim();
+  if (!schoolName) return { ok: false, error: "Add the school name in Settings before sending branded messages." };
+  const messageText = input.message.replace(/\s+/gu, " ").trim();
+  if (!messageText) return { ok: false, error: "Enter a message to send." };
+  const brandedMessage = `${schoolName}: ${messageText}`;
+  if (compactSingleSegmentSms(brandedMessage) !== brandedMessage) {
+    return { ok: false, error: "Shorten the message to fit one SMS segment, including the school name." };
+  }
+
+  const phones = [...selectedTeachers, ...selectedParents]
+    .flatMap((recipient) => recipient ? [recipient.phone] : []);
+  const summary = await dispatchSms(
+    "direct_message",
+    `direct-message:${actorId}:${input.requestId}`,
+    phones,
+    brandedMessage,
+    actorId,
+  );
+  const status = summary.acceptedCount === summary.recipientCount && summary.recipientCount > 0
+    ? "accepted"
+    : summary.acceptedCount > 0
+      ? "partial"
+      : summary.disabled
+        ? "disabled"
+        : summary.duplicateCount > 0 && summary.failedCount === 0
+          ? "duplicate"
+          : "failed";
+  return {
+    ok: true,
+    result: {
+      status,
+      recipientCount: summary.recipientCount,
+      acceptedCount: summary.acceptedCount,
+      failedCount: summary.failedCount,
+      duplicateCount: summary.duplicateCount,
+    },
+  };
 }
 
 function normalizeAudience(value: string): string {

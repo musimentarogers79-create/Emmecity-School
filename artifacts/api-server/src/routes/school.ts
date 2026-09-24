@@ -13,7 +13,7 @@ import {
   CreateUserBody, CreateUserResponse, ListUsersResponse, UpdateUserProfileByAdminBody, UpdateUserProfileByAdminResponse,
   UpdateUserPermissionsBody, UpdateUserPermissionsResponse, DeleteUserResponse,
   ListSubjectsResponse, CreateSubjectBody, CreateSubjectResponse, UpdateSubjectParams, UpdateSubjectBody, UpdateSubjectResponse,
-  DeleteSubjectParams, DeleteSubjectResponse,
+  DeleteSubjectParams, DeleteSubjectResponse, ListMessageRecipientsResponse, SendDirectMessageBody, SendDirectMessageResponse,
 } from "@workspace/api-zod";
 import {
   AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, currentUserFromToken, getAdmissionForm,
@@ -22,7 +22,7 @@ import {
   createUser, deleteOperation, deleteUser, updatePayment, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserAdmin, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
 } from "../lib/school-data";
 import { isBackupObjectPath, requestBackupDownload, uploadBackupObject } from "../lib/object-storage";
-import { getFeeReminderSmsAuthorization, sendAnnouncementSms, sendEventSms, sendPaymentConfirmationSms, setFeeReminderSmsAuthorization } from "../lib/school-notification-sms";
+import { getFeeReminderSmsAuthorization, listMessageRecipients, sendAnnouncementSms, sendDirectSchoolMessage, sendEventSms, sendPaymentConfirmationSms, setFeeReminderSmsAuthorization } from "../lib/school-notification-sms";
 
 const router: IRouter = Router();
 const getCookie = (req: Parameters<Parameters<IRouter["get"]>[1]>[0], name: string) =>
@@ -524,6 +524,32 @@ router.post("/finance/salaries", async (req, res): Promise<void> => {
   } catch (error) {
     errorResponse(res, 409, error instanceof Error ? error.message : "Salary payment could not be recorded.");
   }
+});
+
+router.get("/communications/message-recipients", async (req, res): Promise<void> => {
+  const actor = await requireUser(req);
+  if (!actor) { errorResponse(res, 401, "Not signed in"); return; }
+  if (!isAdministrator(actor)) { errorResponse(res, 403, "Administrator access required."); return; }
+  res.setHeader("Cache-Control", "private, no-store");
+  res.json(ListMessageRecipientsResponse.parse(await listMessageRecipients()));
+});
+
+router.post("/communications/direct-message", async (req, res): Promise<void> => {
+  const actor = await requireUser(req);
+  if (!actor) { errorResponse(res, 401, "Not signed in"); return; }
+  if (!isAdministrator(actor)) { errorResponse(res, 403, "Administrator access required."); return; }
+  const parsed = SendDirectMessageBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Choose valid recipients and enter a message."); return; }
+  const result = await sendDirectSchoolMessage(parsed.data, actor.id);
+  if (!result.ok) { errorResponse(res, 400, result.error); return; }
+  req.log.info({
+    actorId: actor.id,
+    recipientCount: result.result.recipientCount,
+    acceptedCount: result.result.acceptedCount,
+    failedCount: result.result.failedCount,
+    status: result.result.status,
+  }, "Administrator sent a targeted school SMS");
+  res.json(SendDirectMessageResponse.parse(result.result));
 });
 
 router.get("/announcements", async (req, res): Promise<void> => {

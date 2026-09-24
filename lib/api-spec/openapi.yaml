@@ -631,6 +631,46 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Announcement"
+  /communications/message-recipients:
+    get:
+      operationId: listMessageRecipients
+      tags: [communication]
+      summary: List active teachers and parents with available phone numbers
+      responses:
+        "200":
+          description: Message recipients available to an administrator
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageRecipients"
+        "401":
+          description: Not signed in
+        "403":
+          description: Administrator access required
+  /communications/direct-message:
+    post:
+      operationId: sendDirectMessage
+      tags: [communication]
+      summary: Send a school-branded SMS to selected teachers and parents
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DirectMessageInput"
+      responses:
+        "200":
+          description: Provider acceptance and delivery summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DirectMessageResult"
+        "400":
+          description: Invalid recipients or a message exceeding one SMS segment
+        "401":
+          description: Not signed in
+        "403":
+          description: Administrator access required
   /academics/timetable:
     get:
       operationId: getTimetable
@@ -1822,6 +1862,65 @@ components:
           type: string
           enum: [normal, important]
       required: [title, body, audience, priority]
+    MessageRecipient:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        detail:
+          type: string
+      required: [id, name, detail]
+    MessageRecipients:
+      type: object
+      properties:
+        teachers:
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageRecipient"
+        parents:
+          type: array
+          items:
+            $ref: "#/components/schemas/MessageRecipient"
+      required: [teachers, parents]
+    DirectMessageInput:
+      type: object
+      properties:
+        requestId:
+          type: string
+          minLength: 1
+          maxLength: 64
+        teacherIds:
+          type: array
+          maxItems: 500
+          items:
+            type: string
+        parentIds:
+          type: array
+          maxItems: 500
+          items:
+            type: string
+        message:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required: [requestId, teacherIds, parentIds, message]
+    DirectMessageResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum: [accepted, partial, failed, disabled, duplicate]
+        recipientCount:
+          type: number
+        acceptedCount:
+          type: number
+        failedCount:
+          type: number
+        duplicateCount:
+          type: number
+      required: [status, recipientCount, acceptedCount, failedCount, duplicateCount]
     TimetableEntry:
       type: object
       properties:
