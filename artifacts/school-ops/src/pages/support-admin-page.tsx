@@ -83,6 +83,7 @@ function SupportLogin({ onSuccess }: { onSuccess: (session: SupportSession) => v
           <h2 className="font-display text-2xl">Sign in to support</h2>
           <p className="mt-2 text-sm leading-6 text-[hsl(var(--muted-foreground))]">Use the support account password provided through the secure workspace setup.</p>
           <form onSubmit={submit} className="mt-6 space-y-4">
+            <input type="text" name="username" value="support" autoComplete="username" readOnly className="sr-only" tabIndex={-1} aria-hidden="true" />
             <label className="block">
               <span className="mb-1.5 block text-xs font-semibold">Support password</span>
               <input
