@@ -867,6 +867,26 @@ paths:
                 $ref: "#/components/schemas/SchoolSettings"
         "403":
           description: Administrator access required
+  /settings/fee-reminder-sms-authorization:
+    patch:
+      operationId: updateFeeReminderSmsAuthorization
+      tags: [settings]
+      summary: Set standing authorization for monthly fee-balance SMS
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FeeReminderSmsAuthorizationInput"
+      responses:
+        "200":
+          description: Updated fee-reminder SMS authorization
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FeeReminderSmsAuthorization"
+        "403":
+          description: Administrator access required
   /backups:
     get:
       operationId: listBackups
@@ -2500,11 +2520,13 @@ components:
           type: string
         currencySymbol:
           type: string
+        feeReminderSmsAuthorized:
+          type: boolean
         availableCurrencies:
           type: array
           items:
             $ref: "#/components/schemas/CurrencyOption"
-      required: [schoolName, academicYear, currencyCode, currencyName, currencySymbol, availableCurrencies]
+      required: [schoolName, academicYear, currencyCode, currencyName, currencySymbol, feeReminderSmsAuthorized, availableCurrencies]
     SchoolSettingsUpdate:
       type: object
       properties:
@@ -2514,6 +2536,18 @@ components:
           type: string
         currencyCode:
           type: string
+    FeeReminderSmsAuthorizationInput:
+      type: object
+      properties:
+        authorized:
+          type: boolean
+      required: [authorized]
+    FeeReminderSmsAuthorization:
+      type: object
+      properties:
+        authorized:
+          type: boolean
+      required: [authorized]
     BackupSummary:
       type: object
       properties:

@@ -2129,6 +2129,7 @@ export const GetSettingsResponse = zod.object({
   "currencyCode": zod.string(),
   "currencyName": zod.string(),
   "currencySymbol": zod.string(),
+  "feeReminderSmsAuthorized": zod.boolean(),
   "availableCurrencies": zod.array(zod.object({
   "code": zod.string(),
   "name": zod.string(),
@@ -2152,11 +2153,24 @@ export const UpdateSettingsResponse = zod.object({
   "currencyCode": zod.string(),
   "currencyName": zod.string(),
   "currencySymbol": zod.string(),
+  "feeReminderSmsAuthorized": zod.boolean(),
   "availableCurrencies": zod.array(zod.object({
   "code": zod.string(),
   "name": zod.string(),
   "symbol": zod.string()
 }))
+})
+
+
+/**
+ * @summary Set standing authorization for monthly fee-balance SMS
+ */
+export const UpdateFeeReminderSmsAuthorizationBody = zod.object({
+  "authorized": zod.boolean()
+})
+
+export const UpdateFeeReminderSmsAuthorizationResponse = zod.object({
+  "authorized": zod.boolean()
 })
 
 

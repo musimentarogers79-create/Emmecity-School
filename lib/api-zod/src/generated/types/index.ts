@@ -36,6 +36,8 @@ export * from './deleteAttendanceRegisterInput';
 export * from './deletedAttendanceRegister';
 export * from './eventInput';
 export * from './expenseInput';
+export * from './feeReminderSmsAuthorization';
+export * from './feeReminderSmsAuthorizationInput';
 export * from './financeSummary';
 export * from './financeSummaryMonthlyItem';
 export * from './fullBackupResponse';

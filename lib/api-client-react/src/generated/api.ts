@@ -35,6 +35,8 @@ import type {
   DeletedAttendanceRegister,
   EventInput,
   ExpenseInput,
+  FeeReminderSmsAuthorization,
+  FeeReminderSmsAuthorizationInput,
   FinanceSummary,
   FullBackupResponse,
   GetAttendanceParams,
@@ -3573,6 +3575,77 @@ export const useUpdateSettings = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateSettingsMutationOptions(options));
+    }
+
+export const getUpdateFeeReminderSmsAuthorizationUrl = () => {
+
+
+
+
+  return `/api/settings/fee-reminder-sms-authorization`
+}
+
+/**
+ * @summary Set standing authorization for monthly fee-balance SMS
+ */
+export const updateFeeReminderSmsAuthorization = async (feeReminderSmsAuthorizationInput: FeeReminderSmsAuthorizationInput, options?: Parameters<typeof customFetch>[1]): Promise<FeeReminderSmsAuthorization> => {
+
+  return customFetch<FeeReminderSmsAuthorization>(getUpdateFeeReminderSmsAuthorizationUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(feeReminderSmsAuthorizationInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateFeeReminderSmsAuthorizationMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFeeReminderSmsAuthorization>>, TError,{data: BodyType<FeeReminderSmsAuthorizationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateFeeReminderSmsAuthorization>>, TError,{data: BodyType<FeeReminderSmsAuthorizationInput>}, TContext> => {
+
+const mutationKey = ['updateFeeReminderSmsAuthorization'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateFeeReminderSmsAuthorization>>, {data: BodyType<FeeReminderSmsAuthorizationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateFeeReminderSmsAuthorization(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateFeeReminderSmsAuthorizationMutationResult = NonNullable<Awaited<ReturnType<typeof updateFeeReminderSmsAuthorization>>>
+    export type UpdateFeeReminderSmsAuthorizationMutationBody = BodyType<FeeReminderSmsAuthorizationInput>
+    export type UpdateFeeReminderSmsAuthorizationMutationError = ErrorType<void>
+
+    /**
+ * @summary Set standing authorization for monthly fee-balance SMS
+ */
+export const useUpdateFeeReminderSmsAuthorization = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateFeeReminderSmsAuthorization>>, TError,{data: BodyType<FeeReminderSmsAuthorizationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateFeeReminderSmsAuthorization>>,
+        TError,
+        {data: BodyType<FeeReminderSmsAuthorizationInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateFeeReminderSmsAuthorizationMutationOptions(options));
     }
 
 export const getListBackupsUrl = () => {

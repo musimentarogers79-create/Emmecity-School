@@ -1061,6 +1061,7 @@ export interface SchoolSettings {
   currencyCode: string;
   currencyName: string;
   currencySymbol: string;
+  feeReminderSmsAuthorized: boolean;
   availableCurrencies: CurrencyOption[];
 }
 
@@ -1068,6 +1069,14 @@ export interface SchoolSettingsUpdate {
   schoolName?: string;
   academicYear?: string;
   currencyCode?: string;
+}
+
+export interface FeeReminderSmsAuthorizationInput {
+  authorized: boolean;
+}
+
+export interface FeeReminderSmsAuthorization {
+  authorized: boolean;
 }
 
 export type BackupSummaryTableCounts = {[key: string]: number};

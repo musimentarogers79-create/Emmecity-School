@@ -9,7 +9,7 @@ import {
   GetStudentResponse, GetTimetableResponse, CreateTimetableEntryBody, CreateTimetableEntryResponse, ListAnnouncementsResponse, ListExpensesResponse, ListPaymentsResponse,
   ListSalariesResponse, ListStudentsQueryParams, ListStudentsResponse, LoginBody, LoginResponse, LogoutResponse,
   RecordPaymentBody, RecordPaymentResponse, UpdatePaymentBody, UpdatePaymentResponse, SaveAttendanceBody, SaveAttendanceResponse, DeleteAttendanceRegisterBody, DeleteAttendanceRegisterResponse, GetDeletedAttendanceRegistersResponse, GetSettingsResponse,
-  UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse, UpdateStudentBody, UpdateStudentResponse,
+  UpdateCurrentUserBody, UpdateCurrentUserResponse, UpdateSettingsBody, UpdateSettingsResponse, UpdateFeeReminderSmsAuthorizationBody, UpdateFeeReminderSmsAuthorizationResponse, UpdateStudentBody, UpdateStudentResponse,
   CreateUserBody, CreateUserResponse, ListUsersResponse, UpdateUserProfileByAdminBody, UpdateUserProfileByAdminResponse,
   UpdateUserPermissionsBody, UpdateUserPermissionsResponse, DeleteUserResponse,
   ListSubjectsResponse, CreateSubjectBody, CreateSubjectResponse, UpdateSubjectParams, UpdateSubjectBody, UpdateSubjectResponse,
@@ -22,7 +22,7 @@ import {
   createUser, deleteOperation, deleteUser, updatePayment, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserAdmin, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
 } from "../lib/school-data";
 import { isBackupObjectPath, requestBackupDownload, uploadBackupObject } from "../lib/object-storage";
-import { sendAnnouncementSms, sendEventSms, sendPaymentConfirmationSms } from "../lib/school-notification-sms";
+import { getFeeReminderSmsAuthorization, sendAnnouncementSms, sendEventSms, sendPaymentConfirmationSms, setFeeReminderSmsAuthorization } from "../lib/school-notification-sms";
 
 const router: IRouter = Router();
 const getCookie = (req: Parameters<Parameters<IRouter["get"]>[1]>[0], name: string) =>
@@ -750,8 +750,11 @@ router.get("/operations", async (req, res): Promise<void> => {
 });
 router.get("/settings", async (req, res): Promise<void> => {
   if (!await requireUser(req)) { errorResponse(res, 401, "Not signed in"); return; }
-  const settings = await getSchoolSettings();
-  res.json(GetSettingsResponse.parse({ ...settings, availableCurrencies: currencyOptions }));
+  const [settings, feeReminderSmsAuthorized] = await Promise.all([
+    getSchoolSettings(),
+    getFeeReminderSmsAuthorization(),
+  ]);
+  res.json(GetSettingsResponse.parse({ ...settings, feeReminderSmsAuthorized, availableCurrencies: currencyOptions }));
 });
 router.patch("/settings", async (req, res): Promise<void> => {
   const user = await requireUser(req);
@@ -762,7 +765,16 @@ router.patch("/settings", async (req, res): Promise<void> => {
   const selected = currencyOptions.find((item) => item.code === (parsed.data.currencyCode ?? current.currencyCode));
   if (!selected) { errorResponse(res, 400, "That currency is not available."); return; }
   const settings = await updateSchoolSettings({ schoolName: parsed.data.schoolName, academicYear: parsed.data.academicYear, currencyCode: selected.code, currencyName: selected.name, currencySymbol: selected.symbol });
-  res.json(UpdateSettingsResponse.parse({ ...settings, availableCurrencies: currencyOptions }));
+  const feeReminderSmsAuthorized = await getFeeReminderSmsAuthorization();
+  res.json(UpdateSettingsResponse.parse({ ...settings, feeReminderSmsAuthorized, availableCurrencies: currencyOptions }));
+});
+router.patch("/settings/fee-reminder-sms-authorization", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!user || !isAdministrator(user)) { errorResponse(res, 403, "Only administrators can authorize monthly fee-balance SMS."); return; }
+  const parsed = UpdateFeeReminderSmsAuthorizationBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Choose whether to authorize monthly fee-balance SMS."); return; }
+  const result = await setFeeReminderSmsAuthorization(parsed.data.authorized, user.id);
+  res.json(UpdateFeeReminderSmsAuthorizationResponse.parse(result));
 });
 
 router.get("/backups", async (req, res): Promise<void> => {

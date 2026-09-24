@@ -35,6 +35,55 @@ function deterministicUuid(value: string): string {
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
 }
 
+function feeReminderAuthorizationId(schoolId: string): string {
+  return deterministicUuid(`${schoolId}:school-system:fee-reminder-sms-authorization`);
+}
+
+export async function getFeeReminderSmsAuthorization(): Promise<boolean> {
+  const schoolId = await getSchoolId();
+  const row = (await db.select({ data: notifications.data }).from(notifications).where(and(
+    eq(notifications.id, feeReminderAuthorizationId(schoolId)),
+    eq(notifications.schoolId, schoolId),
+  )).limit(1))[0];
+  return row?.data["recordType"] === "fee_reminder_sms_authorization"
+    && row.data["authorized"] === true;
+}
+
+export async function setFeeReminderSmsAuthorization(
+  authorized: boolean,
+  actorId: string,
+): Promise<{ authorized: boolean }> {
+  const schoolId = await getSchoolId();
+  const id = feeReminderAuthorizationId(schoolId);
+  const now = new Date();
+  await db.insert(notifications).values({
+    id,
+    schoolId,
+    data: {
+      smsDelivery: true,
+      recordType: "fee_reminder_sms_authorization",
+      channel: "fee_reminder",
+      authorized,
+      authorizedBy: actorId,
+      authorizedAt: authorized ? now.toISOString() : null,
+    },
+  }).onConflictDoUpdate({
+    target: notifications.id,
+    set: {
+      data: {
+        smsDelivery: true,
+        recordType: "fee_reminder_sms_authorization",
+        channel: "fee_reminder",
+        authorized,
+        authorizedBy: actorId,
+        authorizedAt: authorized ? now.toISOString() : null,
+      },
+      updatedAt: now,
+    },
+  });
+  return { authorized };
+}
+
 async function reserveSmsDelivery(
   deliveryKey: string,
   channel: SmsChannel,
@@ -255,7 +304,7 @@ export async function sendEventSms(event: OperationRecord): Promise<void> {
   }
 }
 
-function kampalaDateParts(date: Date): { year: number; month: number; day: number; hour: number; minute: number } {
+function kampalaDateParts(date: Date): { year: number; month: number; day: number; hour: number; minute: number; second: number } {
   const parts = new Intl.DateTimeFormat("en-GB", {
     timeZone: SCHOOL_TIME_ZONE,
     year: "numeric",
@@ -263,23 +312,22 @@ function kampalaDateParts(date: Date): { year: number; month: number; day: numbe
     day: "2-digit",
     hour: "2-digit",
     minute: "2-digit",
+    second: "2-digit",
     hourCycle: "h23",
   }).formatToParts(date);
   const read = (type: string) => Number(parts.find((part) => part.type === type)?.value ?? 0);
-  return { year: read("year"), month: read("month"), day: read("day"), hour: read("hour"), minute: read("minute") };
+  return { year: read("year"), month: read("month"), day: read("day"), hour: read("hour"), minute: read("minute"), second: read("second") };
 }
 
-function feeReminderWeekKey(date: Date): string {
-  const { year, month, day } = kampalaDateParts(date);
-  const localDate = Date.UTC(year, month - 1, day);
-  const weekday = new Date(localDate).getUTCDay();
-  const daysSinceMonday = (weekday + 6) % 7;
-  return new Date(localDate - daysSinceMonday * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+function feeReminderMonthKey(date: Date): string {
+  const { year, month } = kampalaDateParts(date);
+  return `${year}-${String(month).padStart(2, "0")}`;
 }
 
-export async function sendWeeklyFeeBalanceReminders(now = new Date()): Promise<void> {
+export async function sendMonthlyFeeBalanceReminders(now = new Date()): Promise<void> {
   if (!isYoolaSmsConfigured()) return;
   try {
+    if (!await getFeeReminderSmsAuthorization()) return;
     const [students, users, settings] = await Promise.all([listStudents(), listUsers(), getSchoolSettings()]);
     const groups = new Map<string, { total: number; pupilCount: number }>();
     for (const student of students) {
@@ -296,39 +344,43 @@ export async function sendWeeklyFeeBalanceReminders(now = new Date()): Promise<v
       groups.set(phone, current);
     }
 
-    const weekKey = feeReminderWeekKey(now);
+    const monthKey = feeReminderMonthKey(now);
     const entries = [...groups.entries()];
     const concurrency = 4;
     for (let offset = 0; offset < entries.length; offset += concurrency) {
+      if (!await getFeeReminderSmsAuthorization()) break;
       await Promise.all(entries.slice(offset, offset + concurrency).map(async ([phone, summary]) => {
         const pupilLabel = summary.pupilCount === 1 ? "pupil" : "pupils";
         const message = `EMMECTY: ${settings.currencyCode} ${formatAmount(summary.total)} remains due for ${summary.pupilCount} ${pupilLabel}. Please contact the school office if paid.`;
         await dispatchSms(
           "fee_reminder",
-          `fee-reminder:${weekKey}:${hash(phone)}`,
+          `fee-reminder:${monthKey}:${hash(phone)}`,
           [phone],
           message,
         );
       }));
     }
   } catch {
-    logger.error({ weekKey: feeReminderWeekKey(now) }, "Weekly Yoola fee reminders could not be processed");
+    logger.error({ monthKey: feeReminderMonthKey(now) }, "Monthly Yoola fee reminders could not be processed");
   }
 }
 
-function millisecondsUntilNextMondayAtNine(now: Date): number {
-  const { year, month, day, hour, minute } = kampalaDateParts(now);
-  const localMidnightUtc = Date.UTC(year, month - 1, day);
-  const weekday = new Date(localMidnightUtc).getUTCDay();
-  let daysUntilMonday = (1 - weekday + 7) % 7;
-  if (daysUntilMonday === 0 && (hour > FEE_REMINDER_HOUR || (hour === FEE_REMINDER_HOUR && minute > 0))) {
-    daysUntilMonday = 7;
+function millisecondsUntilNextMonthFirstAtNine(now: Date): number {
+  const { year, month, day, hour, minute, second } = kampalaDateParts(now);
+  let targetYear = year;
+  let targetMonth = month;
+  if (day > 1 || hour > FEE_REMINDER_HOUR || (hour === FEE_REMINDER_HOUR && (minute > 0 || second > 0))) {
+    targetMonth += 1;
+    if (targetMonth > 12) {
+      targetMonth = 1;
+      targetYear += 1;
+    }
   }
-  const targetUtc = localMidnightUtc + daysUntilMonday * 24 * 60 * 60 * 1000 + 6 * 60 * 60 * 1000;
+  const targetUtc = Date.UTC(targetYear, targetMonth - 1, 1, 6, 0, 0);
   return Math.max(1_000, targetUtc - now.getTime());
 }
 
-export function startWeeklyFeeReminderScheduler(): void {
+export function startMonthlyFeeReminderScheduler(): void {
   if (!isYoolaSmsConfigured()) {
     logger.info("Yoola SMS is not configured; outbound SMS remains disabled");
   }
@@ -336,17 +388,17 @@ export function startWeeklyFeeReminderScheduler(): void {
   const scheduleNext = () => {
     const timer = setTimeout(async () => {
       try {
-        await sendWeeklyFeeBalanceReminders();
+        await sendMonthlyFeeBalanceReminders();
       } finally {
         scheduleNext();
       }
-    }, millisecondsUntilNextMondayAtNine(new Date()));
+    }, millisecondsUntilNextMonthFirstAtNine(new Date()));
     timer.unref?.();
   };
 
   scheduleNext();
   logger.info(
-    { timeZone: SCHOOL_TIME_ZONE, weekday: "Monday", hour: FEE_REMINDER_HOUR },
-    "Weekly Yoola fee reminders scheduled",
+    { timeZone: SCHOOL_TIME_ZONE, dayOfMonth: 1, hour: FEE_REMINDER_HOUR, authorizationRequired: true },
+    "Monthly Yoola fee reminders scheduled",
   );
 }

@@ -4,7 +4,7 @@ import type { LucideIcon } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from 'wouter';
 import type { AdmissionForm, Student, StudentUpdateInput, ReportCardInput, OperationSubject } from '@workspace/api-client-react';
-import { AnnouncementInputPriority, AttendanceStatus, type AnnouncementInput, type SalaryPayment, type StudentInput, type AttendanceRecord, type Dashboard, type Payment, type PaymentInput, type TimetableInput, getAdmissionForm, useCreateAnnouncement, useCreateAttendanceRegister, useCreateReportCard, useCreateStudent, useCreateTimetableEntry, useGetAdmissionForm, useGetAttendance, useGetCurrentUser, useGetDashboard, useGetFinanceSummary, useGetOperations, useGetReportCard, useGetSettings, useGetStudent, useGetTimetable, useListAnnouncements, useListPayments, useListSalaries, useListStudents, useLogin, useRecordPayment, useSaveAttendance, useUpdatePayment, useUpdateSettings, useUpdateStudent, getGetAdmissionFormQueryKey, getGetAttendanceQueryKey, getGetDashboardQueryKey, getGetFinanceSummaryQueryKey, getGetOperationsQueryKey, getGetReportCardQueryKey, getGetSettingsQueryKey, getGetStudentQueryKey, getGetTimetableQueryKey, getListAnnouncementsQueryKey, getListPaymentsQueryKey, getListStudentsQueryKey } from '@workspace/api-client-react';
+import { AnnouncementInputPriority, AttendanceStatus, type AnnouncementInput, type SalaryPayment, type StudentInput, type AttendanceRecord, type Dashboard, type Payment, type PaymentInput, type TimetableInput, getAdmissionForm, useCreateAnnouncement, useCreateAttendanceRegister, useCreateReportCard, useCreateStudent, useCreateTimetableEntry, useGetAdmissionForm, useGetAttendance, useGetCurrentUser, useGetDashboard, useGetFinanceSummary, useGetOperations, useGetReportCard, useGetSettings, useGetStudent, useGetTimetable, useListAnnouncements, useListPayments, useListSalaries, useListStudents, useLogin, useRecordPayment, useSaveAttendance, useUpdatePayment, useUpdateSettings, useUpdateFeeReminderSmsAuthorization, useUpdateStudent, getGetAdmissionFormQueryKey, getGetAttendanceQueryKey, getGetDashboardQueryKey, getGetFinanceSummaryQueryKey, getGetOperationsQueryKey, getGetReportCardQueryKey, getGetSettingsQueryKey, getGetStudentQueryKey, getGetTimetableQueryKey, getListAnnouncementsQueryKey, getListPaymentsQueryKey, getListStudentsQueryKey } from '@workspace/api-client-react';
 import { ArrowLeft, ArrowRight, BadgeCheck, BarChart3, BookOpen, CalendarDays, Check, ChevronDown, CircleDollarSign, ClipboardList, Download, Eye, EyeOff, FileBarChart, FileText, GraduationCap, Info, LockKeyhole, Megaphone, MoreHorizontal, Pencil, PhoneCall, Plus, Printer, Receipt, RefreshCcw, Search, Send, Share2, ShieldCheck, Upload, UserPlus, Users, WalletCards, X } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { AppShell, Button, EmptyState, ErrorState, PageHeader, Panel, SCHOOL_LOCATION, SCHOOL_NAME, SCHOOL_PHONE, SCHOOL_POSTAL_ADDRESS, SchoolMark, Skeleton } from '@/components/school-shell';
@@ -1306,7 +1306,61 @@ function FullBackupPanel() {
       setPending(false);
     }
   };
-  return <Panel className="p-6" testId="panel-full-backup"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.15em] text-[hsl(var(--primary))]">Administrator safeguard</p><h2 className="mt-1 font-display text-2xl">Full school backup</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[hsl(var(--muted-foreground))]">Create a compressed backup containing every school database record, attendance history, account, document, payment, setting, sequence, and stored pupil passport photo. A private copy is saved before the download starts.</p></div><Download className="size-5 text-[hsl(var(--primary))]" /></div>{error && <p className="mt-4 text-sm text-[hsl(var(--destructive))]" role="alert" data-testid="status-backup-error">{error}</p>}{message && <p className="mt-4 text-sm text-[hsl(var(--primary))]" role="status" data-testid="status-backup-created">{message}</p>}<Button className="mt-5" onClick={() => void createBackup()} disabled={pending} testId="button-create-full-backup"><Download className="size-4" />{pending ? 'Creating full backup…' : 'Create and download full backup'}</Button></Panel>;
+  return <><Panel className="p-6" testId="panel-full-backup"><div className="flex flex-wrap items-start justify-between gap-4"><div><p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.15em] text-[hsl(var(--primary))]">Administrator safeguard</p><h2 className="mt-1 font-display text-2xl">Full school backup</h2><p className="mt-2 max-w-2xl text-sm leading-6 text-[hsl(var(--muted-foreground))]">Create a compressed backup containing every school database record, attendance history, account, document, payment, setting, sequence, and stored pupil passport photo. A private copy is saved before the download starts.</p></div><Download className="size-5 text-[hsl(var(--primary))]" /></div>{error && <p className="mt-4 text-sm text-[hsl(var(--destructive))]" role="alert" data-testid="status-backup-error">{error}</p>}{message && <p className="mt-4 text-sm text-[hsl(var(--primary))]" role="status" data-testid="status-backup-created">{message}</p>}<Button className="mt-5" onClick={() => void createBackup()} disabled={pending} testId="button-create-full-backup"><Download className="size-4" />{pending ? 'Creating full backup…' : 'Create and download full backup'}</Button></Panel><FeeReminderSmsAuthorizationPanel /></>;
+}
+
+function FeeReminderSmsAuthorizationPanel() {
+  const client = useQueryClient();
+  const settings = useGetSettings();
+  const updateAuthorization = useUpdateFeeReminderSmsAuthorization();
+  const authorized = settings.data?.feeReminderSmsAuthorized === true;
+
+  const setAuthorization = (nextAuthorized: boolean) => {
+    updateAuthorization.mutate({ data: { authorized: nextAuthorized } }, {
+      onSuccess: (result) => {
+        client.setQueryData(getGetSettingsQueryKey(), (previous) => previous
+          ? { ...previous, feeReminderSmsAuthorized: result.authorized }
+          : previous);
+      },
+    });
+  };
+
+  return <Panel className="p-6" testId="panel-fee-reminder-sms-authorization">
+    <div className="flex flex-wrap items-start justify-between gap-4">
+      <div>
+        <p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.15em] text-[hsl(var(--primary))]">Administrator authorization</p>
+        <h2 className="mt-1 font-display text-2xl">Monthly fee-balance SMS</h2>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-[hsl(var(--muted-foreground))]">
+          Standing authorization sends eligible fee reminders on the 1st of each month at 09:00 Kampala time. This setting only controls fee reminders; other selected SMS alerts are unaffected. SMS charges may apply.
+        </p>
+      </div>
+      <ShieldCheck className="size-5 text-[hsl(var(--primary))]" />
+    </div>
+    <div className="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-[hsl(var(--border))] pt-5">
+      <p className="text-sm font-semibold" role="status" data-testid="status-fee-reminder-sms-authorization">
+        {settings.isLoading
+          ? 'Loading authorization status…'
+          : authorized ? 'Standing authorization is active.' : 'Not authorized; monthly fee reminders are off.'}
+      </p>
+      <Button
+        type="button"
+        variant={authorized ? 'secondary' : 'primary'}
+        onClick={() => setAuthorization(!authorized)}
+        disabled={settings.isLoading || settings.isError || updateAuthorization.isPending}
+        testId="button-toggle-fee-reminder-sms-authorization"
+      >
+        {updateAuthorization.isPending
+          ? 'Saving…'
+          : authorized ? 'Revoke authorization' : 'Authorize monthly reminders'}
+      </Button>
+    </div>
+    {settings.isError && <p className="mt-3 text-sm text-[hsl(var(--destructive))]" role="alert" data-testid="status-fee-reminder-sms-authorization-load-error">
+      Authorization status could not be loaded. Refresh settings before changing it.
+    </p>}
+    {updateAuthorization.isError && <p className="mt-3 text-sm text-[hsl(var(--destructive))]" role="alert" data-testid="status-fee-reminder-sms-authorization-error">
+      The authorization setting could not be saved. Please try again.
+    </p>}
+  </Panel>;
 }
 
 function SettingsPage() {

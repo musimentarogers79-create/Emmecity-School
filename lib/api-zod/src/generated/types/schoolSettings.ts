@@ -13,5 +13,6 @@ export interface SchoolSettings {
   currencyCode: string;
   currencyName: string;
   currencySymbol: string;
+  feeReminderSmsAuthorized: boolean;
   availableCurrencies: CurrencyOption[];
 }
