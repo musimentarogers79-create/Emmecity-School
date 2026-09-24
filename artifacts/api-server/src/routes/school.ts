@@ -62,6 +62,8 @@ const administratorRoles: SchoolRole[] = ["super_admin", "administrator"];
 const isAdministrator = (user?: SchoolUser) => !!user && administratorRoles.includes(user.role);
 const canManageEvents = (user?: SchoolUser) => !!user && (isAdministrator(user) || user.role === "secretary");
 const hasPermission = (user: SchoolUser | undefined, permission: PermissionKey) => !!user && (isAdministrator(user) || user.permissions.includes(permission));
+const canManagePayments = (user?: SchoolUser) => !!user && (isAdministrator(user) || user.role === "accountant" || hasPermission(user, "payments_manage"));
+const canViewFinance = (user?: SchoolUser) => canManagePayments(user) || hasPermission(user, "finance_view");
 const canManageUsers = (user?: SchoolUser) => !!user && (user.role === "super_admin" || user.role === "administrator" || user.permissions.includes("users_manage"));
 const canViewUsers = (user?: SchoolUser) => !!user && (canManageUsers(user) || user.permissions.includes("users_view"));
 const canManageSubjects = (user?: SchoolUser) => !!user && (isAdministrator(user) || user.role === "teacher" || user.permissions.includes("subjects_manage"));
@@ -544,7 +546,7 @@ router.delete("/attendance/register", async (req, res): Promise<void> => {
 
 router.get("/finance/summary", async (req, res): Promise<void> => {
   const user = await requireUser(req);
-  if (!user || (!isAdministrator(user) && user.role !== "accountant" && !hasPermission(user, "finance_view"))) { errorResponse(res, 403, "Finance access is limited to users with finance permission."); return; }
+  if (!canViewFinance(user)) { errorResponse(res, 403, "Finance access is limited to users with finance permission."); return; }
   const [rows, studentsRows] = await Promise.all([listPayments(), listStudents()]);
   const collected = rows.filter((item) => item.status === "completed").reduce((sum, item) => sum + item.amount, 0);
   const outstanding = studentsRows.reduce((sum, item) => sum + item.feeBalance, 0);
@@ -552,12 +554,12 @@ router.get("/finance/summary", async (req, res): Promise<void> => {
 });
 router.get("/finance/payments", async (req, res): Promise<void> => {
   const user = await requireUser(req);
-  if (!user || (!isAdministrator(user) && user.role !== "accountant" && !hasPermission(user, "finance_view"))) { errorResponse(res, 403, "Finance access is limited to users with finance permission."); return; }
+  if (!canViewFinance(user)) { errorResponse(res, 403, "Finance access is limited to users with finance permission."); return; }
   res.json(ListPaymentsResponse.parse(await listPayments()));
 });
 router.post("/finance/payments", async (req, res): Promise<void> => {
   const user = await requireUser(req);
-  if (!user || (!isAdministrator(user) && user.role !== "accountant" && !hasPermission(user, "finance_view"))) { errorResponse(res, 403, "Only users with finance permission can record payments."); return; }
+  if (!canManagePayments(user)) { errorResponse(res, 403, "Only users allowed to manage payments can record them."); return; }
   const parsed = RecordPaymentBody.safeParse(req.body);
   if (!parsed.success) { errorResponse(res, 400, "Enter a valid student, amount, method, and reference."); return; }
   try {
@@ -571,7 +573,7 @@ router.post("/finance/payments", async (req, res): Promise<void> => {
 });
 router.patch("/finance/payments/:paymentId", async (req, res): Promise<void> => {
   const user = await requireUser(req);
-  if (!user || (!isAdministrator(user) && user.role !== "accountant" && !hasPermission(user, "finance_view"))) { errorResponse(res, 403, "Only users with finance permission can edit payments."); return; }
+  if (!canManagePayments(user)) { errorResponse(res, 403, "Only users allowed to manage payments can edit them."); return; }
   const parsed = UpdatePaymentBody.safeParse(req.body);
   if (!parsed.success) { errorResponse(res, 400, "Enter a valid non-negative amount, payment method, and reference."); return; }
   try {
@@ -579,7 +581,7 @@ router.patch("/finance/payments/:paymentId", async (req, res): Promise<void> => 
     if (!payment) { errorResponse(res, 404, "Payment not found"); return; }
     res.json(UpdatePaymentResponse.parse(payment));
   } catch {
-    errorResponse(res, 409, "The payment could not be updated.");
+    errorResponse(res, 409, "The payment could not be updated. Check that the corrected amount does not exceed the pupil's total fees.");
   }
 });
 

@@ -43,6 +43,7 @@ const permissions: { value: PermissionKey; label: string }[] = [
   { value: 'users_manage', label: 'Manage users' },
   { value: 'subjects_manage', label: 'Manage subjects' },
   { value: 'finance_view', label: 'View finance' },
+  { value: 'payments_manage', label: 'Manage payments' },
   { value: 'expense_approve', label: 'Approve expenses' },
   { value: 'transactions_view', label: 'View transactions' },
 ];

@@ -209,7 +209,7 @@ function PupilExportToolbar() {
   const students = useListStudents({}, { query: { enabled: location === '/students', queryKey: getListStudentsQueryKey({}) } });
   const role = session?.user.role;
   const canSeeFinance = role === 'administrator' || role === 'super_admin' || role === 'accountant'
-    || session?.user.permissions.some((permission) => permission === 'finance_view' || permission === 'transactions_view') === true;
+    || session?.user.permissions.some((permission) => permission === 'finance_view' || permission === 'payments_manage' || permission === 'transactions_view') === true;
   const payments = useListPayments({ query: { enabled: location === '/students' && canSeeFinance, queryKey: getListPaymentsQueryKey() } });
   const [classFilter, setClassFilter] = useState('All classes');
   const [paymentFilter, setPaymentFilter] = useState('all');
@@ -430,7 +430,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const displayName = user?.name || user?.identifier || 'Isingoma';
   const roleLabel = (user?.role || 'administrator').replace('_', ' ');
   const navRole = user?.role === 'super_admin' ? 'administrator' : user?.role || 'staff';
-  const canFinance = user?.role === 'administrator' || user?.role === 'super_admin' || user?.role === 'accountant' || user?.permissions.includes('finance_view');
+  const canFinance = user?.role === 'administrator' || user?.role === 'super_admin' || user?.role === 'accountant' || user?.permissions.includes('finance_view') || user?.permissions.includes('payments_manage');
   const canExpenses = user?.role === 'administrator' || user?.role === 'super_admin' || user?.role === 'accountant' || user?.permissions.includes('expenses_view');
   const navItems = (roleNavigation[navRole] || roleNavigation.staff).filter((item) => {
     if (item.href === '/operations?view=events') return false;

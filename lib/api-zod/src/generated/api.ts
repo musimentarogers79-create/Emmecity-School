@@ -43,7 +43,7 @@ export const LoginResponse = zod.object({
   "phone": zod.string(),
   "status": zod.enum(['active', 'inactive']),
   "department": zod.string().optional(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'payments_manage', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
   "assignedClasses": zod.array(zod.string()).optional(),
   "monthlySalary": zod.number().min(loginResponseUserMonthlySalaryMin).optional(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
@@ -79,7 +79,7 @@ export const GetCurrentUserResponse = zod.object({
   "phone": zod.string(),
   "status": zod.enum(['active', 'inactive']),
   "department": zod.string().optional(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'payments_manage', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
   "assignedClasses": zod.array(zod.string()).optional(),
   "monthlySalary": zod.number().min(getCurrentUserResponseUserMonthlySalaryMin).optional(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
@@ -123,7 +123,7 @@ export const UpdateCurrentUserResponse = zod.object({
   "phone": zod.string(),
   "status": zod.enum(['active', 'inactive']),
   "department": zod.string().optional(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'payments_manage', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
   "assignedClasses": zod.array(zod.string()).optional(),
   "monthlySalary": zod.number().min(updateCurrentUserResponseUserMonthlySalaryMin).optional(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
@@ -243,7 +243,7 @@ export const ListUsersResponseItem = zod.object({
   "phone": zod.string(),
   "status": zod.enum(['active', 'inactive']),
   "department": zod.string().optional(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'payments_manage', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
   "assignedClasses": zod.array(zod.string()).optional(),
   "monthlySalary": zod.number().min(listUsersResponseMonthlySalaryMin).optional(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
@@ -276,7 +276,7 @@ export const CreateUserBody = zod.object({
   "phone": zod.string().optional(),
   "department": zod.string().optional(),
   "monthlySalary": zod.number().min(createUserBodyMonthlySalaryMin).optional(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])).optional()
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'payments_manage', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])).optional()
 })
 
 export const createUserResponseMonthlySalaryMin = 0;
@@ -291,7 +291,7 @@ export const CreateUserResponse = zod.object({
   "phone": zod.string(),
   "status": zod.enum(['active', 'inactive']),
   "department": zod.string().optional(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'payments_manage', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
   "assignedClasses": zod.array(zod.string()).optional(),
   "monthlySalary": zod.number().min(createUserResponseMonthlySalaryMin).optional(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
@@ -327,7 +327,7 @@ export const UpdateUserProfileByAdminBody = zod.object({
   "department": zod.string().optional(),
   "studentId": zod.string().nullish(),
   "monthlySalary": zod.number().min(updateUserProfileByAdminBodyMonthlySalaryMin).optional(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])).optional(),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'payments_manage', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])).optional(),
   "assignedClasses": zod.array(zod.string()).optional()
 })
 
@@ -343,7 +343,7 @@ export const UpdateUserProfileByAdminResponse = zod.object({
   "phone": zod.string(),
   "status": zod.enum(['active', 'inactive']),
   "department": zod.string().optional(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'payments_manage', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
   "assignedClasses": zod.array(zod.string()).optional(),
   "monthlySalary": zod.number().min(updateUserProfileByAdminResponseMonthlySalaryMin).optional(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
@@ -373,7 +373,7 @@ export const UpdateUserPermissionsParams = zod.object({
 })
 
 export const UpdateUserPermissionsBody = zod.object({
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'payments_manage', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
   "assignedClasses": zod.array(zod.string()).optional()
 })
 
@@ -389,7 +389,7 @@ export const UpdateUserPermissionsResponse = zod.object({
   "phone": zod.string(),
   "status": zod.enum(['active', 'inactive']),
   "department": zod.string().optional(),
-  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
+  "permissions": zod.array(zod.enum(['expense_approve', 'expense_delete', 'transactions_view', 'transactions_print', 'finance_view', 'payments_manage', 'expenses_view', 'users_view', 'users_manage', 'subjects_view', 'subjects_manage', 'subjects_delete'])),
   "assignedClasses": zod.array(zod.string()).optional(),
   "monthlySalary": zod.number().min(updateUserPermissionsResponseMonthlySalaryMin).optional(),
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),

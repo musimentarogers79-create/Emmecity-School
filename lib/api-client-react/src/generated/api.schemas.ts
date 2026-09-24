@@ -128,6 +128,7 @@ export const PermissionKey = {
   transactions_view: 'transactions_view',
   transactions_print: 'transactions_print',
   finance_view: 'finance_view',
+  payments_manage: 'payments_manage',
   expenses_view: 'expenses_view',
   users_view: 'users_view',
   users_manage: 'users_manage',

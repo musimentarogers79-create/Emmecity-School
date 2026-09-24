@@ -11,7 +11,7 @@ import { requestObjectDownload } from "./object-storage";
 import { compactSingleSegmentSms } from "./single-segment-sms";
 
 export type SchoolRole = "super_admin" | "administrator" | "teacher" | "accountant" | "secretary" | "librarian" | "nurse" | "guardian" | "student" | "staff";
-export type PermissionKey = "expense_approve" | "expense_delete" | "transactions_view" | "transactions_print" | "finance_view" | "expenses_view" | "users_view" | "users_manage" | "subjects_view" | "subjects_manage" | "subjects_delete";
+export type PermissionKey = "expense_approve" | "expense_delete" | "transactions_view" | "transactions_print" | "finance_view" | "payments_manage" | "expenses_view" | "users_view" | "users_manage" | "subjects_view" | "subjects_manage" | "subjects_delete";
 export type AttendanceStatus = "present" | "absent" | "late" | "excused";
 export type SchoolUser = {
   id: string; name: string; identifier: string; email: string; phone: string; password: string; userType: "staff" | "guardian" | "learner";
@@ -57,6 +57,7 @@ export function verifyPassword(password: string, storedPassword: string) {
 }
 const initials = (name: string) => name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase();
 const number = (value: string | number | null | undefined) => Number(value ?? 0);
+const validPaymentPrecision = (value: number) => Number.isFinite(value) && Math.abs(value - Math.round(value * 100) / 100) < 1e-9;
 export const getDateLabel = () => new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
 const isoDate = () => new Date().toISOString().slice(0, 10);
 
@@ -178,7 +179,7 @@ export async function initializeSchoolData() {
 export async function getSchoolId() { return initializeSchoolData(); }
 
 function publicRow(row: User, setting: SchoolSettings): SchoolUser {
-  const permissions = Array.isArray(row.permissions) ? row.permissions.filter((item): item is PermissionKey => ["expense_approve", "expense_delete", "transactions_view", "transactions_print", "finance_view", "expenses_view", "users_view", "users_manage", "subjects_view", "subjects_manage", "subjects_delete"].includes(item)) : [];
+  const permissions = Array.isArray(row.permissions) ? row.permissions.filter((item): item is PermissionKey => ["expense_approve", "expense_delete", "transactions_view", "transactions_print", "finance_view", "payments_manage", "expenses_view", "users_view", "users_manage", "subjects_view", "subjects_manage", "subjects_delete"].includes(item)) : [];
   return { id: row.id, name: row.name, identifier: row.identifier, email: row.email, phone: row.phone, password: row.passwordHash, userType: row.userType as SchoolUser["userType"], role: row.role as SchoolRole, status: (row.status || "active") as SchoolUser["status"], ...(row.department ? { department: row.department } : {}), permissions, initials: row.initials, schoolName: setting.schoolName, ...(row.studentId ? { studentId: row.studentId } : {}), ...(row.monthlySalary !== null ? { monthlySalary: number(row.monthlySalary) } : {}) };
 }
 export function publicUser(user: SchoolUser) {
@@ -668,7 +669,7 @@ export async function listPayments() {
   return rows.map(({ payment, student }) => ({ id: payment.id, studentId: student.id, receiptNumber: payment.receiptNumber, studentName: `${student.firstName}${student.middleName ? ` ${student.middleName}` : ""} ${student.lastName}`, registrationNumber: student.registrationNumber, amount: number(payment.amount), method: payment.method, reference: payment.reference, date: new Date(`${payment.paidOn}T00:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }), status: payment.status as Payment["status"], balance: number(student.feeBalance) }));
 }
 export async function recordPayment(studentId: string, amount: number, method: string, reference: string) {
-  if (amount <= 0) throw new Error("Payment amount must be positive");
+  if (amount <= 0 || !validPaymentPrecision(amount)) throw new Error("Payment amount must be positive and have at most two decimal places");
   const schoolId = await getSchoolId();
   return db.transaction(async (tx) => {
     const lockedStudentRow = (await tx.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.id, studentId))).for("update").limit(1))[0];
@@ -688,12 +689,12 @@ export async function recordPayment(studentId: string, amount: number, method: s
     const row = (await tx.insert(payments).values({ schoolId, studentId: student.id, receiptNumber, amount: String(amount), method, reference, paidOn: isoDate(), status: "completed" }).returning())[0];
     await tx.update(students).set({ feeBalance: sql`fee_balance - ${amount}`, amountPaid: sql`coalesce(amount_paid, 0) + ${amount}`, updatedAt: new Date() }).where(and(eq(students.schoolId, schoolId), eq(students.id, student.id)));
     const updatedStudent = (await tx.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.id, student.id))).limit(1))[0];
-    return row ? { id: row.id, studentId: student.id, receiptNumber, studentName: student.name, registrationNumber: student.registrationNumber, amount, method, reference, date: getDateLabel(), status: "completed" as const, balance: number(updatedStudent?.feeBalance) } : undefined;
+    return row ? { id: row.id, studentId: student.id, receiptNumber, studentName: student.name, registrationNumber: student.registrationNumber, amount: number(row.amount), method, reference, date: getDateLabel(), status: "completed" as const, balance: number(updatedStudent?.feeBalance) } : undefined;
   });
 }
 
 export async function updatePayment(paymentId: string, amount: number, method: string, reference: string) {
-  if (amount < 0) throw new Error("Payment amount cannot be negative");
+  if (amount < 0 || !validPaymentPrecision(amount)) throw new Error("Payment amount must be non-negative and have at most two decimal places");
   const schoolId = await getSchoolId();
   return db.transaction(async (tx) => {
     const existing = (await tx.select({ payment: payments, student: students }).from(payments).innerJoin(students, eq(payments.studentId, students.id)).where(and(eq(payments.schoolId, schoolId), eq(payments.id, paymentId))).for("update").limit(1))[0];
@@ -702,6 +703,9 @@ export async function updatePayment(paymentId: string, amount: number, method: s
     const totals = (await tx.select({ total: sql<string>`coalesce(sum(${payments.amount}) filter (where ${payments.status} = 'completed'), 0)` }).from(payments).where(and(eq(payments.schoolId, schoolId), eq(payments.studentId, existing.student.id))))[0];
     const amountPaid = number(totals?.total);
     const payable = existing.student.isSponsored ? 0 : number(existing.student.previousFeeBalance) + number(existing.student.termFee);
+    if (updated.status === "completed" && number(updated.amount) > number(existing.payment.amount) && amountPaid > payable) {
+      throw new Error("The corrected payment would exceed the pupil's payable fees");
+    }
     const feeBalance = Math.max(0, payable - amountPaid);
     await tx.update(students).set({ amountPaid: String(amountPaid), feeBalance: String(feeBalance), updatedAt: new Date() }).where(and(eq(students.schoolId, schoolId), eq(students.id, existing.student.id)));
     return updated ? {
@@ -710,7 +714,7 @@ export async function updatePayment(paymentId: string, amount: number, method: s
       receiptNumber: updated.receiptNumber,
       studentName: `${existing.student.firstName}${existing.student.middleName ? ` ${existing.student.middleName}` : ""} ${existing.student.lastName}`,
       registrationNumber: existing.student.registrationNumber,
-      amount,
+      amount: number(updated.amount),
       method: updated.method,
       reference: updated.reference,
       date: new Date(`${updated.paidOn}T00:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),

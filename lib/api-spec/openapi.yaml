@@ -1339,7 +1339,7 @@ components:
       required: [permissions]
     PermissionKey:
       type: string
-      enum: [expense_approve, expense_delete, transactions_view, transactions_print, finance_view, expenses_view, users_view, users_manage, subjects_view, subjects_manage, subjects_delete]
+      enum: [expense_approve, expense_delete, transactions_view, transactions_print, finance_view, payments_manage, expenses_view, users_view, users_manage, subjects_view, subjects_manage, subjects_delete]
     AuthSession:
       type: object
       properties:

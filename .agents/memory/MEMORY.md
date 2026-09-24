@@ -11,6 +11,7 @@
 - [Class access identity](class-access-identity.md) — normalize class-and-stream assignments consistently across teacher access and subject visibility.
 - [Sponsored pupils](sponsored-pupils.md) — school-sponsored pupils remain normal pupils but must have zero payable fees and no opening receipt.
 - [Payment balance recalculation](payment-balance-recalculation.md) — rebuild pupil totals from completed payment rows after edits to prevent balance drift.
+- [Payment permission boundary](payment-permission-boundary.md) — viewing finance is not authority to record or correct fee payments.
 - [Attendance register deletion](attendance-register-deletion.md) — archive deleted registers with their reason instead of silently removing attendance history.
 - [Account and personnel separation](account-personnel-separation.md) — login-account lifecycle must not create or delete real pupil or staff records.
 - [School notifications](school-device-notifications.md) — keep external delivery opt-in and single-segment for SMS; browser and background alerts have separate setup requirements.
