@@ -837,13 +837,18 @@ export async function listOperation(kind: OperationKind): Promise<OperationRecor
   const schoolId = await getSchoolId();
   const table = tables[kind];
   const rows = await db.select().from(table).where(eq(table.schoolId, schoolId)).orderBy(desc(table.createdAt));
-  return rows.map((row) => ({ ...(row.data as OperationRecord), id: row.id }));
+  return rows
+    .map((row): OperationRecord => ({ ...(row.data as Record<string, unknown>), id: row.id }))
+    .filter((record) => kind !== "notifications" || record["smsDelivery"] !== true);
 }
 export async function getOperation(kind: OperationKind, id: string) {
   const schoolId = await getSchoolId();
   const table = tables[kind];
   const row = (await db.select().from(table).where(and(eq(table.schoolId, schoolId), eq(table.id, id))).limit(1))[0];
-  return row ? { ...(row.data as OperationRecord), id: row.id } : undefined;
+  if (!row) return undefined;
+  const record: OperationRecord = { ...(row.data as Record<string, unknown>), id: row.id };
+  if (kind === "notifications" && record["smsDelivery"] === true) return undefined;
+  return record;
 }
 export async function buildFullBackup() {
   const schoolId = await getSchoolId();

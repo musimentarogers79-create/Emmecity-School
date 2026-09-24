@@ -1,6 +1,7 @@
 import app from "./app";
 import { logger } from "./lib/logger";
 import { initializeSchoolData } from "./lib/school-data";
+import { startWeeklyFeeReminderScheduler } from "./lib/school-notification-sms";
 
 const rawPort = process.env["PORT"];
 
@@ -17,6 +18,7 @@ if (Number.isNaN(port) || port <= 0) {
 }
 
 await initializeSchoolData();
+startWeeklyFeeReminderScheduler();
 
 app.listen(port, (err) => {
   if (err) {

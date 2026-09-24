@@ -22,6 +22,7 @@ import {
   createUser, deleteOperation, deleteUser, updatePayment, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserAdmin, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
 } from "../lib/school-data";
 import { isBackupObjectPath, requestBackupDownload, uploadBackupObject } from "../lib/object-storage";
+import { sendAnnouncementSms, sendEventSms, sendPaymentConfirmationSms } from "../lib/school-notification-sms";
 
 const router: IRouter = Router();
 const getCookie = (req: Parameters<Parameters<IRouter["get"]>[1]>[0], name: string) =>
@@ -331,6 +332,7 @@ router.post("/students", async (req, res): Promise<void> => {
   if (!parsed.success) { errorResponse(res, 400, "Complete the required pupil and guardian fields."); return; }
   try {
     const created = await createStudentWithPayment(parsed.data);
+    if (created.payment) await sendPaymentConfirmationSms(created.payment, created.student);
     const result = { ...created.student, ...(created.payment ? { receiptNumber: created.payment.receiptNumber } : {}), admissionForm: created.admissionForm };
     res.status(201).json(CreateStudentResponse.parse(result));
   } catch { errorResponse(res, 409, "A pupil could not be registered. Please try again."); }
@@ -451,6 +453,7 @@ router.post("/finance/payments", async (req, res): Promise<void> => {
   try {
     const payment = await recordPayment(parsed.data.studentId, parsed.data.amount, parsed.data.method, parsed.data.reference);
     if (!payment) { errorResponse(res, 404, "Student not found"); return; }
+    await sendPaymentConfirmationSms(payment);
     res.status(201).json(RecordPaymentResponse.parse(payment));
   } catch {
     errorResponse(res, 409, "The payment exceeds the pupil’s current fee balance.");
@@ -545,11 +548,13 @@ router.post("/announcements", async (req, res): Promise<void> => {
   const parsed = CreateAnnouncementBody.safeParse(req.body);
   if (!parsed.success) { errorResponse(res, 400, "Add a title and message before publishing."); return; }
   const item = await createOperation("announcements", { ...parsed.data, publishedAt: getDateLabel(), author: user.name });
+  if (!item) { errorResponse(res, 500, "The announcement could not be saved."); return; }
   await createSchoolNotification({
     title: parsed.data.priority === "important" ? `Important: ${parsed.data.title}` : parsed.data.title,
     body: `${parsed.data.body} · Audience: ${parsed.data.audience}`,
     source: "announcement",
   });
+  await sendAnnouncementSms(item);
   res.status(201).json(CreateAnnouncementResponse.parse(item));
 });
 
@@ -707,6 +712,7 @@ router.post("/operations/events", async (req, res): Promise<void> => {
   if (!parsed.success) { errorResponse(res, 400, "Complete the event title, date, type, location, and status."); return; }
   const created = await createOperation("events", parsed.data);
   if (!created) { errorResponse(res, 400, "The school event could not be created."); return; }
+  await sendEventSms(created);
   res.status(201).json(CreateEventResponse.parse(created));
 });
 router.get("/operations", async (req, res): Promise<void> => {
