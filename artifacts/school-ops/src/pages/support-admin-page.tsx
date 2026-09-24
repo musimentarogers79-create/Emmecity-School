@@ -48,7 +48,7 @@ async function supportRequest<T>(path: string, init: RequestInit = {}): Promise<
   return body as T;
 }
 
-function SupportLogin({ onSuccess }: { onSuccess: () => void }) {
+function SupportLogin({ onSuccess }: { onSuccess: (session: SupportSession) => void }) {
   const [password, setPassword] = useState('');
   const login = useMutation({
     mutationFn: (value: string) => supportRequest<SupportSession>('/api/support/auth/login', {
@@ -157,6 +157,11 @@ export default function SupportAdminPage() {
   const [search, setSearch] = useState('');
   const [selectedPupil, setSelectedPupil] = useState<SupportPupil | null>(null);
   const [notice, setNotice] = useState('');
+  const [sessionClosed, setSessionClosed] = useState(false);
+  const handleSupportLoginSuccess = (nextSession: SupportSession) => {
+    setSessionClosed(false);
+    queryClient.setQueryData(sessionKey, nextSession);
+  };
   const normalizedSearch = search.trim();
   const session = useQuery({
     queryKey: sessionKey,
@@ -172,12 +177,13 @@ export default function SupportAdminPage() {
   });
   const logout = useMutation({
     mutationFn: () => supportRequest<{ message: string }>('/api/support/auth/logout', { method: 'POST' }),
-    onSuccess: async () => {
+    onSuccess: () => {
+      setSessionClosed(true);
       setSearch('');
       setSelectedPupil(null);
       setNotice('');
       queryClient.removeQueries({ queryKey: ['support-pupils'] });
-      await queryClient.invalidateQueries({ queryKey: sessionKey });
+      queryClient.removeQueries({ queryKey: sessionKey, exact: true });
     },
   });
   const removePupil = useMutation({
@@ -198,6 +204,9 @@ export default function SupportAdminPage() {
     },
   });
 
+  if (sessionClosed) {
+    return <SupportLogin onSuccess={handleSupportLoginSuccess} />;
+  }
   if (session.isLoading) {
     return <main className="grid min-h-screen place-items-center bg-[#f6f3eb] p-6 text-sm text-[hsl(var(--muted-foreground))]" data-testid="support-session-loading">Checking secure support session…</main>;
   }
@@ -211,7 +220,7 @@ export default function SupportAdminPage() {
     </main>;
   }
   if (!session.data) {
-    return <SupportLogin onSuccess={() => { void queryClient.invalidateQueries({ queryKey: sessionKey }); }} />;
+    return <SupportLogin onSuccess={handleSupportLoginSuccess} />;
   }
 
   return <main className="min-h-screen bg-[#f6f3eb] text-[hsl(var(--foreground))]">
@@ -225,6 +234,7 @@ export default function SupportAdminPage() {
         <button type="button" onClick={() => logout.mutate()} disabled={logout.isPending} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[hsl(var(--border))] px-3 py-2 text-xs font-semibold hover:bg-[hsl(var(--muted)/.45)] disabled:opacity-50" data-testid="button-support-logout"><LogOut className="size-4" /> Sign out</button>
       </div>
     </header>
+    {logout.isError && <p role="alert" className="mx-auto mt-4 max-w-6xl px-5 text-sm text-[hsl(var(--destructive))] sm:px-8" data-testid="status-support-logout-error">Sign out could not be completed. Your support session may still be active; please try again.</p>}
     <div className="mx-auto max-w-6xl space-y-6 px-5 py-8 sm:px-8 sm:py-10">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div><p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.2em] text-[hsl(var(--primary))]">Authorised support use only</p><h1 className="mt-2 font-display text-3xl tracking-[-.03em] sm:text-4xl">Find a pupil record</h1><p className="mt-2 max-w-2xl text-sm leading-6 text-[hsl(var(--muted-foreground))]">Search by pupil name, guardian name, or registration number. Only the identity details needed to confirm a record are shown.</p></div>
