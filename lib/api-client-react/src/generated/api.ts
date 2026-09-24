@@ -2634,7 +2634,7 @@ export const getListMessageRecipientsUrl = () => {
 }
 
 /**
- * @summary List active teachers and parents with available phone numbers
+ * @summary List teachers, pupils, and guardian contacts available for messaging
  */
 export const listMessageRecipients = async ( options?: Parameters<typeof customFetch>[1]): Promise<MessageRecipients> => {
 
@@ -2681,7 +2681,7 @@ export type ListMessageRecipientsQueryError = ErrorType<void>
 
 
 /**
- * @summary List active teachers and parents with available phone numbers
+ * @summary List teachers, pupils, and guardian contacts available for messaging
  */
 
 export function useListMessageRecipients<TData = Awaited<ReturnType<typeof listMessageRecipients>>, TError = ErrorType<void>>(

@@ -344,6 +344,7 @@ export const GetDashboardResponse = zod.object({
   "firstName": zod.string(),
   "middleName": zod.string().optional(),
   "lastName": zod.string(),
+  "admissionDate": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
   "gender": zod.string(),
@@ -432,6 +433,7 @@ export const GetDashboardResponse = zod.object({
   "firstName": zod.string(),
   "middleName": zod.string().optional(),
   "lastName": zod.string(),
+  "admissionDate": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
   "gender": zod.string(),
@@ -537,6 +539,7 @@ export const ListStudentsResponseItem = zod.object({
   "firstName": zod.string(),
   "middleName": zod.string().optional(),
   "lastName": zod.string(),
+  "admissionDate": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
   "gender": zod.string(),
@@ -696,6 +699,7 @@ export const CreateStudentResponse = zod.object({
   "firstName": zod.string(),
   "middleName": zod.string().optional(),
   "lastName": zod.string(),
+  "admissionDate": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
   "gender": zod.string(),
@@ -860,6 +864,7 @@ export const GetStudentResponse = zod.object({
   "firstName": zod.string(),
   "middleName": zod.string().optional(),
   "lastName": zod.string(),
+  "admissionDate": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
   "gender": zod.string(),
@@ -1030,6 +1035,7 @@ export const UpdateStudentResponse = zod.object({
   "firstName": zod.string(),
   "middleName": zod.string().optional(),
   "lastName": zod.string(),
+  "admissionDate": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
   "gender": zod.string(),
@@ -1482,7 +1488,7 @@ export const CreateAnnouncementResponse = zod.object({
 
 
 /**
- * @summary List active teachers and parents with available phone numbers
+ * @summary List teachers, pupils, and guardian contacts available for messaging
  */
 export const ListMessageRecipientsResponse = zod.object({
   "teachers": zod.array(zod.object({
@@ -1494,6 +1500,12 @@ export const ListMessageRecipientsResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "detail": zod.string()
+})),
+  "pupils": zod.array(zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "detail": zod.string(),
+  "canSend": zod.boolean()
 }))
 })
 
@@ -1507,6 +1519,8 @@ export const sendDirectMessageBodyTeacherIdsMax = 500;
 
 export const sendDirectMessageBodyParentIdsMax = 500;
 
+export const sendDirectMessageBodyPupilIdsMax = 2000;
+
 export const sendDirectMessageBodyMessageMax = 1000;
 
 
@@ -1515,6 +1529,7 @@ export const SendDirectMessageBody = zod.object({
   "requestId": zod.string().min(1).max(sendDirectMessageBodyRequestIdMax),
   "teacherIds": zod.array(zod.string()).max(sendDirectMessageBodyTeacherIdsMax),
   "parentIds": zod.array(zod.string()).max(sendDirectMessageBodyParentIdsMax),
+  "pupilIds": zod.array(zod.string()).max(sendDirectMessageBodyPupilIdsMax),
   "message": zod.string().min(1).max(sendDirectMessageBodyMessageMax)
 })
 
@@ -1595,6 +1610,7 @@ export const GetReportCardResponse = zod.object({
   "firstName": zod.string(),
   "middleName": zod.string().optional(),
   "lastName": zod.string(),
+  "admissionDate": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
   "gender": zod.string(),
@@ -1740,6 +1756,7 @@ export const CreateReportCardResponse = zod.object({
   "firstName": zod.string(),
   "middleName": zod.string().optional(),
   "lastName": zod.string(),
+  "admissionDate": zod.string(),
   "className": zod.string(),
   "stream": zod.string(),
   "gender": zod.string(),

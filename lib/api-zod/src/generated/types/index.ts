@@ -51,6 +51,7 @@ export * from './listStudentsStatus';
 export * from './loginInput';
 export * from './loginInputUserType';
 export * from './message';
+export * from './messagePupilRecipient';
 export * from './messageRecipient';
 export * from './messageRecipients';
 export * from './operationAssignment';

@@ -4,7 +4,7 @@ import { ArrowLeft, Search, Send, Users } from "lucide-react";
 import { Link } from "wouter";
 import { AppShell, Button, PageHeader, Panel } from "@/components/school-shell";
 
-type Recipient = { id: string; name: string; detail: string };
+type Recipient = { id: string; name: string; detail: string; canSend?: boolean };
 type SendSummary = {
   status: "accepted" | "partial" | "failed" | "disabled" | "duplicate";
   recipientCount: number;
@@ -66,12 +66,12 @@ function RecipientSection({
           <label
             key={recipient.id}
             htmlFor={`${testId}-${recipient.id}`}
-            className="flex cursor-pointer items-start gap-3 p-4 transition-colors hover:bg-[hsl(var(--muted)/.45)]"
+            className={`flex items-start gap-3 p-4 transition-colors ${recipient.canSend === false ? "cursor-not-allowed opacity-60" : "cursor-pointer hover:bg-[hsl(var(--muted)/.45)]"}`}
           >
             <input
               id={`${testId}-${recipient.id}`}
               type="checkbox"
-              disabled={disabled}
+              disabled={disabled || recipient.canSend === false}
               checked={selectedIds.has(recipient.id)}
               onChange={() => onToggle(recipient.id)}
               className="mt-1 size-4 shrink-0 accent-[hsl(var(--primary))] disabled:cursor-not-allowed"
@@ -109,6 +109,7 @@ export default function MessagesPage() {
   const sendMutation = useSendDirectMessage();
   const [teacherIds, setTeacherIds] = useState<Set<string>>(() => new Set());
   const [parentIds, setParentIds] = useState<Set<string>>(() => new Set());
+  const [pupilIds, setPupilIds] = useState<Set<string>>(() => new Set());
   const [message, setMessage] = useState("");
   const [sendSummary, setSendSummary] = useState<SendSummary>();
   const requestRef = useRef<{ fingerprint: string; id: string } | undefined>(undefined);
@@ -117,6 +118,7 @@ export default function MessagesPage() {
     if (!currentRecipients) return;
     const availableTeacherIds = new Set(currentRecipients.teachers.map((recipient) => recipient.id));
     const availableParentIds = new Set(currentRecipients.parents.map((recipient) => recipient.id));
+    const availablePupilIds = new Set(currentRecipients.pupils.filter((pupil) => pupil.canSend).map((pupil) => pupil.id));
     setTeacherIds((current) => {
       const next = new Set([...current].filter((id) => availableTeacherIds.has(id)));
       return next.size === current.size ? current : next;
@@ -125,10 +127,14 @@ export default function MessagesPage() {
       const next = new Set([...current].filter((id) => availableParentIds.has(id)));
       return next.size === current.size ? current : next;
     });
+    setPupilIds((current) => {
+      const next = new Set([...current].filter((id) => availablePupilIds.has(id)));
+      return next.size === current.size ? current : next;
+    });
   }, [recipientsQuery.data]);
 
   const schoolName = settingsQuery.data?.schoolName?.replace(/\s+/gu, " ").trim() || "";
-  const selectedRecipientCount = teacherIds.size + parentIds.size;
+  const selectedRecipientCount = teacherIds.size + parentIds.size + pupilIds.size;
   const recipients = recipientsQuery.data;
   const toggleId = (setter: (update: (current: Set<string>) => Set<string>) => void, id: string) => {
     setter((current) => {
@@ -145,7 +151,8 @@ export default function MessagesPage() {
     setSendSummary(undefined);
     const sortedTeacherIds = [...teacherIds].sort();
     const sortedParentIds = [...parentIds].sort();
-    const fingerprint = JSON.stringify({ teacherIds: sortedTeacherIds, parentIds: sortedParentIds, message: message.trim() });
+    const sortedPupilIds = [...pupilIds].sort();
+    const fingerprint = JSON.stringify({ teacherIds: sortedTeacherIds, parentIds: sortedParentIds, pupilIds: sortedPupilIds, message: message.trim() });
     const requestId = requestRef.current?.fingerprint === fingerprint
       ? requestRef.current.id
       : window.crypto.randomUUID();
@@ -156,6 +163,7 @@ export default function MessagesPage() {
         requestId,
         teacherIds: sortedTeacherIds,
         parentIds: sortedParentIds,
+        pupilIds: sortedPupilIds,
         message: message.trim(),
       },
     }, {
@@ -191,7 +199,7 @@ export default function MessagesPage() {
       <PageHeader
         eyebrow="Communication · Administrator"
         title="Send a message"
-        description="Choose specific teachers and parents or guardians. Their phone numbers are never shown here."
+        description="Choose specific teachers, pupils, or parents and guardians. Messages to pupils go to their guardian contact; phone numbers are never shown here."
         action={
           <Link
             href="/dashboard"
@@ -217,7 +225,7 @@ export default function MessagesPage() {
         </Panel>
       ) : (
         <form className="space-y-6" onSubmit={submitMessage}>
-          <div className="grid gap-5 xl:grid-cols-2">
+          <div className="grid gap-5 lg:grid-cols-2 2xl:grid-cols-3">
             <RecipientSection
               title="Teachers"
               description="Active teacher accounts with a usable phone number."
@@ -233,8 +241,22 @@ export default function MessagesPage() {
               testId="message-teachers"
             />
             <RecipientSection
+              title="Pupils"
+              description="All active and inactive pupils, including school-sponsored pupils. Selecting a pupil messages their guardian."
+              recipients={recipients?.pupils ?? []}
+              selectedIds={pupilIds}
+              onToggle={(id) => {
+                setSendSummary(undefined);
+                sendMutation.reset();
+                toggleId(setPupilIds, id);
+              }}
+              disabled={sendMutation.isPending}
+              searchLabel="Search pupils and guardians"
+              testId="message-pupils"
+            />
+            <RecipientSection
               title="Parents and guardians"
-              description="Contacts linked to active pupils; shared family numbers appear once."
+              description="Guardian contacts linked to active or inactive pupils; shared family numbers appear once."
               recipients={recipients?.parents ?? []}
               selectedIds={parentIds}
               onToggle={(id) => {

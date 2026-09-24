@@ -5,9 +5,11 @@
  * EMMECTY Nursery & Primary School management API
  * OpenAPI spec version: 0.2.0
  */
+import type { MessagePupilRecipient } from './messagePupilRecipient';
 import type { MessageRecipient } from './messageRecipient';
 
 export interface MessageRecipients {
   teachers: MessageRecipient[];
   parents: MessageRecipient[];
+  pupils: MessagePupilRecipient[];
 }

@@ -275,6 +275,7 @@ export interface Student {
   firstName: string;
   middleName?: string;
   lastName: string;
+  admissionDate: string;
   className: string;
   stream: string;
   gender: string;
@@ -674,9 +675,17 @@ export interface MessageRecipient {
   detail: string;
 }
 
+export interface MessagePupilRecipient {
+  id: string;
+  name: string;
+  detail: string;
+  canSend: boolean;
+}
+
 export interface MessageRecipients {
   teachers: MessageRecipient[];
   parents: MessageRecipient[];
+  pupils: MessagePupilRecipient[];
 }
 
 export interface DirectMessageInput {
@@ -689,6 +698,8 @@ export interface DirectMessageInput {
   teacherIds: string[];
   /** @maxItems 500 */
   parentIds: string[];
+  /** @maxItems 2000 */
+  pupilIds: string[];
   /**
      * @minLength 1
      * @maxLength 1000

@@ -635,7 +635,7 @@ paths:
     get:
       operationId: listMessageRecipients
       tags: [communication]
-      summary: List active teachers and parents with available phone numbers
+      summary: List teachers, pupils, and guardian contacts available for messaging
       responses:
         "200":
           description: Message recipients available to an administrator
@@ -1190,6 +1190,8 @@ components:
           type: string
         lastName:
           type: string
+        admissionDate:
+          type: string
         className:
           type: string
         stream:
@@ -1222,7 +1224,7 @@ components:
           type: string
         admissionForm:
           $ref: "#/components/schemas/AdmissionForm"
-      required: [id, registrationNumber, name, firstName, lastName, className, stream, gender, status, attendancePercentage, feeBalance, previousFeeBalance, avatarTone, enrollmentType, isSponsored, termFee, amountPaid]
+      required: [id, registrationNumber, name, firstName, lastName, admissionDate, className, stream, gender, status, attendancePercentage, feeBalance, previousFeeBalance, avatarTone, enrollmentType, isSponsored, termFee, amountPaid]
     AdmissionForm:
       type: object
       properties:
@@ -1883,7 +1885,23 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/MessageRecipient"
-      required: [teachers, parents]
+        pupils:
+          type: array
+          items:
+            $ref: "#/components/schemas/MessagePupilRecipient"
+      required: [teachers, parents, pupils]
+    MessagePupilRecipient:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        detail:
+          type: string
+        canSend:
+          type: boolean
+      required: [id, name, detail, canSend]
     DirectMessageInput:
       type: object
       properties:
@@ -1901,11 +1919,16 @@ components:
           maxItems: 500
           items:
             type: string
+        pupilIds:
+          type: array
+          maxItems: 2000
+          items:
+            type: string
         message:
           type: string
           minLength: 1
           maxLength: 1000
-      required: [requestId, teacherIds, parentIds, message]
+      required: [requestId, teacherIds, parentIds, pupilIds, message]
     DirectMessageResult:
       type: object
       properties:

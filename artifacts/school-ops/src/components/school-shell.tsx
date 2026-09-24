@@ -184,20 +184,51 @@ function FormatDownloadButtons({ filename, columns, rows, disabled, testId }: { 
   return <div className="flex flex-wrap gap-2"><Button variant="secondary" onClick={() => downloadTable(filename, columns, rows, 'doc')} disabled={disabled} testId={`${testId}-doc`}><Download className="size-3.5" /> DOC</Button><Button variant="secondary" onClick={() => downloadTable(filename, columns, rows, 'xls')} disabled={disabled} testId={`${testId}-excel`}><Download className="size-3.5" /> Excel</Button><Button variant="secondary" onClick={() => downloadTable(filename, columns, rows, 'pdf')} disabled={disabled} testId={`${testId}-pdf`}><Download className="size-3.5" /> PDF</Button></div>;
 }
 
+type RegistrationPeriod = 'day' | 'week' | 'month' | 'all' | 'custom';
+function localDateKey(date: Date) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+function registrationDateRange(period: RegistrationPeriod, dayDate: string, fromDate: string, toDate: string) {
+  const today = localDateKey(new Date());
+  if (period === 'day') return { from: dayDate, to: dayDate };
+  if (period === 'week') {
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+    const dayOfWeek = start.getDay() || 7;
+    start.setDate(start.getDate() - dayOfWeek + 1);
+    return { from: localDateKey(start), to: today };
+  }
+  if (period === 'month') return { from: `${today.slice(0, 7)}-01`, to: today };
+  if (period === 'custom') return { from: fromDate, to: toDate };
+  return { from: '', to: '' };
+}
+
 function PupilExportToolbar() {
   const [location] = useLocation();
   const { data: session } = useGetCurrentUser();
   const students = useListStudents({}, { query: { enabled: location === '/students', queryKey: getListStudentsQueryKey({}) } });
-  const payments = useListPayments({ query: { enabled: location === '/students', queryKey: getListPaymentsQueryKey() } });
+  const role = session?.user.role;
+  const canSeeFinance = role === 'administrator' || role === 'super_admin' || role === 'accountant'
+    || session?.user.permissions.some((permission) => permission === 'finance_view' || permission === 'transactions_view') === true;
+  const payments = useListPayments({ query: { enabled: location === '/students' && canSeeFinance, queryKey: getListPaymentsQueryKey() } });
   const [classFilter, setClassFilter] = useState('All classes');
   const [paymentFilter, setPaymentFilter] = useState('all');
-  const canExport = session?.user.role === 'administrator' || session?.user.role === 'super_admin';
+  const [registrationPeriod, setRegistrationPeriod] = useState<RegistrationPeriod>('all');
+  const [registrationDay, setRegistrationDay] = useState(() => localDateKey(new Date()));
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const canExport = role === 'administrator' || role === 'super_admin' || role === 'accountant'
+    || role === 'secretary' || role === 'teacher'
+    || ((role === 'guardian' || role === 'student') && Boolean(session?.user.studentId));
   if (location !== '/students' || !canExport) return null;
   const classOptions = Array.from(new Set([...supportedPupilClasses, ...(students.data || []).map((student) => student.className).filter(Boolean)]));
   const paymentRows = payments.data || [];
   const paidByStudent = new Map<string, number>();
   paymentRows.forEach((payment: Payment) => paidByStudent.set(payment.studentId, (paidByStudent.get(payment.studentId) || 0) + payment.amount));
+  const dateRange = registrationDateRange(registrationPeriod, registrationDay, fromDate, toDate);
   const filtered = (students.data || []).filter((student: Student) => {
+    if (dateRange.from && student.admissionDate < dateRange.from) return false;
+    if (dateRange.to && student.admissionDate > dateRange.to) return false;
     if (classFilter !== 'All classes' && student.className !== classFilter) return false;
     const paid = paidByStudent.get(student.id) ?? student.amountPaid ?? 0;
     const termFee = student.termFee || 0;
@@ -205,15 +236,65 @@ function PupilExportToolbar() {
     if (paymentFilter === 'half') return termFee > 0 && paid >= termFee / 2 && paid < termFee;
     if (paymentFilter === 'unpaid') return paid <= 0;
     return true;
-  });
-  const pupilColumns = ['Registration number', 'Pupil name', 'Class', 'Stream', 'Gender', 'Guardian', 'Guardian phone', 'Previous balance (UGX)', 'Term fee (UGX)', 'Paid (UGX)', 'Total balance (UGX)', 'Status'];
+  }).sort((left, right) => right.admissionDate.localeCompare(left.admissionDate) || left.name.localeCompare(right.name));
+  const pupilColumns = [
+    'Registration date', 'Registration number', 'Pupil name', 'Class', 'Stream', 'Gender', 'Guardian', 'Guardian phone', 'Status',
+    ...(canSeeFinance ? ['Previous balance (UGX)', 'Term fee (UGX)', 'Paid (UGX)', 'Total balance (UGX)'] : []),
+  ];
   const pupilRows = filtered.map((student) => {
     const paid = paidByStudent.get(student.id) ?? student.amountPaid ?? 0;
     const pupil = student as Student & { guardianName?: string; guardianPhone?: string };
-    return [pupil.registrationNumber, pupil.name, pupil.className, pupil.stream, pupil.gender, pupil.guardianName || 'N/A', pupil.guardianPhone || 'N/A', pupil.previousFeeBalance, pupil.termFee, paid, pupil.feeBalance, pupil.status];
+    return [
+      student.admissionDate, pupil.registrationNumber, pupil.name, pupil.className, pupil.stream, pupil.gender,
+      pupil.guardianName || 'N/A', pupil.guardianPhone || 'N/A', pupil.status,
+      ...(canSeeFinance ? [student.previousFeeBalance, student.termFee, paid, student.feeBalance] : []),
+    ];
   });
-  const exportPupils = () => downloadCsv(`pupils-${classFilter === 'All classes' ? 'all-classes' : classFilter.replaceAll(' ', '-').toLowerCase()}-${paymentFilter}.csv`, pupilColumns, pupilRows);
-  return <Panel className="mb-6 border-[hsl(var(--primary)/.25)] bg-[hsl(var(--secondary)/.2)] p-4" testId="panel-pupil-downloads"><div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"><div><p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.16em] text-[hsl(var(--primary))]">Pupil downloads</p><h2 className="mt-1 font-display text-xl">Download pupil lists</h2><p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Choose all classes or one class, then filter by payment status before downloading.</p></div><div className="grid gap-3 sm:grid-cols-3 xl:min-w-[650px]"><label className="text-xs font-semibold">Class<select value={classFilter} onChange={(event) => setClassFilter(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="select-pupil-download-class"><option>All classes</option>{classOptions.map((option) => <option key={option}>{option}</option>)}</select></label><label className="text-xs font-semibold">Payment status<select value={paymentFilter} onChange={(event) => setPaymentFilter(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="select-pupil-download-payment"><option value="all">All pupils</option><option value="paid">Paid in full</option><option value="half">Paid half / part paid</option><option value="unpaid">Not paid</option></select></label><div className="flex flex-wrap items-end gap-2"><Button onClick={exportPupils} disabled={!filtered.length} className="w-full" testId="button-download-pupil-list"><Download className="size-4" /> CSV</Button><FormatDownloadButtons filename={`pupils-${classFilter}.xls`} columns={pupilColumns} rows={pupilRows} disabled={!filtered.length} testId="button-download-pupil-list" /></div></div></div></Panel>;
+  const periodLabel = registrationPeriod === 'day' ? registrationDay : registrationPeriod === 'custom' ? `${fromDate || 'start'}-to-${toDate || 'end'}` : registrationPeriod;
+  const classLabel = classFilter === 'All classes' ? 'all-classes' : classFilter.replaceAll(' ', '-').toLowerCase();
+  const exportPupils = () => downloadCsv(`pupils-${classLabel}-${periodLabel}.csv`, pupilColumns, pupilRows);
+  const dateRangeIsInvalid = registrationPeriod === 'custom' && Boolean(fromDate && toDate && fromDate > toDate);
+  return (
+    <Panel className="mb-6 border-[hsl(var(--primary)/.25)] bg-[hsl(var(--secondary)/.2)] p-4" testId="panel-pupil-downloads">
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col justify-between gap-3 md:flex-row md:items-start">
+          <div>
+            <p className="font-mono-ui text-[10px] font-semibold uppercase tracking-[.16em] text-[hsl(var(--primary))]">Pupil downloads</p>
+            <h2 className="mt-1 font-display text-xl">Download pupil lists</h2>
+            <p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">Filter by registration date or class. Downloads follow the pupil access already assigned to your account.</p>
+            <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">{filtered.length} pupil{filtered.length === 1 ? '' : 's'} · Newest registration first</p>
+          </div>
+          <div className="flex flex-wrap items-end gap-2">
+            <Button onClick={exportPupils} disabled={!filtered.length || dateRangeIsInvalid} className="w-full sm:w-auto" testId="button-download-pupil-list"><Download className="size-4" /> CSV</Button>
+            <FormatDownloadButtons filename={`pupils-${classLabel}-${periodLabel}.xls`} columns={pupilColumns} rows={pupilRows} disabled={!filtered.length || dateRangeIsInvalid} testId="button-download-pupil-list" />
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <label className="text-xs font-semibold">Registration period
+            <select value={registrationPeriod} onChange={(event) => setRegistrationPeriod(event.target.value as RegistrationPeriod)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="select-pupil-registration-period">
+              <option value="day">One day</option><option value="week">This week</option><option value="month">This month</option><option value="all">All dates</option><option value="custom">Custom range</option>
+            </select>
+          </label>
+          {registrationPeriod === 'day' && <label className="text-xs font-semibold">Entry date<input type="date" value={registrationDay} onChange={(event) => setRegistrationDay(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="input-pupil-registration-day" /></label>}
+          {registrationPeriod === 'custom' && <>
+            <label className="text-xs font-semibold">From date<input type="date" value={fromDate} onChange={(event) => setFromDate(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="input-pupil-registration-from" /></label>
+            <label className="text-xs font-semibold">To date<input type="date" value={toDate} onChange={(event) => setToDate(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="input-pupil-registration-to" /></label>
+          </>}
+          <label className="text-xs font-semibold">Class
+            <select value={classFilter} onChange={(event) => setClassFilter(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="select-pupil-download-class">
+              <option>All classes</option>{classOptions.map((option) => <option key={option}>{option}</option>)}
+            </select>
+          </label>
+          {canSeeFinance && <label className="text-xs font-semibold">Payment status
+            <select value={paymentFilter} onChange={(event) => setPaymentFilter(event.target.value)} className="mt-1 h-10 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3 text-sm" data-testid="select-pupil-download-payment">
+              <option value="all">All pupils</option><option value="paid">Paid in full</option><option value="half">Paid half / part paid</option><option value="unpaid">Not paid</option>
+            </select>
+          </label>}
+        </div>
+        {dateRangeIsInvalid && <p className="text-sm text-[hsl(var(--destructive))]" role="alert">The start date must be on or before the end date.</p>}
+      </div>
+    </Panel>
+  );
 }
 
 function LegacyAttendanceRegisterHistory() {

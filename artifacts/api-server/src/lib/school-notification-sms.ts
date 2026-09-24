@@ -24,6 +24,7 @@ type SmsPayment = {
   status?: string;
 };
 type DirectMessageRecipient = { id: string; name: string; detail: string; phone: string };
+type DirectMessagePupil = { id: string; name: string; detail: string; phone?: string };
 type SmsDispatchSummary = {
   recipientCount: number;
   acceptedCount: number;
@@ -234,7 +235,7 @@ function directMessageRecipients(
   students: SchoolStudent[],
   users: SchoolUser[],
   schoolId: string,
-): { teachers: DirectMessageRecipient[]; parents: DirectMessageRecipient[] } {
+): { teachers: DirectMessageRecipient[]; parents: DirectMessageRecipient[]; pupils: DirectMessagePupil[] } {
   const teachers = users.flatMap((user) => {
     if (user.status !== "active" || user.userType !== "staff" || user.role !== "teacher") return [];
     const phone = normalizeYoolaPhone(user.phone);
@@ -246,9 +247,20 @@ function directMessageRecipients(
       phone,
     }];
   });
+  const pupils = students.map((student): DirectMessagePupil => {
+    const phone = guardianPhone(student, users);
+    const classLabel = `${student.className}${student.stream ? ` · ${student.stream}` : ""}`;
+    const fundingLabel = student.isSponsored ? "School-sponsored" : "Fee-paying";
+    const contactLabel = phone ? "Guardian contact available" : "No usable guardian number";
+    return {
+      id: student.id,
+      name: student.name,
+      detail: `${student.registrationNumber} · ${classLabel} · Guardian: ${student.guardianName.trim() || "Not recorded"} · ${fundingLabel} · ${student.status} · ${contactLabel}`,
+      ...(phone ? { phone } : {}),
+    };
+  });
   const guardiansByPhone = new Map<string, { guardianNames: Set<string>; pupilNames: Set<string> }>();
   for (const student of students) {
-    if (student.status !== "active") continue;
     const phone = guardianPhone(student, users);
     if (!phone) continue;
     const group = guardiansByPhone.get(phone) ?? { guardianNames: new Set<string>(), pupilNames: new Set<string>() };
@@ -269,23 +281,29 @@ function directMessageRecipients(
     };
   });
   const byName = (left: DirectMessageRecipient, right: DirectMessageRecipient) => left.name.localeCompare(right.name);
-  return { teachers: teachers.sort(byName), parents: parents.sort(byName) };
+  return {
+    teachers: teachers.sort(byName),
+    parents: parents.sort(byName),
+    pupils: pupils.sort((left, right) => left.name.localeCompare(right.name)),
+  };
 }
 
 export async function listMessageRecipients(): Promise<{
   teachers: Array<{ id: string; name: string; detail: string }>;
   parents: Array<{ id: string; name: string; detail: string }>;
+  pupils: Array<{ id: string; name: string; detail: string; canSend: boolean }>;
 }> {
   const [students, users, schoolId] = await Promise.all([listStudents(), listUsers(), getSchoolId()]);
   const contacts = directMessageRecipients(students, users, schoolId);
   return {
     teachers: contacts.teachers.map(({ id, name, detail }) => ({ id, name, detail })),
     parents: contacts.parents.map(({ id, name, detail }) => ({ id, name, detail })),
+    pupils: contacts.pupils.map(({ id, name, detail, phone }) => ({ id, name, detail, canSend: Boolean(phone) })),
   };
 }
 
 export async function sendDirectSchoolMessage(
-  input: { requestId: string; teacherIds: string[]; parentIds: string[]; message: string },
+  input: { requestId: string; teacherIds: string[]; parentIds: string[]; pupilIds: string[]; message: string },
   actorId: string,
 ): Promise<
   | { ok: false; error: string }
@@ -303,7 +321,8 @@ export async function sendDirectSchoolMessage(
   if (!UUID_PATTERN.test(input.requestId)) return { ok: false, error: "Invalid send request. Refresh the page and try again." };
   const teacherIds = [...new Set(input.teacherIds)];
   const parentIds = [...new Set(input.parentIds)];
-  if (!teacherIds.length && !parentIds.length) return { ok: false, error: "Select at least one teacher or parent/guardian." };
+  const pupilIds = [...new Set(input.pupilIds)];
+  if (!teacherIds.length && !parentIds.length && !pupilIds.length) return { ok: false, error: "Select at least one teacher, pupil, or parent/guardian." };
 
   const [students, users, settings, schoolId] = await Promise.all([
     listStudents(),
@@ -314,9 +333,15 @@ export async function sendDirectSchoolMessage(
   const contacts = directMessageRecipients(students, users, schoolId);
   const teachersById = new Map(contacts.teachers.map((recipient) => [recipient.id, recipient]));
   const parentsById = new Map(contacts.parents.map((recipient) => [recipient.id, recipient]));
+  const pupilsById = new Map(contacts.pupils.map((recipient) => [recipient.id, recipient]));
   const selectedTeachers = teacherIds.map((id) => teachersById.get(id));
   const selectedParents = parentIds.map((id) => parentsById.get(id));
-  if (selectedTeachers.some((recipient) => !recipient) || selectedParents.some((recipient) => !recipient)) {
+  const selectedPupils = pupilIds.map((id) => pupilsById.get(id));
+  if (
+    selectedTeachers.some((recipient) => !recipient)
+    || selectedParents.some((recipient) => !recipient)
+    || selectedPupils.some((recipient) => !recipient?.phone)
+  ) {
     return { ok: false, error: "Some contacts changed or no longer have a usable phone number. Refresh the recipient list and try again." };
   }
 
@@ -329,8 +354,11 @@ export async function sendDirectSchoolMessage(
     return { ok: false, error: "Shorten the message to fit one SMS segment, including the school name." };
   }
 
-  const phones = [...selectedTeachers, ...selectedParents]
-    .flatMap((recipient) => recipient ? [recipient.phone] : []);
+  const phones = [
+    ...selectedTeachers.flatMap((recipient) => recipient ? [recipient.phone] : []),
+    ...selectedParents.flatMap((recipient) => recipient ? [recipient.phone] : []),
+    ...selectedPupils.flatMap((recipient) => recipient?.phone ? [recipient.phone] : []),
+  ];
   const summary = await dispatchSms(
     "direct_message",
     `direct-message:${actorId}:${input.requestId}`,

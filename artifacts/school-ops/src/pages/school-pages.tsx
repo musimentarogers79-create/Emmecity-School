@@ -833,7 +833,9 @@ function StudentsPage() {
       },
     });
   };
-  const students = (query.data || []).filter((student) => !outstandingOnly || student.feeBalance > 0);
+  const students = (query.data || [])
+    .filter((student) => !outstandingOnly || student.feeBalance > 0)
+    .sort((left, right) => right.admissionDate.localeCompare(left.admissionDate) || left.name.localeCompare(right.name));
   const generateAllAdmissionForms = async () => {
     const allStudents = query.data || [];
     if (!allStudents.length) return;

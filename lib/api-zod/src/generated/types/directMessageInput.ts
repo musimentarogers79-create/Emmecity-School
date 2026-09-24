@@ -16,6 +16,8 @@ export interface DirectMessageInput {
   teacherIds: string[];
   /** @maxItems 500 */
   parentIds: string[];
+  /** @maxItems 2000 */
+  pupilIds: string[];
   /**
      * @minLength 1
      * @maxLength 1000
