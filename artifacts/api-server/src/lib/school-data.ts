@@ -8,6 +8,7 @@ import {
 } from "@workspace/db";
 import type { SchoolSettings, User } from "@workspace/db";
 import { requestObjectDownload } from "./object-storage";
+import { compactSingleSegmentSms } from "./single-segment-sms";
 
 export type SchoolRole = "super_admin" | "administrator" | "teacher" | "accountant" | "secretary" | "librarian" | "nurse" | "guardian" | "student" | "staff";
 export type PermissionKey = "expense_approve" | "expense_delete" | "transactions_view" | "transactions_print" | "finance_view" | "expenses_view" | "users_view" | "users_manage" | "subjects_view" | "subjects_manage" | "subjects_delete";
@@ -930,7 +931,7 @@ export async function createOperation(kind: OperationKind, data: Record<string, 
     const eventType = String(data.type || "School event");
     await createOperation("notifications", {
       title: eventType.toLowerCase().includes("holiday") ? `Public holiday: ${eventTitle}` : eventTitle,
-      body: eventDate ? `${eventType} is scheduled for ${eventDate}.` : `${eventType} has been added to the school calendar.`,
+      body: compactSingleSegmentSms(eventDate ? `${eventType} is scheduled for ${eventDate}.` : `${eventType} has been added to the school calendar.`),
       read: false,
       date: getDateLabel(),
       source: "event",
@@ -941,7 +942,7 @@ export async function createOperation(kind: OperationKind, data: Record<string, 
 export async function createSchoolNotification(data: { title: string; body: string; source?: string }) {
   return createOperation("notifications", {
     title: data.title.trim(),
-    body: data.body.trim(),
+    body: compactSingleSegmentSms(data.body),
     read: false,
     date: getDateLabel(),
     source: data.source || "school",
