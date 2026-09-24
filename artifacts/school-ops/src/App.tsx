@@ -24,6 +24,7 @@ const StudentProfilePage = lazy(() => import('@/pages/school-pages').then((modul
 const ReportCardPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.ReportCardPage })));
 const StudentsPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.StudentsPage })));
 const SupportPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.SupportPage })));
+const SupportAdminPage = lazy(() => import('@/pages/support-admin-page'));
 const TimetablePage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.TimetablePage })));
 const TransactionDetailPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.TransactionDetailPage })));
 const TransactionsPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.TransactionsPage })));
@@ -55,6 +56,7 @@ function Router() {
         <Switch>
         <Route path="/" component={LoginPage} />
         <Route path="/support" component={SupportPage} />
+        <Route path="/support-admin" component={SupportAdminPage} />
         <Route path="/manual" component={UserManualPage} />
         <Route path="/transactions" component={TransactionsPage} />
         <Route path="/transactions/:transactionId" component={TransactionDetailPage} />

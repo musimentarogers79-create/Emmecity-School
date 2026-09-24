@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
-import { and, asc, desc, eq, gt, ilike, inArray, isNotNull, isNull, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, ilike, inArray, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   announcements, attendance, assignments, classes, discipline, documents, events, expenses,
@@ -833,6 +833,45 @@ export async function recordSalaryPayment(data: { staffId: string; period: strin
 
 const tables = { announcements, assignments, classes, discipline, documents, events, expenses, inventory, library, medical, notifications, parents, reports, salaryPayments, staff, subjects, timetable, transport } as const;
 export type OperationKind = keyof typeof tables;
+export async function searchSupportPupils(search: string) {
+  const value = search.trim();
+  if (value.length < 2) return [];
+  const pattern = `%${value}%`;
+  const rows = await db.select({
+    id: students.id,
+    schoolName: schoolSettings.schoolName,
+    registrationNumber: students.registrationNumber,
+    firstName: students.firstName,
+    middleName: students.middleName,
+    lastName: students.lastName,
+    className: students.className,
+    stream: students.stream,
+    status: students.status,
+    isSponsored: students.isSponsored,
+  }).from(students)
+    .innerJoin(schoolSettings, eq(students.schoolId, schoolSettings.id))
+    .where(or(
+      ilike(students.registrationNumber, pattern),
+      ilike(students.firstName, pattern),
+      ilike(students.middleName, pattern),
+      ilike(students.lastName, pattern),
+      ilike(students.guardianName, pattern),
+      sql`concat_ws(' ', ${students.firstName}, ${students.middleName}, ${students.lastName}) ilike ${pattern}`,
+    ))
+    .orderBy(asc(schoolSettings.schoolName), asc(students.lastName), asc(students.firstName))
+    .limit(50);
+  return rows.map((row) => ({
+    id: row.id,
+    schoolName: row.schoolName,
+    registrationNumber: row.registrationNumber,
+    name: `${row.firstName}${row.middleName ? ` ${row.middleName}` : ""} ${row.lastName}`,
+    className: row.className,
+    stream: row.stream,
+    status: row.status as SchoolStudent["status"],
+    isSponsored: row.isSponsored,
+  }));
+}
+
 export async function listOperation(kind: OperationKind): Promise<OperationRecord[]> {
   const schoolId = await getSchoolId();
   const table = tables[kind];
@@ -964,6 +1003,67 @@ export async function deleteOperation(kind: OperationKind, id: string) {
   const table = tables[kind];
   const row = (await db.delete(table).where(and(eq(table.schoolId, schoolId), eq(table.id, id))).returning({ id: table.id }))[0];
   return !!row;
+}
+
+export async function permanentlyDeleteSupportPupil(
+  id: string,
+  confirmRegistrationNumber: string,
+  removePhoto: (photoPath: string) => Promise<void>,
+) {
+  return db.transaction(async (tx) => {
+    const pupil = (await tx.select().from(students).where(eq(students.id, id)).for("update").limit(1))[0];
+    if (!pupil) return undefined;
+    if (pupil.registrationNumber !== confirmRegistrationNumber) {
+      throw new Error("The registration number confirmation does not match.");
+    }
+
+    const linkedPhoto = pupil.photoPath;
+    const otherPhotoOwner = linkedPhoto
+      ? (await tx.select({ id: students.id }).from(students).where(and(eq(students.photoPath, linkedPhoto), ne(students.id, pupil.id))).limit(1))[0]
+      : undefined;
+    let photoStatus: "not_present" | "removed" | "shared" = "not_present";
+    if (linkedPhoto) {
+      if (otherPhotoOwner) photoStatus = "shared";
+      else {
+        await removePhoto(linkedPhoto);
+        photoStatus = "removed";
+      }
+    }
+
+    const attendanceRows = await tx.delete(attendance)
+      .where(and(eq(attendance.schoolId, pupil.schoolId), eq(attendance.studentId, pupil.id)))
+      .returning({ id: attendance.id });
+    const paymentRows = await tx.delete(payments)
+      .where(and(eq(payments.schoolId, pupil.schoolId), eq(payments.studentId, pupil.id)))
+      .returning({ id: payments.id });
+    const accountRows = await tx.delete(users)
+      .where(and(eq(users.schoolId, pupil.schoolId), eq(users.studentId, pupil.id)))
+      .returning({ id: users.id });
+
+    let deletedLinkedRecords = 0;
+    for (const table of Object.values(tables)) {
+      const removed = await tx.delete(table).where(and(
+        eq(table.schoolId, pupil.schoolId),
+        sql`jsonb_path_exists(${table.data}, '$.** ? (@ == $targetId)', jsonb_build_object('targetId', ${pupil.id}::text))`,
+      )).returning({ id: table.id });
+      deletedLinkedRecords += removed.length;
+    }
+
+    const deletedPupil = await tx.delete(students).where(and(eq(students.id, pupil.id), eq(students.schoolId, pupil.schoolId))).returning({ id: students.id });
+    if (!deletedPupil.length) throw new Error("The pupil record could not be deleted.");
+
+    return {
+      id: pupil.id,
+      schoolId: pupil.schoolId,
+      name: `${pupil.firstName}${pupil.middleName ? ` ${pupil.middleName}` : ""} ${pupil.lastName}`,
+      registrationNumber: pupil.registrationNumber,
+      photoStatus,
+      deletedAttendanceRecords: attendanceRows.length,
+      deletedPaymentRecords: paymentRows.length,
+      deletedLinkedAccounts: accountRows.length,
+      deletedLinkedRecords,
+    };
+  });
 }
 export async function saveAttendance(studentId: string, date: string, status: AttendanceStatus, arrivalTime?: string | null) {
   const student = await getStudent(studentId);

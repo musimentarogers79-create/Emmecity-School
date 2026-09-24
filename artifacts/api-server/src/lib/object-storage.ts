@@ -21,7 +21,7 @@ const parseObjectPath = (value: string) => {
 async function signObjectUrl(input: {
   bucketName: string;
   objectName: string;
-  method: "GET" | "PUT";
+  method: "DELETE" | "GET" | "PUT";
 }) {
   const response = await fetch(`${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`, {
     method: "POST",
@@ -66,6 +66,19 @@ export async function requestObjectDownload(objectPath: string) {
   const objectName = objectPath.slice("/objects/".length);
   const { bucketName } = parseObjectPath(`${privateObjectDir()}/${objectName}`);
   return signObjectUrl({ bucketName, objectName, method: "GET" });
+}
+
+export async function deletePupilPhoto(objectPath: string) {
+  if (!isPupilPhotoPath(objectPath)) throw new Error("Invalid pupil photo path.");
+  const objectName = objectPath.slice("/objects/".length);
+  const { bucketName } = parseObjectPath(`${privateObjectDir()}/${objectName}`);
+  const deleteUrl = await signObjectUrl({ bucketName, objectName, method: "DELETE" });
+  const response = await fetch(deleteUrl, {
+    method: "DELETE",
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (response.status === 404) return;
+  if (!response.ok) throw new Error(`Pupil photo deletion failed (${response.status}).`);
 }
 
 export async function uploadBackupObject(objectPath: string, body: Uint8Array) {

@@ -44,6 +44,7 @@ import type {
   GetAttendanceParams,
   HealthStatus,
   ListStudentsParams,
+  ListSupportPupilsParams,
   LoginInput,
   Message,
   MessageRecipients,
@@ -67,6 +68,11 @@ import type {
   StudentProfile,
   StudentUpdateInput,
   SubjectInput,
+  SupportDeletePupilInput,
+  SupportDeletePupilResult,
+  SupportLoginInput,
+  SupportPupilList,
+  SupportSession,
   TimetableEntry,
   TimetableInput,
   UserAccountInput,
@@ -468,6 +474,381 @@ export const useUpdateCurrentUser = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getUpdateCurrentUserMutationOptions(options));
+    }
+
+export const getSupportLoginUrl = () => {
+
+
+
+
+  return `/api/support/auth/login`
+}
+
+/**
+ * @summary Sign in to the restricted cross-school pupil support workspace
+ */
+export const supportLogin = async (supportLoginInput: SupportLoginInput, options?: Parameters<typeof customFetch>[1]): Promise<SupportSession> => {
+
+  return customFetch<SupportSession>(getSupportLoginUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(supportLoginInput)
+  }
+);}
+
+
+
+
+
+export const getSupportLoginMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supportLogin>>, TError,{data: BodyType<SupportLoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof supportLogin>>, TError,{data: BodyType<SupportLoginInput>}, TContext> => {
+
+const mutationKey = ['supportLogin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supportLogin>>, {data: BodyType<SupportLoginInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  supportLogin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupportLoginMutationResult = NonNullable<Awaited<ReturnType<typeof supportLogin>>>
+    export type SupportLoginMutationBody = BodyType<SupportLoginInput>
+    export type SupportLoginMutationError = ErrorType<void>
+
+    /**
+ * @summary Sign in to the restricted cross-school pupil support workspace
+ */
+export const useSupportLogin = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supportLogin>>, TError,{data: BodyType<SupportLoginInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof supportLogin>>,
+        TError,
+        {data: BodyType<SupportLoginInput>},
+        TContext
+      > => {
+      return useMutation(getSupportLoginMutationOptions(options));
+    }
+
+export const getSupportLogoutUrl = () => {
+
+
+
+
+  return `/api/support/auth/logout`
+}
+
+/**
+ * @summary Sign out of the support workspace
+ */
+export const supportLogout = async ( options?: Parameters<typeof customFetch>[1]): Promise<Message> => {
+
+  return customFetch<Message>(getSupportLogoutUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getSupportLogoutMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supportLogout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof supportLogout>>, TError,void, TContext> => {
+
+const mutationKey = ['supportLogout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof supportLogout>>, void> = () => {
+
+
+          return  supportLogout(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SupportLogoutMutationResult = NonNullable<Awaited<ReturnType<typeof supportLogout>>>
+
+    export type SupportLogoutMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Sign out of the support workspace
+ */
+export const useSupportLogout = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof supportLogout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof supportLogout>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSupportLogoutMutationOptions(options));
+    }
+
+export const getGetSupportSessionUrl = () => {
+
+
+
+
+  return `/api/support/auth/me`
+}
+
+/**
+ * @summary Check the restricted support session
+ */
+export const getSupportSession = async ( options?: Parameters<typeof customFetch>[1]): Promise<SupportSession> => {
+
+  return customFetch<SupportSession>(getGetSupportSessionUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSupportSessionQueryKey = () => {
+    return [
+    `/api/support/auth/me`
+    ] as const;
+    }
+
+
+export const getGetSupportSessionQueryOptions = <TData = Awaited<ReturnType<typeof getSupportSession>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSupportSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSupportSessionQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSupportSession>>> = ({ signal }) => getSupportSession({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSupportSession>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSupportSessionQueryResult = NonNullable<Awaited<ReturnType<typeof getSupportSession>>>
+export type GetSupportSessionQueryError = ErrorType<void>
+
+
+/**
+ * @summary Check the restricted support session
+ */
+
+export function useGetSupportSession<TData = Awaited<ReturnType<typeof getSupportSession>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSupportSession>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSupportSessionQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListSupportPupilsUrl = (params: ListSupportPupilsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/support/pupils?${stringifiedParams}` : `/api/support/pupils`
+}
+
+/**
+ * @summary Search pupil identity records across schools
+ */
+export const listSupportPupils = async (params: ListSupportPupilsParams, options?: Parameters<typeof customFetch>[1]): Promise<SupportPupilList> => {
+
+  return customFetch<SupportPupilList>(getListSupportPupilsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSupportPupilsQueryKey = (params?: ListSupportPupilsParams,) => {
+    return [
+    `/api/support/pupils`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListSupportPupilsQueryOptions = <TData = Awaited<ReturnType<typeof listSupportPupils>>, TError = ErrorType<void>>(params: ListSupportPupilsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSupportPupils>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSupportPupilsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSupportPupils>>> = ({ signal }) => listSupportPupils(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSupportPupils>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSupportPupilsQueryResult = NonNullable<Awaited<ReturnType<typeof listSupportPupils>>>
+export type ListSupportPupilsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Search pupil identity records across schools
+ */
+
+export function useListSupportPupils<TData = Awaited<ReturnType<typeof listSupportPupils>>, TError = ErrorType<void>>(
+ params: ListSupportPupilsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSupportPupils>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSupportPupilsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDeleteSupportPupilUrl = (studentId: string,) => {
+
+
+
+
+  return `/api/support/pupils/${studentId}`
+}
+
+/**
+ * @summary Permanently delete a pupil and all pupil-linked records
+ */
+export const deleteSupportPupil = async (studentId: string,
+    supportDeletePupilInput: SupportDeletePupilInput, options?: Parameters<typeof customFetch>[1]): Promise<SupportDeletePupilResult> => {
+
+  return customFetch<SupportDeletePupilResult>(getDeleteSupportPupilUrl(studentId),
+  {
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(supportDeletePupilInput)
+  }
+);}
+
+
+
+
+
+export const getDeleteSupportPupilMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSupportPupil>>, TError,{studentId: string;data: BodyType<SupportDeletePupilInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteSupportPupil>>, TError,{studentId: string;data: BodyType<SupportDeletePupilInput>}, TContext> => {
+
+const mutationKey = ['deleteSupportPupil'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSupportPupil>>, {studentId: string;data: BodyType<SupportDeletePupilInput>}> = (props) => {
+          const {studentId,data} = props ?? {};
+
+          return  deleteSupportPupil(studentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteSupportPupilMutationResult = NonNullable<Awaited<ReturnType<typeof deleteSupportPupil>>>
+    export type DeleteSupportPupilMutationBody = BodyType<SupportDeletePupilInput>
+    export type DeleteSupportPupilMutationError = ErrorType<void>
+
+    /**
+ * @summary Permanently delete a pupil and all pupil-linked records
+ */
+export const useDeleteSupportPupil = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSupportPupil>>, TError,{studentId: string;data: BodyType<SupportDeletePupilInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteSupportPupil>>,
+        TError,
+        {studentId: string;data: BodyType<SupportDeletePupilInput>},
+        TContext
+      > => {
+      return useMutation(getDeleteSupportPupilMutationOptions(options));
     }
 
 export const getListUsersUrl = () => {

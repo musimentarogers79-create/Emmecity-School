@@ -136,6 +136,99 @@ export const UpdateCurrentUserResponse = zod.object({
 
 
 /**
+ * @summary Sign in to the restricted cross-school pupil support workspace
+ */
+export const supportLoginBodyPasswordMax = 200;
+
+
+
+export const SupportLoginBody = zod.object({
+  "password": zod.string().min(1).max(supportLoginBodyPasswordMax)
+})
+
+export const SupportLoginResponse = zod.object({
+  "expiresAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Sign out of the support workspace
+ */
+export const SupportLogoutResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary Check the restricted support session
+ */
+export const GetSupportSessionResponse = zod.object({
+  "expiresAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Search pupil identity records across schools
+ */
+export const listSupportPupilsQuerySearchMin = 2;
+export const listSupportPupilsQuerySearchMax = 100;
+
+
+
+export const ListSupportPupilsQueryParams = zod.object({
+  "search": zod.coerce.string().min(listSupportPupilsQuerySearchMin).max(listSupportPupilsQuerySearchMax)
+})
+
+export const ListSupportPupilsResponse = zod.object({
+  "pupils": zod.array(zod.object({
+  "id": zod.string(),
+  "schoolName": zod.string(),
+  "registrationNumber": zod.string(),
+  "name": zod.string(),
+  "className": zod.string(),
+  "stream": zod.string(),
+  "status": zod.enum(['active', 'inactive']),
+  "isSponsored": zod.boolean()
+}))
+})
+
+
+/**
+ * @summary Permanently delete a pupil and all pupil-linked records
+ */
+export const DeleteSupportPupilParams = zod.object({
+  "studentId": zod.coerce.string()
+})
+
+export const deleteSupportPupilBodyConfirmRegistrationNumberMax = 100;
+
+
+
+export const DeleteSupportPupilBody = zod.object({
+  "confirmRegistrationNumber": zod.string().min(1).max(deleteSupportPupilBodyConfirmRegistrationNumberMax)
+})
+
+export const deleteSupportPupilResponseDeletedAttendanceRecordsMin = 0;
+
+export const deleteSupportPupilResponseDeletedPaymentRecordsMin = 0;
+
+export const deleteSupportPupilResponseDeletedLinkedAccountsMin = 0;
+
+export const deleteSupportPupilResponseDeletedLinkedRecordsMin = 0;
+
+
+
+export const DeleteSupportPupilResponse = zod.object({
+  "message": zod.string(),
+  "deletedAttendanceRecords": zod.number().min(deleteSupportPupilResponseDeletedAttendanceRecordsMin),
+  "deletedPaymentRecords": zod.number().min(deleteSupportPupilResponseDeletedPaymentRecordsMin),
+  "deletedLinkedAccounts": zod.number().min(deleteSupportPupilResponseDeletedLinkedAccountsMin),
+  "deletedLinkedRecords": zod.number().min(deleteSupportPupilResponseDeletedLinkedRecordsMin),
+  "photoStatus": zod.enum(['removed', 'not_present', 'shared', 'failed'])
+})
+
+
+/**
  * @summary List school user accounts for authorized administrators
  */
 export const listUsersResponseMonthlySalaryMin = 0;

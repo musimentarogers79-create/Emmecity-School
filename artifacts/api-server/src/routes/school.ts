@@ -1,5 +1,5 @@
 import { gzipSync } from "node:zlib";
-import { randomUUID } from "node:crypto";
+import { createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { Router, type IRouter } from "express";
 import {
   AttendanceRecord, CreateAnnouncementBody, CreateAnnouncementResponse, CreateAttendanceRegisterBody, CreateAttendanceRegisterResponse, CreateClassBody, CreateExpenseBody, CreateExpenseResponse, CreateEventBody, CreateEventResponse,
@@ -14,14 +14,17 @@ import {
   UpdateUserPermissionsBody, UpdateUserPermissionsResponse, DeleteUserResponse,
   ListSubjectsResponse, CreateSubjectBody, CreateSubjectResponse, UpdateSubjectParams, UpdateSubjectBody, UpdateSubjectResponse,
   DeleteSubjectParams, DeleteSubjectResponse, ListMessageRecipientsResponse, SendDirectMessageBody, SendDirectMessageResponse,
+  SupportLoginBody, SupportLoginResponse, SupportLogoutResponse, GetSupportSessionResponse, ListSupportPupilsQueryParams, ListSupportPupilsResponse,
+  DeleteSupportPupilParams, DeleteSupportPupilBody, DeleteSupportPupilResponse,
 } from "@workspace/api-zod";
 import {
   AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, currentUserFromToken, getAdmissionForm,
   buildFullBackup, clearLoginFailures, deleteSession, findUser, findUserById, getOperation, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
   listAttendance, listDeletedAttendanceRegisters, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance, deleteAttendanceRegister, updateStudent, createSchoolNotification,
   createUser, deleteOperation, deleteUser, updatePayment, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserAdmin, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
+  permanentlyDeleteSupportPupil, searchSupportPupils,
 } from "../lib/school-data";
-import { isBackupObjectPath, requestBackupDownload, uploadBackupObject } from "../lib/object-storage";
+import { deletePupilPhoto, isBackupObjectPath, isPupilPhotoPath, requestBackupDownload, uploadBackupObject } from "../lib/object-storage";
 import { getFeeReminderSmsAuthorization, listMessageRecipients, sendAnnouncementSms, sendDirectSchoolMessage, sendEventSms, sendPaymentConfirmationSms, setFeeReminderSmsAuthorization } from "../lib/school-notification-sms";
 
 const router: IRouter = Router();
@@ -30,6 +33,31 @@ const getCookie = (req: Parameters<Parameters<IRouter["get"]>[1]>[0], name: stri
 const setSessionCookie = (res: Parameters<Parameters<IRouter["get"]>[1]>[1], token: string) =>
   res.setHeader("Set-Cookie", `schoolops_session=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=28800${process.env["NODE_ENV"] === "production" ? "; Secure" : ""}`);
 const requireUser = (req: Parameters<Parameters<IRouter["get"]>[1]>[0]) => currentUserFromToken(getCookie(req, "schoolops_session"));
+const supportCookieName = "schoolops_support_session";
+const supportSessionDurationMs = 8 * 60 * 60 * 1000;
+const setSupportSessionCookie = (res: Parameters<Parameters<IRouter["get"]>[1]>[1], token: string) =>
+  res.setHeader("Set-Cookie", `${supportCookieName}=${token}; HttpOnly; Path=/; SameSite=Strict; Max-Age=28800${process.env["NODE_ENV"] === "production" ? "; Secure" : ""}`);
+const clearSupportSessionCookie = (res: Parameters<Parameters<IRouter["get"]>[1]>[1]) =>
+  res.setHeader("Set-Cookie", `${supportCookieName}=; HttpOnly; Path=/; SameSite=Strict; Max-Age=0${process.env["NODE_ENV"] === "production" ? "; Secure" : ""}`);
+function createSupportSession() {
+  const sessionSecret = process.env["SESSION_SECRET"];
+  if (!sessionSecret) throw new Error("Support session signing is not configured.");
+  const expiresAtMs = Date.now() + supportSessionDurationMs;
+  const payload = `${expiresAtMs}.${randomBytes(32).toString("hex")}`;
+  const signature = createHmac("sha256", sessionSecret).update(payload).digest("hex");
+  return { token: `${payload}.${signature}`, expiresAt: new Date(expiresAtMs).toISOString() };
+}
+function isValidSupportSession(token: string | undefined) {
+  const sessionSecret = process.env["SESSION_SECRET"];
+  if (!sessionSecret || !process.env["SCHOOL_SUPPORT_PASSWORD"] || !token) return false;
+  const [expiresAt, nonce, signature, extra] = token.split(".");
+  if (extra !== undefined || !expiresAt || !nonce || !signature || !/^\d+$/.test(expiresAt) || !/^[a-f0-9]{64}$/.test(nonce) || !/^[a-f0-9]{64}$/.test(signature) || Number(expiresAt) <= Date.now()) return false;
+  const expected = createHmac("sha256", sessionSecret).update(`${expiresAt}.${nonce}`).digest();
+  const actual = Buffer.from(signature, "hex");
+  return actual.length === expected.length && timingSafeEqual(actual, expected);
+}
+const requireSupport = (req: Parameters<Parameters<IRouter["get"]>[1]>[0]) =>
+  isValidSupportSession(getCookie(req, supportCookieName));
 const administratorRoles: SchoolRole[] = ["super_admin", "administrator"];
 const isAdministrator = (user?: SchoolUser) => !!user && administratorRoles.includes(user.role);
 const canManageEvents = (user?: SchoolUser) => !!user && (isAdministrator(user) || user.role === "secretary");
@@ -147,6 +175,88 @@ const operationDocumentRow = (item: OperationRecord, pupilName?: string) => {
     visibility: textValue(item.visibility, "School administration"),
   };
 };
+
+router.post("/support/auth/login", async (req, res): Promise<void> => {
+  const parsed = SupportLoginBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Enter the support password."); return; }
+  const configuredPassword = process.env["SCHOOL_SUPPORT_PASSWORD"];
+  const sessionSecret = process.env["SESSION_SECRET"];
+  if (!configuredPassword || !sessionSecret) { errorResponse(res, 503, "Support access is not configured."); return; }
+  const attemptKey = `${req.ip || "unknown"}:cross-school-support`;
+  if (!await consumeLoginAttempt(attemptKey)) { errorResponse(res, 429, "Too many sign-in attempts. Try again in 15 minutes."); return; }
+  const actual = createHmac("sha256", sessionSecret).update(parsed.data.password).digest();
+  const expected = createHmac("sha256", sessionSecret).update(configuredPassword).digest();
+  if (!timingSafeEqual(actual, expected)) { errorResponse(res, 401, "Those support details do not match."); return; }
+  await clearLoginFailures(attemptKey);
+  const session = createSupportSession();
+  setSupportSessionCookie(res, session.token);
+  res.json(SupportLoginResponse.parse({ expiresAt: session.expiresAt }));
+});
+
+router.post("/support/auth/logout", async (_req, res): Promise<void> => {
+  clearSupportSessionCookie(res);
+  res.json(SupportLogoutResponse.parse({ message: "Support signed out successfully." }));
+});
+
+router.get("/support/auth/me", async (req, res): Promise<void> => {
+  if (!requireSupport(req)) { errorResponse(res, 401, "Not signed in to support."); return; }
+  res.json(GetSupportSessionResponse.parse({ expiresAt: new Date(Date.now() + supportSessionDurationMs).toISOString() }));
+});
+
+router.get("/support/pupils", async (req, res): Promise<void> => {
+  if (!requireSupport(req)) { errorResponse(res, 401, "Not signed in to support."); return; }
+  const parsed = ListSupportPupilsQueryParams.safeParse(req.query);
+  if (!parsed.success) { errorResponse(res, 400, "Search with at least two letters or digits."); return; }
+  res.json(ListSupportPupilsResponse.parse({ pupils: await searchSupportPupils(parsed.data.search) }));
+});
+
+router.delete("/support/pupils/:studentId", async (req, res): Promise<void> => {
+  if (!requireSupport(req)) { errorResponse(res, 401, "Not signed in to support."); return; }
+  const params = DeleteSupportPupilParams.safeParse(req.params);
+  const body = DeleteSupportPupilBody.safeParse(req.body);
+  if (!params.success || !body.success) { errorResponse(res, 400, "Confirm the pupil's exact registration number."); return; }
+  let deleted;
+  try {
+    deleted = await permanentlyDeleteSupportPupil(params.data.studentId, body.data.confirmRegistrationNumber, async (photoPath) => {
+      if (!isPupilPhotoPath(photoPath)) throw new Error("The saved pupil photo path is unsupported.");
+      try {
+        await deletePupilPhoto(photoPath);
+      } catch (error) {
+        req.log.error({ pupilId: params.data.studentId, error }, "Pupil photo could not be safely removed; pupil deletion was cancelled");
+        throw new Error("The pupil photo could not be safely removed. No pupil records were deleted.");
+      }
+    });
+  } catch (error) {
+    if (error instanceof Error && error.message === "The registration number confirmation does not match.") {
+      errorResponse(res, 400, error.message);
+      return;
+    }
+    if (error instanceof Error && (error.message === "The pupil photo could not be safely removed. No pupil records were deleted." || error.message === "The saved pupil photo path is unsupported.")) {
+      errorResponse(res, 502, error.message);
+      return;
+    }
+    throw error;
+  }
+  if (!deleted) { errorResponse(res, 404, "Pupil not found."); return; }
+  const photoStatus = deleted.photoStatus;
+  req.log.info({
+    pupilId: deleted.id,
+    schoolId: deleted.schoolId,
+    deletedAttendanceRecords: deleted.deletedAttendanceRecords,
+    deletedPaymentRecords: deleted.deletedPaymentRecords,
+    deletedLinkedAccounts: deleted.deletedLinkedAccounts,
+    deletedLinkedRecords: deleted.deletedLinkedRecords,
+    photoStatus,
+  }, "Cross-school support permanently deleted a pupil");
+  res.json(DeleteSupportPupilResponse.parse({
+    message: "The pupil and linked school records were permanently deleted.",
+    deletedAttendanceRecords: deleted.deletedAttendanceRecords,
+    deletedPaymentRecords: deleted.deletedPaymentRecords,
+    deletedLinkedAccounts: deleted.deletedLinkedAccounts,
+    deletedLinkedRecords: deleted.deletedLinkedRecords,
+    photoStatus,
+  }));
+});
 
 router.post("/auth/login", async (req, res): Promise<void> => {
   const parsed = LoginBody.safeParse(req.body);

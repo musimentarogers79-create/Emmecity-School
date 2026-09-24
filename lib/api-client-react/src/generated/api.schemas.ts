@@ -45,6 +45,72 @@ export interface LoginInput {
   password: string;
 }
 
+export interface SupportLoginInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  password: string;
+}
+
+export interface SupportSession {
+  expiresAt: string;
+}
+
+export type SupportPupilStatus = typeof SupportPupilStatus[keyof typeof SupportPupilStatus];
+
+
+export const SupportPupilStatus = {
+  active: 'active',
+  inactive: 'inactive',
+} as const;
+
+export interface SupportPupil {
+  id: string;
+  schoolName: string;
+  registrationNumber: string;
+  name: string;
+  className: string;
+  stream: string;
+  status: SupportPupilStatus;
+  isSponsored: boolean;
+}
+
+export interface SupportPupilList {
+  pupils: SupportPupil[];
+}
+
+export interface SupportDeletePupilInput {
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  confirmRegistrationNumber: string;
+}
+
+export type SupportDeletePupilResultPhotoStatus = typeof SupportDeletePupilResultPhotoStatus[keyof typeof SupportDeletePupilResultPhotoStatus];
+
+
+export const SupportDeletePupilResultPhotoStatus = {
+  removed: 'removed',
+  not_present: 'not_present',
+  shared: 'shared',
+  failed: 'failed',
+} as const;
+
+export interface SupportDeletePupilResult {
+  message: string;
+  /** @minimum 0 */
+  deletedAttendanceRecords: number;
+  /** @minimum 0 */
+  deletedPaymentRecords: number;
+  /** @minimum 0 */
+  deletedLinkedAccounts: number;
+  /** @minimum 0 */
+  deletedLinkedRecords: number;
+  photoStatus: SupportDeletePupilResultPhotoStatus;
+}
+
 export type AuthUserStatus = typeof AuthUserStatus[keyof typeof AuthUserStatus];
 
 
@@ -1153,6 +1219,14 @@ export interface BackupSummary {
 
 export type FullBackupResponse = BackupSummary & {
   downloadUrl: string;
+};
+
+export type ListSupportPupilsParams = {
+/**
+ * @minLength 2
+ * @maxLength 100
+ */
+search: string;
 };
 
 export type ListStudentsParams = {

@@ -111,6 +111,106 @@ paths:
           description: Not signed in
         "409":
           description: Username already in use
+  /support/auth/login:
+    post:
+      operationId: supportLogin
+      tags: [support]
+      summary: Sign in to the restricted cross-school pupil support workspace
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupportLoginInput"
+      responses:
+        "200":
+          description: Support session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportSession"
+        "400":
+          description: Invalid support credentials
+        "401":
+          description: Invalid support credentials
+        "429":
+          description: Too many sign-in attempts
+        "503":
+          description: Support access is not configured
+  /support/auth/logout:
+    post:
+      operationId: supportLogout
+      tags: [support]
+      summary: Sign out of the support workspace
+      responses:
+        "200":
+          description: Support session ended
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+  /support/auth/me:
+    get:
+      operationId: getSupportSession
+      tags: [support]
+      summary: Check the restricted support session
+      responses:
+        "200":
+          description: Active support session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportSession"
+        "401":
+          description: Not signed in to support
+  /support/pupils:
+    get:
+      operationId: listSupportPupils
+      tags: [support]
+      summary: Search pupil identity records across schools
+      parameters:
+        - name: search
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+            maxLength: 100
+      responses:
+        "200":
+          description: Matching pupil identities
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportPupilList"
+        "401":
+          description: Not signed in to support
+  /support/pupils/{studentId}:
+    delete:
+      operationId: deleteSupportPupil
+      tags: [support]
+      summary: Permanently delete a pupil and all pupil-linked records
+      parameters:
+        - $ref: "#/components/parameters/StudentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupportDeletePupilInput"
+      responses:
+        "200":
+          description: Pupil and linked records deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportDeletePupilResult"
+        "400":
+          description: Registration number confirmation did not match
+        "401":
+          description: Not signed in to support
+        "404":
+          description: Pupil not found
   /users:
     get:
       operationId: listUsers
@@ -1025,6 +1125,79 @@ components:
           type: string
           minLength: 1
       required: [userType, identifier, password]
+    SupportLoginInput:
+      type: object
+      properties:
+        password:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required: [password]
+    SupportSession:
+      type: object
+      properties:
+        expiresAt:
+          type: string
+          format: date-time
+      required: [expiresAt]
+    SupportPupil:
+      type: object
+      properties:
+        id:
+          type: string
+        schoolName:
+          type: string
+        registrationNumber:
+          type: string
+        name:
+          type: string
+        className:
+          type: string
+        stream:
+          type: string
+        status:
+          type: string
+          enum: [active, inactive]
+        isSponsored:
+          type: boolean
+      required: [id, schoolName, registrationNumber, name, className, stream, status, isSponsored]
+    SupportPupilList:
+      type: object
+      properties:
+        pupils:
+          type: array
+          items:
+            $ref: "#/components/schemas/SupportPupil"
+      required: [pupils]
+    SupportDeletePupilInput:
+      type: object
+      properties:
+        confirmRegistrationNumber:
+          type: string
+          minLength: 1
+          maxLength: 100
+      required: [confirmRegistrationNumber]
+    SupportDeletePupilResult:
+      type: object
+      properties:
+        message:
+          type: string
+        deletedAttendanceRecords:
+          type: number
+          minimum: 0
+        deletedPaymentRecords:
+          type: number
+          minimum: 0
+        deletedLinkedAccounts:
+          type: number
+          minimum: 0
+        deletedLinkedRecords:
+          type: number
+          minimum: 0
+        photoStatus:
+          type: string
+          enum: [removed, not_present, shared, failed]
+      required: [message, deletedAttendanceRecords, deletedPaymentRecords, deletedLinkedAccounts, deletedLinkedRecords, photoStatus]
     AuthUser:
       type: object
       properties:
