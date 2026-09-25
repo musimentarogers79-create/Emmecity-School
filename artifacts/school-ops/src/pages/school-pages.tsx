@@ -952,15 +952,13 @@ function StudentProfilePage() {
         setPhotoUploadError('The converted image must be smaller than 1 MB.');
         return;
       }
-      const urlResponse = await fetch('/api/storage/uploads/request-url', {
+      const uploadResponse = await fetch('/api/storage/photos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: uploadFile.name, size: uploadFile.size, contentType: uploadFile.type }),
+        headers: { 'Content-Type': uploadFile.type },
+        body: uploadFile,
       });
-      if (!urlResponse.ok) throw new Error('Upload URL unavailable');
-      const upload = await urlResponse.json() as { uploadURL: string; objectPath: string };
-      const uploadResponse = await fetch(upload.uploadURL, { method: 'PUT', headers: { 'Content-Type': uploadFile.type }, body: uploadFile });
       if (!uploadResponse.ok) throw new Error('Photo upload failed');
+      const upload = await uploadResponse.json() as { objectPath: string };
       updateStudent.mutate({ studentId, data: { photoPath: upload.objectPath } }, {
         onSuccess: (updated) => {
           setEditForm((current) => ({ ...current, photoPath: updated.photoPath }));

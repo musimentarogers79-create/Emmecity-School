@@ -205,10 +205,11 @@ export async function listUsers() {
     return user.role === "teacher" ? { ...user, assignedClasses: classRows.filter((item) => item.teacherId === user.id).map((item) => classAssignmentKey(String(item.name), String(item.stream ?? ""))) } : user;
   });
 }
-export async function findUser(identifier: string, _userType?: string) {
+export async function findUser(identifier: string, userType: SchoolUser["userType"]) {
   const schoolId = await getSchoolId();
   const normalizedIdentifier = identifier.trim();
-  const rows = await db.select().from(users).where(and(eq(users.schoolId, schoolId), ilike(users.identifier, normalizedIdentifier))).limit(1);
+  const matchingType = userType === "learner" ? inArray(users.userType, ["learner", "guardian"]) : eq(users.userType, userType);
+  const rows = await db.select().from(users).where(and(eq(users.schoolId, schoolId), matchingType, ilike(users.identifier, normalizedIdentifier))).limit(1);
   const setting = await getSchoolSettings();
   return rows[0] ? publicRow(rows[0], setting) : undefined;
 }
@@ -217,6 +218,12 @@ export async function findUserById(id: string) {
   const rows = await db.select().from(users).where(and(eq(users.schoolId, schoolId), eq(users.id, id))).limit(1);
   const setting = await getSchoolSettings();
   return rows[0] ? publicRow(rows[0], setting) : undefined;
+}
+
+export async function findStudentByPhotoPath(photoPath: string) {
+  const schoolId = await getSchoolId();
+  const row = (await db.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.photoPath, photoPath))).limit(1))[0];
+  return row ? studentRow(row) : undefined;
 }
 export async function updateUserProfile(user: SchoolUser, data: {
   name?: string; identifier?: string; email?: string; phone?: string; newPassword?: string;
@@ -987,13 +994,14 @@ export async function createOperation(kind: OperationKind, data: Record<string, 
   }
   return row ? { ...(row.data as OperationRecord), id: row.id } : undefined;
 }
-export async function createSchoolNotification(data: { title: string; body: string; source?: string }) {
+export async function createSchoolNotification(data: { title: string; body: string; source?: string; audience?: string }) {
   return createOperation("notifications", {
     title: data.title.trim(),
     body: compactSingleSegmentSms(data.body),
     read: false,
     date: getDateLabel(),
     source: data.source || "school",
+    ...(data.audience ? { audience: data.audience } : {}),
   });
 }
 export async function updateOperation(kind: OperationKind, id: string, data: Record<string, unknown>) {

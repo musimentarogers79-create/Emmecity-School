@@ -61,6 +61,18 @@ export async function requestPupilPhotoUpload(contentType: string) {
   };
 }
 
+export async function uploadPupilPhoto(body: Buffer, contentType: string) {
+  const { uploadURL, objectPath } = await requestPupilPhotoUpload(contentType);
+  const response = await fetch(uploadURL, {
+    method: "PUT",
+    headers: { "Content-Type": contentType },
+    body: body as unknown as string,
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!response.ok) throw new Error(`Pupil photo upload failed (${response.status}).`);
+  return objectPath;
+}
+
 export async function requestObjectDownload(objectPath: string) {
   if (!isPupilPhotoPath(objectPath)) throw new Error("Invalid object path.");
   const objectName = objectPath.slice("/objects/".length);

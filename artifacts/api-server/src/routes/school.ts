@@ -68,6 +68,14 @@ const canManageUsers = (user?: SchoolUser) => !!user && (user.role === "super_ad
 const canViewUsers = (user?: SchoolUser) => !!user && (canManageUsers(user) || user.permissions.includes("users_view"));
 const canManageSubjects = (user?: SchoolUser) => !!user && (isAdministrator(user) || user.role === "teacher" || user.permissions.includes("subjects_manage"));
 const canDeleteSubjects = (user?: SchoolUser) => !!user && (isAdministrator(user) || user.permissions.includes("subjects_delete"));
+const canSeeAudience = (user: SchoolUser, audience: string) => {
+  if (isAdministrator(user) || ["Entire school", "Everyone"].includes(audience)) return true;
+  if (user.role === "teacher") return ["Teachers", "Teachers & pupils", "Students"].includes(audience);
+  if (user.role === "guardian") return ["Parents & guardians", "Guardians"].includes(audience);
+  if (user.role === "student") return ["Teachers & pupils", "Students"].includes(audience);
+  if (user.role === "accountant") return audience === "Accountants";
+  return user.role === "staff" && ["Staff", "All staff"].includes(audience);
+};
 const recordAccountAudit = async (actor: SchoolUser, action: string, targetId: string, details: Record<string, unknown> = {}) => {
   await createOperation("documents", {
     type: "audit", category: "user_account", title: `Account ${action}`, description: `${actor.name} ${action} account ${targetId}`,
@@ -668,16 +676,7 @@ router.get("/announcements", async (req, res): Promise<void> => {
   const user = await requireUser(req);
   if (!user) { errorResponse(res, 401, "Not signed in"); return; }
   const rows = await listOperation("announcements");
-  const visible = rows.filter((item) => {
-    if (isAdministrator(user)) return true;
-    const audience = String(item.audience);
-    if (["Entire school", "Everyone"].includes(audience)) return true;
-    if (user.role === "teacher") return ["Teachers", "Teachers & pupils", "Students"].includes(audience);
-    if (user.role === "guardian") return ["Parents & guardians", "Guardians"].includes(audience);
-    if (user.role === "student") return ["Teachers & pupils", "Students"].includes(audience);
-    if (user.role === "accountant") return audience === "Accountants";
-    return user.role === "staff";
-  });
+  const visible = rows.filter((item) => canSeeAudience(user, String(item.audience ?? "")));
   res.json(ListAnnouncementsResponse.parse(visible));
 });
 router.post("/announcements", async (req, res): Promise<void> => {
@@ -691,6 +690,7 @@ router.post("/announcements", async (req, res): Promise<void> => {
     title: parsed.data.priority === "important" ? `Important: ${parsed.data.title}` : parsed.data.title,
     body: `${parsed.data.body} · Audience: ${parsed.data.audience}`,
     source: "announcement",
+    audience: parsed.data.audience,
   });
   await sendAnnouncementSms(item);
   res.status(201).json(CreateAnnouncementResponse.parse(item));
@@ -869,20 +869,27 @@ router.get("/operations", async (req, res): Promise<void> => {
       : isAdministrator(user)
         ? students
         : [];
-  const visibleClasses = user.role === "teacher" ? data.classes.filter((item) => matchesAssignedClass(assigned, String(item.name), String(item.stream ?? ""))) : data.classes;
+  const linkedRole = user.role === "guardian" || user.role === "student";
+  const linkedClasses = new Set(linked.map((item) => classAssignmentKey(item.className, item.stream)));
+  const classVisible = (item: OperationRecord) => linkedClasses.has(classAssignmentKey(String(item.className ?? item.name ?? ""), String(item.stream ?? "")));
+  const visibleClasses = user.role === "teacher"
+    ? data.classes.filter((item) => matchesAssignedClass(assigned, String(item.name), String(item.stream ?? "")))
+    : linkedRole ? data.classes.filter(classVisible) : data.classes;
   const studentIds = new Set(linked.map((item) => item.id));
-  const linkedClasses = new Set(linked.map((item) => `${item.className} ${item.stream}`));
   const documentRows = data.documents.map((item) => {
     const pupil = students.find((student) => student.id === item.studentId);
     return operationDocumentRow(item, pupil?.name);
   });
   const modules = {
-    classes: visibleClasses, subjects: isAdministrator(user) ? data.subjects : data.subjects.filter((item) => matchesAssignedClass(assigned, String(item.className))), assignments: isAdministrator(user) ? data.assignments : data.assignments.filter((item) => matchesAssignedClass(assigned, String(item.className))),
+    classes: visibleClasses, subjects: isAdministrator(user) ? data.subjects : data.subjects.filter((item) => linkedRole ? classVisible(item) : matchesAssignedClass(assigned, String(item.className))), assignments: isAdministrator(user) ? data.assignments : data.assignments.filter((item) => linkedRole ? classVisible(item) : matchesAssignedClass(assigned, String(item.className))),
     staff: isAdministrator(user) ? data.staff : [], parents: isAdministrator(user) ? data.parents : [],
     expenses: isAdministrator(user) || user.role === "accountant" || hasPermission(user, "expenses_view") ? data.expenses : [], salaries: isAdministrator(user) || user.role === "accountant" ? data.salaryPayments : [],
      discipline: data.discipline.filter((item) => studentIds.has(String(item.studentId))), medical: isAdministrator(user) || user.role === "nurse" ? data.medical : data.medical.filter((item) => studentIds.has(String(item.studentId))),
-     library: data.library, transport: data.transport, inventory: isAdministrator(user) || user.role === "staff" || user.role === "librarian" ? data.inventory : [], events: data.events,
-     documents: isAdministrator(user) || user.role === "staff" || user.role === "secretary" ? documentRows : [], reports: isAdministrator(user) || user.role === "accountant" ? data.reports : [], notifications: data.notifications,
+     library: linkedRole ? data.library.filter((item) => studentIds.has(String(item.studentId)) || item.visibility === "public") : data.library,
+     transport: linkedRole ? data.transport.filter((item) => studentIds.has(String(item.studentId)) || item.visibility === "public") : data.transport,
+     inventory: isAdministrator(user) || user.role === "staff" || user.role === "librarian" ? data.inventory : [], events: data.events,
+     documents: isAdministrator(user) || user.role === "staff" || user.role === "secretary" ? documentRows : [], reports: isAdministrator(user) || user.role === "accountant" ? data.reports : [],
+     notifications: data.notifications.filter((item) => isAdministrator(user) || (item.source === "event" || (item.source === "announcement" && typeof item.audience === "string" && canSeeAudience(user, item.audience)))),
   };
   res.json(GetOperationsResponse.parse({ role: user.role, currencyCode: settings.currencyCode, currencyName: settings.currencyName, currencySymbol: settings.currencySymbol, actions: roleActions(user.role, user.studentId), modules }));
 });
