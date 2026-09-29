@@ -1,8 +1,8 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react';
 import { Link, useLocation } from 'wouter';
-import { useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AttendanceRecord, DeletedAttendanceRegister, OperationExpense, Payment, Student } from '@workspace/api-client-react';
-import { getGetAttendanceQueryKey, getGetCurrentUserQueryKey, getGetDeletedAttendanceRegistersQueryKey, getGetOperationsQueryKey, getListPaymentsQueryKey, getListStudentsQueryKey, useDeleteAttendanceRegister, useGetAttendance, useGetCurrentUser, useGetDeletedAttendanceRegisters, useGetOperations, useListPayments, useListStudents, useLogout } from '@workspace/api-client-react';
+import { getGetAttendanceQueryKey, getGetCurrentUserQueryKey, getGetDeletedAttendanceRegistersQueryKey, getGetOperationsQueryKey, getGetSmsAllowanceQueryKey, getListPaymentsQueryKey, getListStudentsQueryKey, getSmsAllowance, useDeleteAttendanceRegister, useGetAttendance, useGetCurrentUser, useGetDeletedAttendanceRegisters, useGetOperations, useListPayments, useListStudents, useLogout } from '@workspace/api-client-react';
 import { BookOpen, CalendarDays, CircleDollarSign, ClipboardList, Download, FileBarChart, KeyRound, LayoutDashboard, LogOut, Menu, Megaphone, PanelLeftClose, PanelLeftOpen, Printer, ReceiptText, Search, Settings, ShieldCheck, UserRound, Users, X } from 'lucide-react';
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
@@ -17,6 +17,7 @@ const roleNavigation: Record<string, NavItem[]> = {
   administrator: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
     { href: '/students', label: 'Pupils', icon: Users },
+    { href: '/academic-years', label: 'Academic years', icon: CalendarDays },
     { href: '/operations?view=classes', label: 'Classes', icon: Users },
     { href: '/operations?view=assignments', label: 'Assignments', icon: ClipboardList },
     { href: '/operations?view=staff', label: 'Staff', icon: UserRound },
@@ -42,6 +43,7 @@ const roleNavigation: Record<string, NavItem[]> = {
   super_admin: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
     { href: '/students', label: 'Pupils', icon: Users },
+    { href: '/academic-years', label: 'Academic years', icon: CalendarDays },
     { href: '/operations?view=classes', label: 'Classes', icon: Users },
     { href: '/operations?view=assignments', label: 'Assignments', icon: ClipboardList },
     { href: '/operations?view=staff', label: 'Staff', icon: UserRound },
@@ -81,6 +83,7 @@ const roleNavigation: Record<string, NavItem[]> = {
   accountant: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
     { href: '/students?filter=outstanding', label: 'Pupil balances', icon: Users },
+    { href: '/academic-years', label: 'Term fee ledger', icon: CalendarDays },
     { href: '/finance', label: 'Finance', icon: CircleDollarSign },
     { href: '/expenses', label: 'Expenses', icon: ReceiptText },
     { href: '/transactions', label: 'Transactions', icon: ReceiptText },
@@ -426,6 +429,22 @@ export function AppShell({ children }: { children: ReactNode }) {
   const sessionQuery = useGetCurrentUser();
   const { data: session } = sessionQuery;
   const logout = useLogout();
+  const smsAllowance = useQuery({
+    queryKey: getGetSmsAllowanceQueryKey(),
+    queryFn: () => getSmsAllowance(),
+    refetchInterval: 10_000,
+    staleTime: 10_000,
+  });
+  const supportLogout = useMutation({
+    mutationFn: async () => {
+      const response = await fetch('/api/support/auth/logout', { method: 'POST', credentials: 'same-origin' });
+      if (!response.ok) throw new Error('Support sign out could not be completed.');
+    },
+    onSuccess: () => {
+      client.removeQueries({ queryKey: getGetCurrentUserQueryKey() });
+      setLocation('/support-admin');
+    },
+  });
   const user = session?.user;
   const displayName = user?.name || user?.identifier || 'Isingoma';
   const roleLabel = (user?.role || 'administrator').replace('_', ' ');
@@ -446,6 +465,10 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const handleLogout = () => {
     setProfileOpen(false);
+    if (user?.isSupport) {
+      supportLogout.mutate();
+      return;
+    }
     logout.mutate(undefined, { onSettled: () => { client.removeQueries({ queryKey: getGetCurrentUserQueryKey() }); setLocation('/'); } });
   };
   useEffect(() => {
@@ -502,17 +525,21 @@ export function AppShell({ children }: { children: ReactNode }) {
             <button onClick={() => setCollapsed(!collapsed)} className="hidden rounded-lg p-2 text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] md:block" data-testid="button-toggle-sidebar">{collapsed ? <PanelLeftOpen className="size-5" /> : <PanelLeftClose className="size-5" />}</button>
             <div className="hidden items-center gap-2 rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-3 py-2 text-xs text-[hsl(var(--muted-foreground))] lg:flex"><Search className="size-3.5" /><span>Search Emmecty</span><kbd className="ml-5 rounded bg-[hsl(var(--muted))] px-1.5 py-0.5 font-mono text-[10px]">⌘ K</kbd></div>
           </div>
+          <div className={`mr-1 rounded-lg border px-2 py-2 text-[9px] font-semibold sm:mr-2 sm:px-3 sm:text-[10px] ${smsAllowance.isError ? 'border-amber-300 bg-amber-50 text-amber-900' : 'border-[hsl(var(--border))] bg-[hsl(var(--card))] text-[hsl(var(--muted-foreground))]'}`} data-testid="text-sms-allowance-balance">
+            {smsAllowance.isError ? 'SMS unavailable' : <><span className="sm:hidden">SMS · {smsAllowance.data?.availableMessages ?? '…'}</span><span className="hidden sm:inline">SMS available · {smsAllowance.data?.availableMessages ?? '…'}</span></>}
+          </div>
              <div className="relative" ref={profileMenuRef}>
                <button onClick={() => setProfileOpen((open) => !open)} data-testid="button-profile-menu" aria-label="Open profile menu" aria-expanded={profileOpen} className="group flex items-center gap-2.5 rounded-xl p-1.5 pr-2 transition-colors hover:bg-[hsl(var(--muted))]"><Initials name={displayName} className="size-8" /><span className="hidden text-left sm:block"><span className="block max-w-[140px] truncate text-xs font-semibold">{displayName}</span><span className="block text-[10px] capitalize text-[hsl(var(--muted-foreground))]">{roleLabel}</span></span></button>
                {profileOpen && <div className="absolute right-0 top-[calc(100%+.5rem)] z-50 w-56 overflow-hidden rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-1.5 shadow-xl" role="menu">
                  <div className="border-b border-[hsl(var(--border))] px-3 py-2.5"><p className="truncate text-sm font-semibold">{displayName}</p><p className="mt-0.5 truncate text-xs capitalize text-[hsl(var(--muted-foreground))]">{roleLabel}</p></div>
-                 <Link href="/profile" onClick={() => setProfileOpen(false)} data-testid="link-header-profile" role="menuitem" className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-[hsl(var(--muted))]"><UserRound className="size-4 text-[hsl(var(--primary))]" /> Profile</Link>
+                  {!user?.isSupport && <Link href="/profile" onClick={() => setProfileOpen(false)} data-testid="link-header-profile" role="menuitem" className="mt-1 flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-[hsl(var(--muted))]"><UserRound className="size-4 text-[hsl(var(--primary))]" /> Profile</Link>}
                  {(user?.role === 'administrator' || user?.role === 'super_admin') && <Link href="/settings" onClick={() => setProfileOpen(false)} data-testid="link-header-settings" role="menuitem" className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium hover:bg-[hsl(var(--muted))]"><Settings className="size-4 text-[hsl(var(--primary))]" /> Settings</Link>}
-                 <button onClick={handleLogout} disabled={logout.isPending} data-testid="button-logout" role="menuitem" className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/.08)] disabled:cursor-not-allowed disabled:opacity-50"><LogOut className="size-4" /> {logout.isPending ? 'Signing out…' : 'Sign out'}</button>
+                  {supportLogout.isError && <p className="px-3 py-2 text-xs text-[hsl(var(--destructive))]" role="alert">{supportLogout.error.message}</p>}
+                  <button onClick={handleLogout} disabled={logout.isPending || supportLogout.isPending} data-testid="button-logout" role="menuitem" className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/.08)] disabled:cursor-not-allowed disabled:opacity-50"><LogOut className="size-4" /> {logout.isPending || supportLogout.isPending ? 'Signing out…' : user?.isSupport ? 'End support session' : 'Sign out'}</button>
                </div>}
              </div>
         </header>
-          <main className="flex-1 overflow-x-hidden"><div className="hidden print:block print:px-8 print:pt-6"><SchoolLetterhead /></div><div className="mx-auto w-full max-w-[1480px] p-5 md:p-8">{user && (user.role === 'administrator' || user.role === 'super_admin') && location.startsWith('/students/') && !location.endsWith('/report') && <div className="mb-5 flex flex-wrap justify-end gap-2 print:hidden"><Link href={`${location}/report`} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-semibold text-[hsl(var(--primary-foreground))] hover:brightness-110" data-testid="link-create-report-card"><FileBarChart className="size-4" /> Create report card</Link></div>}<PupilExportToolbar /><AttendanceRegisterHistory /><ExpenseReportToolbar />{children}</div></main>
+           <main className="flex-1 overflow-x-hidden"><div className="hidden print:block print:px-8 print:pt-6"><SchoolLetterhead /></div><div className="mx-auto w-full max-w-[1480px] p-5 md:p-8">{user?.isSupport && <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-950" data-testid="banner-support-identity"><span><strong>Corenexa Support identity</strong> · Full school-system access is being used under a separate support session.</span><Link href="/support-admin" className="font-semibold underline underline-offset-2">Return to support workspace</Link></div>}{user && (user.role === 'administrator' || user.role === 'super_admin') && location.startsWith('/students/') && !location.endsWith('/report') && <div className="mb-5 flex flex-wrap justify-end gap-2 print:hidden"><Link href={`${location}/report`} className="inline-flex min-h-10 items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-semibold text-[hsl(var(--primary-foreground))] hover:brightness-110" data-testid="link-create-report-card"><FileBarChart className="size-4" /> Create report card</Link></div>}<PupilExportToolbar /><AttendanceRegisterHistory /><ExpenseReportToolbar />{children}</div></main>
       </div>
     </div>
   );

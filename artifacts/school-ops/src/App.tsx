@@ -12,6 +12,7 @@ import {
 } from 'wouter';
 
 const AnnouncementsPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.AnnouncementsPage })));
+const AcademicPage = lazy(() => import('@/pages/academic-page'));
 const AttendanceCreatePage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.AttendanceCreatePage })));
 const AttendancePage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.AttendancePage })));
 const DashboardPage = lazy(() => import('@/pages/school-pages').then((module) => ({ default: module.DashboardPage })));
@@ -62,6 +63,7 @@ function Router() {
         <Route path="/transactions/:transactionId" component={TransactionDetailPage} />
         <Route path="/salary-receipts/:salaryId" component={SalaryReceiptPage} />
         <Route path="/dashboard" component={DashboardPage} />
+        <Route path="/academic-years" component={AcademicPage} />
         <Route path="/students" component={StudentsPage} />
         <Route path="/students/:studentId" component={StudentProfilePage} />
         <Route path="/students/:studentId/report" component={ReportCardPage} />

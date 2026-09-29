@@ -26,4 +26,5 @@ export interface AuthUser {
   schoolName: string;
   /** @nullable */
   studentId?: string | null;
+  isSupport?: boolean;
 }

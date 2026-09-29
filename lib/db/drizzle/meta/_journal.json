@@ -113,6 +113,27 @@
       "when": 1789970030851,
       "tag": "0015_free_junta",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1790676054650,
+      "tag": "0016_chemical_thunderbolts",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790676374791,
+      "tag": "0017_amused_thunderbolts",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790676739202,
+      "tag": "0018_low_leper_queen",
+      "breakpoints": true
     }
   ]
 }

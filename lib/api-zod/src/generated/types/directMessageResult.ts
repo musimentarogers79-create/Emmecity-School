@@ -13,4 +13,5 @@ export interface DirectMessageResult {
   acceptedCount: number;
   failedCount: number;
   duplicateCount: number;
+  quotaExceeded?: boolean;
 }

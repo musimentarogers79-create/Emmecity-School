@@ -20,6 +20,22 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AcademicAdjustment,
+  AcademicAdjustmentInput,
+  AcademicDashboard,
+  AcademicDepartureInput,
+  AcademicEnrollment,
+  AcademicEnrollmentInput,
+  AcademicFeeCharge,
+  AcademicFeeChargeInput,
+  AcademicFeeSchedule,
+  AcademicFeeScheduleInput,
+  AcademicPayment,
+  AcademicPaymentInput,
+  AcademicTerm,
+  AcademicTermStatement,
+  AcademicYear,
+  AcademicYearInput,
   AdmissionForm,
   Announcement,
   AnnouncementInput,
@@ -35,19 +51,23 @@ import type {
   DeletedAttendanceRegister,
   DirectMessageInput,
   DirectMessageResult,
+  EnrollmentImportResult,
   EventInput,
   ExpenseInput,
   FeeReminderSmsAuthorization,
   FeeReminderSmsAuthorizationInput,
   FinanceSummary,
   FullBackupResponse,
+  GetAcademicDashboardParams,
   GetAttendanceParams,
   HealthStatus,
+  LegacyPaymentAllocationInput,
   ListStudentsParams,
   ListSupportPupilsParams,
   LoginInput,
   Message,
   MessageRecipients,
+  OpenAcademicTermInput,
   OperationClass,
   OperationEvent,
   OperationExpense,
@@ -56,6 +76,12 @@ import type {
   Payment,
   PaymentInput,
   PaymentUpdateInput,
+  PromotionConfirmation,
+  PromotionCycle,
+  PromotionCycleInput,
+  PromotionDecision,
+  PromotionDecisionInput,
+  PromotionReviewRow,
   ReportCard,
   ReportCardInput,
   SalaryPayment,
@@ -63,7 +89,11 @@ import type {
   SalaryStaffAccount,
   SchoolSettings,
   SchoolSettingsUpdate,
+  SmsAllowanceAdjustmentInput,
+  SmsAllowanceBalance,
+  SmsDeliveryReconciliationInput,
   Student,
+  StudentAcademicHistory,
   StudentInput,
   StudentProfile,
   StudentUpdateInput,
@@ -73,6 +103,8 @@ import type {
   SupportLoginInput,
   SupportPupilList,
   SupportSession,
+  SupportSmsAllowance,
+  SupportSmsReconciliationList,
   TimetableEntry,
   TimetableInput,
   UserAccountInput,
@@ -850,6 +882,380 @@ export const useDeleteSupportPupil = <TError = ErrorType<void>,
       > => {
       return useMutation(getDeleteSupportPupilMutationOptions(options));
     }
+
+export const getGetSupportSmsAllowanceUrl = () => {
+
+
+
+
+  return `/api/support/sms-allowance`
+}
+
+/**
+ * @summary View the school's SMS allowance and support adjustment audit
+ */
+export const getSupportSmsAllowance = async ( options?: Parameters<typeof customFetch>[1]): Promise<SupportSmsAllowance> => {
+
+  return customFetch<SupportSmsAllowance>(getGetSupportSmsAllowanceUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSupportSmsAllowanceQueryKey = () => {
+    return [
+    `/api/support/sms-allowance`
+    ] as const;
+    }
+
+
+export const getGetSupportSmsAllowanceQueryOptions = <TData = Awaited<ReturnType<typeof getSupportSmsAllowance>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSupportSmsAllowance>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSupportSmsAllowanceQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSupportSmsAllowance>>> = ({ signal }) => getSupportSmsAllowance({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSupportSmsAllowance>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSupportSmsAllowanceQueryResult = NonNullable<Awaited<ReturnType<typeof getSupportSmsAllowance>>>
+export type GetSupportSmsAllowanceQueryError = ErrorType<void>
+
+
+/**
+ * @summary View the school's SMS allowance and support adjustment audit
+ */
+
+export function useGetSupportSmsAllowance<TData = Awaited<ReturnType<typeof getSupportSmsAllowance>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSupportSmsAllowance>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSupportSmsAllowanceQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdjustSupportSmsAllowanceUrl = () => {
+
+
+
+
+  return `/api/support/sms-allowance`
+}
+
+/**
+ * @summary Grant or adjust the school's prepaid SMS message allowance
+ */
+export const adjustSupportSmsAllowance = async (smsAllowanceAdjustmentInput: SmsAllowanceAdjustmentInput, options?: Parameters<typeof customFetch>[1]): Promise<SupportSmsAllowance> => {
+
+  return customFetch<SupportSmsAllowance>(getAdjustSupportSmsAllowanceUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(smsAllowanceAdjustmentInput)
+  }
+);}
+
+
+
+
+
+export const getAdjustSupportSmsAllowanceMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adjustSupportSmsAllowance>>, TError,{data: BodyType<SmsAllowanceAdjustmentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adjustSupportSmsAllowance>>, TError,{data: BodyType<SmsAllowanceAdjustmentInput>}, TContext> => {
+
+const mutationKey = ['adjustSupportSmsAllowance'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adjustSupportSmsAllowance>>, {data: BodyType<SmsAllowanceAdjustmentInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adjustSupportSmsAllowance(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdjustSupportSmsAllowanceMutationResult = NonNullable<Awaited<ReturnType<typeof adjustSupportSmsAllowance>>>
+    export type AdjustSupportSmsAllowanceMutationBody = BodyType<SmsAllowanceAdjustmentInput>
+    export type AdjustSupportSmsAllowanceMutationError = ErrorType<void>
+
+    /**
+ * @summary Grant or adjust the school's prepaid SMS message allowance
+ */
+export const useAdjustSupportSmsAllowance = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adjustSupportSmsAllowance>>, TError,{data: BodyType<SmsAllowanceAdjustmentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adjustSupportSmsAllowance>>,
+        TError,
+        {data: BodyType<SmsAllowanceAdjustmentInput>},
+        TContext
+      > => {
+      return useMutation(getAdjustSupportSmsAllowanceMutationOptions(options));
+    }
+
+export const getListSupportSmsReconciliationsUrl = () => {
+
+
+
+
+  return `/api/support/sms-reconciliation`
+}
+
+/**
+ * @summary List SMS deliveries whose provider outcome needs reconciliation
+ */
+export const listSupportSmsReconciliations = async ( options?: Parameters<typeof customFetch>[1]): Promise<SupportSmsReconciliationList> => {
+
+  return customFetch<SupportSmsReconciliationList>(getListSupportSmsReconciliationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSupportSmsReconciliationsQueryKey = () => {
+    return [
+    `/api/support/sms-reconciliation`
+    ] as const;
+    }
+
+
+export const getListSupportSmsReconciliationsQueryOptions = <TData = Awaited<ReturnType<typeof listSupportSmsReconciliations>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSupportSmsReconciliations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSupportSmsReconciliationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSupportSmsReconciliations>>> = ({ signal }) => listSupportSmsReconciliations({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSupportSmsReconciliations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSupportSmsReconciliationsQueryResult = NonNullable<Awaited<ReturnType<typeof listSupportSmsReconciliations>>>
+export type ListSupportSmsReconciliationsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List SMS deliveries whose provider outcome needs reconciliation
+ */
+
+export function useListSupportSmsReconciliations<TData = Awaited<ReturnType<typeof listSupportSmsReconciliations>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSupportSmsReconciliations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSupportSmsReconciliationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getReconcileSupportSmsDeliveryUrl = (deliveryId: string,) => {
+
+
+
+
+  return `/api/support/sms-reconciliation/${deliveryId}`
+}
+
+/**
+ * @summary Resolve an ambiguous SMS reservation after checking provider status
+ */
+export const reconcileSupportSmsDelivery = async (deliveryId: string,
+    smsDeliveryReconciliationInput: SmsDeliveryReconciliationInput, options?: Parameters<typeof customFetch>[1]): Promise<Message> => {
+
+  return customFetch<Message>(getReconcileSupportSmsDeliveryUrl(deliveryId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(smsDeliveryReconciliationInput)
+  }
+);}
+
+
+
+
+
+export const getReconcileSupportSmsDeliveryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reconcileSupportSmsDelivery>>, TError,{deliveryId: string;data: BodyType<SmsDeliveryReconciliationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reconcileSupportSmsDelivery>>, TError,{deliveryId: string;data: BodyType<SmsDeliveryReconciliationInput>}, TContext> => {
+
+const mutationKey = ['reconcileSupportSmsDelivery'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reconcileSupportSmsDelivery>>, {deliveryId: string;data: BodyType<SmsDeliveryReconciliationInput>}> = (props) => {
+          const {deliveryId,data} = props ?? {};
+
+          return  reconcileSupportSmsDelivery(deliveryId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReconcileSupportSmsDeliveryMutationResult = NonNullable<Awaited<ReturnType<typeof reconcileSupportSmsDelivery>>>
+    export type ReconcileSupportSmsDeliveryMutationBody = BodyType<SmsDeliveryReconciliationInput>
+    export type ReconcileSupportSmsDeliveryMutationError = ErrorType<void>
+
+    /**
+ * @summary Resolve an ambiguous SMS reservation after checking provider status
+ */
+export const useReconcileSupportSmsDelivery = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reconcileSupportSmsDelivery>>, TError,{deliveryId: string;data: BodyType<SmsDeliveryReconciliationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reconcileSupportSmsDelivery>>,
+        TError,
+        {deliveryId: string;data: BodyType<SmsDeliveryReconciliationInput>},
+        TContext
+      > => {
+      return useMutation(getReconcileSupportSmsDeliveryMutationOptions(options));
+    }
+
+export const getGetSmsAllowanceUrl = () => {
+
+
+
+
+  return `/api/sms/allowance`
+}
+
+/**
+ * @summary View the school's remaining prepaid SMS messages
+ */
+export const getSmsAllowance = async ( options?: Parameters<typeof customFetch>[1]): Promise<SmsAllowanceBalance> => {
+
+  return customFetch<SmsAllowanceBalance>(getGetSmsAllowanceUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSmsAllowanceQueryKey = () => {
+    return [
+    `/api/sms/allowance`
+    ] as const;
+    }
+
+
+export const getGetSmsAllowanceQueryOptions = <TData = Awaited<ReturnType<typeof getSmsAllowance>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSmsAllowance>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSmsAllowanceQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSmsAllowance>>> = ({ signal }) => getSmsAllowance({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSmsAllowance>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSmsAllowanceQueryResult = NonNullable<Awaited<ReturnType<typeof getSmsAllowance>>>
+export type GetSmsAllowanceQueryError = ErrorType<void>
+
+
+/**
+ * @summary View the school's remaining prepaid SMS messages
+ */
+
+export function useGetSmsAllowance<TData = Awaited<ReturnType<typeof getSmsAllowance>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSmsAllowance>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSmsAllowanceQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getListUsersUrl = () => {
 
@@ -3153,6 +3559,1556 @@ export const useSendDirectMessage = <TError = ErrorType<void>,
       > => {
       return useMutation(getSendDirectMessageMutationOptions(options));
     }
+
+export const getListAcademicYearsUrl = () => {
+
+
+
+
+  return `/api/academic/years`
+}
+
+/**
+ * @summary List academic years and their three terms
+ */
+export const listAcademicYears = async ( options?: Parameters<typeof customFetch>[1]): Promise<AcademicYear[]> => {
+
+  return customFetch<AcademicYear[]>(getListAcademicYearsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAcademicYearsQueryKey = () => {
+    return [
+    `/api/academic/years`
+    ] as const;
+    }
+
+
+export const getListAcademicYearsQueryOptions = <TData = Awaited<ReturnType<typeof listAcademicYears>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAcademicYears>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAcademicYearsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAcademicYears>>> = ({ signal }) => listAcademicYears({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAcademicYears>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAcademicYearsQueryResult = NonNullable<Awaited<ReturnType<typeof listAcademicYears>>>
+export type ListAcademicYearsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List academic years and their three terms
+ */
+
+export function useListAcademicYears<TData = Awaited<ReturnType<typeof listAcademicYears>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAcademicYears>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAcademicYearsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateAcademicYearUrl = () => {
+
+
+
+
+  return `/api/academic/years`
+}
+
+/**
+ * @summary Create an academic year and its three planned terms
+ */
+export const createAcademicYear = async (academicYearInput: AcademicYearInput, options?: Parameters<typeof customFetch>[1]): Promise<AcademicYear> => {
+
+  return customFetch<AcademicYear>(getCreateAcademicYearUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(academicYearInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAcademicYearMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAcademicYear>>, TError,{data: BodyType<AcademicYearInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAcademicYear>>, TError,{data: BodyType<AcademicYearInput>}, TContext> => {
+
+const mutationKey = ['createAcademicYear'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAcademicYear>>, {data: BodyType<AcademicYearInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAcademicYear(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAcademicYearMutationResult = NonNullable<Awaited<ReturnType<typeof createAcademicYear>>>
+    export type CreateAcademicYearMutationBody = BodyType<AcademicYearInput>
+    export type CreateAcademicYearMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create an academic year and its three planned terms
+ */
+export const useCreateAcademicYear = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAcademicYear>>, TError,{data: BodyType<AcademicYearInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAcademicYear>>,
+        TError,
+        {data: BodyType<AcademicYearInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAcademicYearMutationOptions(options));
+    }
+
+export const getImportCurrentEnrollmentsUrl = (yearId: string,) => {
+
+
+
+
+  return `/api/academic/years/${yearId}/import-current`
+}
+
+/**
+ * @summary Add current existing pupil profiles to an academic year once
+ */
+export const importCurrentEnrollments = async (yearId: string, options?: Parameters<typeof customFetch>[1]): Promise<EnrollmentImportResult> => {
+
+  return customFetch<EnrollmentImportResult>(getImportCurrentEnrollmentsUrl(yearId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getImportCurrentEnrollmentsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importCurrentEnrollments>>, TError,{yearId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importCurrentEnrollments>>, TError,{yearId: string}, TContext> => {
+
+const mutationKey = ['importCurrentEnrollments'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importCurrentEnrollments>>, {yearId: string}> = (props) => {
+          const {yearId} = props ?? {};
+
+          return  importCurrentEnrollments(yearId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportCurrentEnrollmentsMutationResult = NonNullable<Awaited<ReturnType<typeof importCurrentEnrollments>>>
+
+    export type ImportCurrentEnrollmentsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Add current existing pupil profiles to an academic year once
+ */
+export const useImportCurrentEnrollments = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importCurrentEnrollments>>, TError,{yearId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importCurrentEnrollments>>,
+        TError,
+        {yearId: string},
+        TContext
+      > => {
+      return useMutation(getImportCurrentEnrollmentsMutationOptions(options));
+    }
+
+export const getListAcademicEnrollmentsUrl = (yearId: string,) => {
+
+
+
+
+  return `/api/academic/years/${yearId}/enrollments`
+}
+
+/**
+ * @summary List current and former enrollments for an academic year
+ */
+export const listAcademicEnrollments = async (yearId: string, options?: Parameters<typeof customFetch>[1]): Promise<AcademicEnrollment[]> => {
+
+  return customFetch<AcademicEnrollment[]>(getListAcademicEnrollmentsUrl(yearId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAcademicEnrollmentsQueryKey = (yearId: string,) => {
+    return [
+    `/api/academic/years/${yearId}/enrollments`
+    ] as const;
+    }
+
+
+export const getListAcademicEnrollmentsQueryOptions = <TData = Awaited<ReturnType<typeof listAcademicEnrollments>>, TError = ErrorType<unknown>>(yearId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAcademicEnrollments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAcademicEnrollmentsQueryKey(yearId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAcademicEnrollments>>> = ({ signal }) => listAcademicEnrollments(yearId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: yearId !== null && yearId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAcademicEnrollments>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAcademicEnrollmentsQueryResult = NonNullable<Awaited<ReturnType<typeof listAcademicEnrollments>>>
+export type ListAcademicEnrollmentsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List current and former enrollments for an academic year
+ */
+
+export function useListAcademicEnrollments<TData = Awaited<ReturnType<typeof listAcademicEnrollments>>, TError = ErrorType<unknown>>(
+ yearId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAcademicEnrollments>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAcademicEnrollmentsQueryOptions(yearId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateAcademicEnrollmentUrl = () => {
+
+
+
+
+  return `/api/academic/enrollments`
+}
+
+/**
+ * @summary Enroll an existing pupil profile without creating another pupil
+ */
+export const createAcademicEnrollment = async (academicEnrollmentInput: AcademicEnrollmentInput, options?: Parameters<typeof customFetch>[1]): Promise<AcademicEnrollment> => {
+
+  return customFetch<AcademicEnrollment>(getCreateAcademicEnrollmentUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(academicEnrollmentInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAcademicEnrollmentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAcademicEnrollment>>, TError,{data: BodyType<AcademicEnrollmentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAcademicEnrollment>>, TError,{data: BodyType<AcademicEnrollmentInput>}, TContext> => {
+
+const mutationKey = ['createAcademicEnrollment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAcademicEnrollment>>, {data: BodyType<AcademicEnrollmentInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createAcademicEnrollment(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAcademicEnrollmentMutationResult = NonNullable<Awaited<ReturnType<typeof createAcademicEnrollment>>>
+    export type CreateAcademicEnrollmentMutationBody = BodyType<AcademicEnrollmentInput>
+    export type CreateAcademicEnrollmentMutationError = ErrorType<void>
+
+    /**
+ * @summary Enroll an existing pupil profile without creating another pupil
+ */
+export const useCreateAcademicEnrollment = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAcademicEnrollment>>, TError,{data: BodyType<AcademicEnrollmentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAcademicEnrollment>>,
+        TError,
+        {data: BodyType<AcademicEnrollmentInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAcademicEnrollmentMutationOptions(options));
+    }
+
+export const getOpenAcademicTermUrl = (termId: string,) => {
+
+
+
+
+  return `/api/academic/terms/${termId}/open`
+}
+
+/**
+ * @summary Generate scheduled charges atomically and open a dated academic term
+ */
+export const openAcademicTerm = async (termId: string,
+    openAcademicTermInput: OpenAcademicTermInput, options?: Parameters<typeof customFetch>[1]): Promise<AcademicTerm> => {
+
+  return customFetch<AcademicTerm>(getOpenAcademicTermUrl(termId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(openAcademicTermInput)
+  }
+);}
+
+
+
+
+
+export const getOpenAcademicTermMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openAcademicTerm>>, TError,{termId: string;data: BodyType<OpenAcademicTermInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof openAcademicTerm>>, TError,{termId: string;data: BodyType<OpenAcademicTermInput>}, TContext> => {
+
+const mutationKey = ['openAcademicTerm'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof openAcademicTerm>>, {termId: string;data: BodyType<OpenAcademicTermInput>}> = (props) => {
+          const {termId,data} = props ?? {};
+
+          return  openAcademicTerm(termId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type OpenAcademicTermMutationResult = NonNullable<Awaited<ReturnType<typeof openAcademicTerm>>>
+    export type OpenAcademicTermMutationBody = BodyType<OpenAcademicTermInput>
+    export type OpenAcademicTermMutationError = ErrorType<void>
+
+    /**
+ * @summary Generate scheduled charges atomically and open a dated academic term
+ */
+export const useOpenAcademicTerm = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof openAcademicTerm>>, TError,{termId: string;data: BodyType<OpenAcademicTermInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof openAcademicTerm>>,
+        TError,
+        {termId: string;data: BodyType<OpenAcademicTermInput>},
+        TContext
+      > => {
+      return useMutation(getOpenAcademicTermMutationOptions(options));
+    }
+
+export const getCloseAcademicTermUrl = (termId: string,) => {
+
+
+
+
+  return `/api/academic/terms/${termId}/close`
+}
+
+/**
+ * @summary Close a term while preserving all financial and enrollment history
+ */
+export const closeAcademicTerm = async (termId: string, options?: Parameters<typeof customFetch>[1]): Promise<AcademicTerm> => {
+
+  return customFetch<AcademicTerm>(getCloseAcademicTermUrl(termId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getCloseAcademicTermMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeAcademicTerm>>, TError,{termId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof closeAcademicTerm>>, TError,{termId: string}, TContext> => {
+
+const mutationKey = ['closeAcademicTerm'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof closeAcademicTerm>>, {termId: string}> = (props) => {
+          const {termId} = props ?? {};
+
+          return  closeAcademicTerm(termId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CloseAcademicTermMutationResult = NonNullable<Awaited<ReturnType<typeof closeAcademicTerm>>>
+
+    export type CloseAcademicTermMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Close a term while preserving all financial and enrollment history
+ */
+export const useCloseAcademicTerm = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof closeAcademicTerm>>, TError,{termId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof closeAcademicTerm>>,
+        TError,
+        {termId: string},
+        TContext
+      > => {
+      return useMutation(getCloseAcademicTermMutationOptions(options));
+    }
+
+export const getGetTermFeeStatementUrl = (termId: string,) => {
+
+
+
+
+  return `/api/academic/terms/${termId}/charges`
+}
+
+/**
+ * @summary Get term charges, allocations, and outstanding amounts
+ */
+export const getTermFeeStatement = async (termId: string, options?: Parameters<typeof customFetch>[1]): Promise<AcademicTermStatement> => {
+
+  return customFetch<AcademicTermStatement>(getGetTermFeeStatementUrl(termId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTermFeeStatementQueryKey = (termId: string,) => {
+    return [
+    `/api/academic/terms/${termId}/charges`
+    ] as const;
+    }
+
+
+export const getGetTermFeeStatementQueryOptions = <TData = Awaited<ReturnType<typeof getTermFeeStatement>>, TError = ErrorType<unknown>>(termId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTermFeeStatement>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTermFeeStatementQueryKey(termId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTermFeeStatement>>> = ({ signal }) => getTermFeeStatement(termId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: termId !== null && termId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTermFeeStatement>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTermFeeStatementQueryResult = NonNullable<Awaited<ReturnType<typeof getTermFeeStatement>>>
+export type GetTermFeeStatementQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get term charges, allocations, and outstanding amounts
+ */
+
+export function useGetTermFeeStatement<TData = Awaited<ReturnType<typeof getTermFeeStatement>>, TError = ErrorType<unknown>>(
+ termId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTermFeeStatement>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTermFeeStatementQueryOptions(termId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateAcademicFeeChargeUrl = (termId: string,) => {
+
+
+
+
+  return `/api/academic/terms/${termId}/charges`
+}
+
+/**
+ * @summary Create an idempotent term-specific fee charge
+ */
+export const createAcademicFeeCharge = async (termId: string,
+    academicFeeChargeInput: AcademicFeeChargeInput, options?: Parameters<typeof customFetch>[1]): Promise<AcademicFeeCharge> => {
+
+  return customFetch<AcademicFeeCharge>(getCreateAcademicFeeChargeUrl(termId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(academicFeeChargeInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAcademicFeeChargeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAcademicFeeCharge>>, TError,{termId: string;data: BodyType<AcademicFeeChargeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAcademicFeeCharge>>, TError,{termId: string;data: BodyType<AcademicFeeChargeInput>}, TContext> => {
+
+const mutationKey = ['createAcademicFeeCharge'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAcademicFeeCharge>>, {termId: string;data: BodyType<AcademicFeeChargeInput>}> = (props) => {
+          const {termId,data} = props ?? {};
+
+          return  createAcademicFeeCharge(termId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAcademicFeeChargeMutationResult = NonNullable<Awaited<ReturnType<typeof createAcademicFeeCharge>>>
+    export type CreateAcademicFeeChargeMutationBody = BodyType<AcademicFeeChargeInput>
+    export type CreateAcademicFeeChargeMutationError = ErrorType<void>
+
+    /**
+ * @summary Create an idempotent term-specific fee charge
+ */
+export const useCreateAcademicFeeCharge = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAcademicFeeCharge>>, TError,{termId: string;data: BodyType<AcademicFeeChargeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAcademicFeeCharge>>,
+        TError,
+        {termId: string;data: BodyType<AcademicFeeChargeInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAcademicFeeChargeMutationOptions(options));
+    }
+
+export const getListAcademicTermFeeSchedulesUrl = (termId: string,) => {
+
+
+
+
+  return `/api/academic/terms/${termId}/fee-schedules`
+}
+
+/**
+ * @summary List administrator-configured fee schedule lines for a term
+ */
+export const listAcademicTermFeeSchedules = async (termId: string, options?: Parameters<typeof customFetch>[1]): Promise<AcademicFeeSchedule[]> => {
+
+  return customFetch<AcademicFeeSchedule[]>(getListAcademicTermFeeSchedulesUrl(termId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAcademicTermFeeSchedulesQueryKey = (termId: string,) => {
+    return [
+    `/api/academic/terms/${termId}/fee-schedules`
+    ] as const;
+    }
+
+
+export const getListAcademicTermFeeSchedulesQueryOptions = <TData = Awaited<ReturnType<typeof listAcademicTermFeeSchedules>>, TError = ErrorType<unknown>>(termId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAcademicTermFeeSchedules>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAcademicTermFeeSchedulesQueryKey(termId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAcademicTermFeeSchedules>>> = ({ signal }) => listAcademicTermFeeSchedules(termId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: termId !== null && termId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAcademicTermFeeSchedules>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAcademicTermFeeSchedulesQueryResult = NonNullable<Awaited<ReturnType<typeof listAcademicTermFeeSchedules>>>
+export type ListAcademicTermFeeSchedulesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List administrator-configured fee schedule lines for a term
+ */
+
+export function useListAcademicTermFeeSchedules<TData = Awaited<ReturnType<typeof listAcademicTermFeeSchedules>>, TError = ErrorType<unknown>>(
+ termId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAcademicTermFeeSchedules>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAcademicTermFeeSchedulesQueryOptions(termId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpsertAcademicTermFeeScheduleUrl = (termId: string,) => {
+
+
+
+
+  return `/api/academic/terms/${termId}/fee-schedules`
+}
+
+/**
+ * @summary Create or update one class, stream, and enrollment-type fee schedule line
+ */
+export const upsertAcademicTermFeeSchedule = async (termId: string,
+    academicFeeScheduleInput: AcademicFeeScheduleInput, options?: Parameters<typeof customFetch>[1]): Promise<AcademicFeeSchedule> => {
+
+  return customFetch<AcademicFeeSchedule>(getUpsertAcademicTermFeeScheduleUrl(termId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(academicFeeScheduleInput)
+  }
+);}
+
+
+
+
+
+export const getUpsertAcademicTermFeeScheduleMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertAcademicTermFeeSchedule>>, TError,{termId: string;data: BodyType<AcademicFeeScheduleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upsertAcademicTermFeeSchedule>>, TError,{termId: string;data: BodyType<AcademicFeeScheduleInput>}, TContext> => {
+
+const mutationKey = ['upsertAcademicTermFeeSchedule'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertAcademicTermFeeSchedule>>, {termId: string;data: BodyType<AcademicFeeScheduleInput>}> = (props) => {
+          const {termId,data} = props ?? {};
+
+          return  upsertAcademicTermFeeSchedule(termId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpsertAcademicTermFeeScheduleMutationResult = NonNullable<Awaited<ReturnType<typeof upsertAcademicTermFeeSchedule>>>
+    export type UpsertAcademicTermFeeScheduleMutationBody = BodyType<AcademicFeeScheduleInput>
+    export type UpsertAcademicTermFeeScheduleMutationError = ErrorType<void>
+
+    /**
+ * @summary Create or update one class, stream, and enrollment-type fee schedule line
+ */
+export const useUpsertAcademicTermFeeSchedule = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertAcademicTermFeeSchedule>>, TError,{termId: string;data: BodyType<AcademicFeeScheduleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof upsertAcademicTermFeeSchedule>>,
+        TError,
+        {termId: string;data: BodyType<AcademicFeeScheduleInput>},
+        TContext
+      > => {
+      return useMutation(getUpsertAcademicTermFeeScheduleMutationOptions(options));
+    }
+
+export const getRecordAcademicPaymentUrl = (chargeId: string,) => {
+
+
+
+
+  return `/api/academic/charges/${chargeId}/payments`
+}
+
+/**
+ * @summary Record a payment explicitly against an original term charge
+ */
+export const recordAcademicPayment = async (chargeId: string,
+    academicPaymentInput: AcademicPaymentInput, options?: Parameters<typeof customFetch>[1]): Promise<AcademicPayment> => {
+
+  return customFetch<AcademicPayment>(getRecordAcademicPaymentUrl(chargeId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(academicPaymentInput)
+  }
+);}
+
+
+
+
+
+export const getRecordAcademicPaymentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordAcademicPayment>>, TError,{chargeId: string;data: BodyType<AcademicPaymentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordAcademicPayment>>, TError,{chargeId: string;data: BodyType<AcademicPaymentInput>}, TContext> => {
+
+const mutationKey = ['recordAcademicPayment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordAcademicPayment>>, {chargeId: string;data: BodyType<AcademicPaymentInput>}> = (props) => {
+          const {chargeId,data} = props ?? {};
+
+          return  recordAcademicPayment(chargeId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordAcademicPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof recordAcademicPayment>>>
+    export type RecordAcademicPaymentMutationBody = BodyType<AcademicPaymentInput>
+    export type RecordAcademicPaymentMutationError = ErrorType<void>
+
+    /**
+ * @summary Record a payment explicitly against an original term charge
+ */
+export const useRecordAcademicPayment = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordAcademicPayment>>, TError,{chargeId: string;data: BodyType<AcademicPaymentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recordAcademicPayment>>,
+        TError,
+        {chargeId: string;data: BodyType<AcademicPaymentInput>},
+        TContext
+      > => {
+      return useMutation(getRecordAcademicPaymentMutationOptions(options));
+    }
+
+export const getAllocateExistingAcademicPaymentUrl = (paymentId: string,) => {
+
+
+
+
+  return `/api/academic/payments/${paymentId}/allocations`
+}
+
+/**
+ * @summary Explicitly allocate an unassigned legacy payment to an original term charge
+ */
+export const allocateExistingAcademicPayment = async (paymentId: string,
+    legacyPaymentAllocationInput: LegacyPaymentAllocationInput, options?: Parameters<typeof customFetch>[1]): Promise<AcademicPayment> => {
+
+  return customFetch<AcademicPayment>(getAllocateExistingAcademicPaymentUrl(paymentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(legacyPaymentAllocationInput)
+  }
+);}
+
+
+
+
+
+export const getAllocateExistingAcademicPaymentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof allocateExistingAcademicPayment>>, TError,{paymentId: string;data: BodyType<LegacyPaymentAllocationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof allocateExistingAcademicPayment>>, TError,{paymentId: string;data: BodyType<LegacyPaymentAllocationInput>}, TContext> => {
+
+const mutationKey = ['allocateExistingAcademicPayment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof allocateExistingAcademicPayment>>, {paymentId: string;data: BodyType<LegacyPaymentAllocationInput>}> = (props) => {
+          const {paymentId,data} = props ?? {};
+
+          return  allocateExistingAcademicPayment(paymentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AllocateExistingAcademicPaymentMutationResult = NonNullable<Awaited<ReturnType<typeof allocateExistingAcademicPayment>>>
+    export type AllocateExistingAcademicPaymentMutationBody = BodyType<LegacyPaymentAllocationInput>
+    export type AllocateExistingAcademicPaymentMutationError = ErrorType<void>
+
+    /**
+ * @summary Explicitly allocate an unassigned legacy payment to an original term charge
+ */
+export const useAllocateExistingAcademicPayment = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof allocateExistingAcademicPayment>>, TError,{paymentId: string;data: BodyType<LegacyPaymentAllocationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof allocateExistingAcademicPayment>>,
+        TError,
+        {paymentId: string;data: BodyType<LegacyPaymentAllocationInput>},
+        TContext
+      > => {
+      return useMutation(getAllocateExistingAcademicPaymentMutationOptions(options));
+    }
+
+export const getCreateAcademicAdjustmentUrl = (chargeId: string,) => {
+
+
+
+
+  return `/api/academic/charges/${chargeId}/adjustments`
+}
+
+/**
+ * @summary Record an authorized, audited financial adjustment
+ */
+export const createAcademicAdjustment = async (chargeId: string,
+    academicAdjustmentInput: AcademicAdjustmentInput, options?: Parameters<typeof customFetch>[1]): Promise<AcademicAdjustment> => {
+
+  return customFetch<AcademicAdjustment>(getCreateAcademicAdjustmentUrl(chargeId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(academicAdjustmentInput)
+  }
+);}
+
+
+
+
+
+export const getCreateAcademicAdjustmentMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAcademicAdjustment>>, TError,{chargeId: string;data: BodyType<AcademicAdjustmentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createAcademicAdjustment>>, TError,{chargeId: string;data: BodyType<AcademicAdjustmentInput>}, TContext> => {
+
+const mutationKey = ['createAcademicAdjustment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createAcademicAdjustment>>, {chargeId: string;data: BodyType<AcademicAdjustmentInput>}> = (props) => {
+          const {chargeId,data} = props ?? {};
+
+          return  createAcademicAdjustment(chargeId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateAcademicAdjustmentMutationResult = NonNullable<Awaited<ReturnType<typeof createAcademicAdjustment>>>
+    export type CreateAcademicAdjustmentMutationBody = BodyType<AcademicAdjustmentInput>
+    export type CreateAcademicAdjustmentMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Record an authorized, audited financial adjustment
+ */
+export const useCreateAcademicAdjustment = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createAcademicAdjustment>>, TError,{chargeId: string;data: BodyType<AcademicAdjustmentInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createAcademicAdjustment>>,
+        TError,
+        {chargeId: string;data: BodyType<AcademicAdjustmentInput>},
+        TContext
+      > => {
+      return useMutation(getCreateAcademicAdjustmentMutationOptions(options));
+    }
+
+export const getRecordAcademicDepartureUrl = (enrollmentId: string,) => {
+
+
+
+
+  return `/api/academic/enrollments/${enrollmentId}/departure`
+}
+
+/**
+ * @summary Transfer or withdraw an enrollment without deleting records or balances
+ */
+export const recordAcademicDeparture = async (enrollmentId: string,
+    academicDepartureInput: AcademicDepartureInput, options?: Parameters<typeof customFetch>[1]): Promise<AcademicEnrollment> => {
+
+  return customFetch<AcademicEnrollment>(getRecordAcademicDepartureUrl(enrollmentId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(academicDepartureInput)
+  }
+);}
+
+
+
+
+
+export const getRecordAcademicDepartureMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordAcademicDeparture>>, TError,{enrollmentId: string;data: BodyType<AcademicDepartureInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordAcademicDeparture>>, TError,{enrollmentId: string;data: BodyType<AcademicDepartureInput>}, TContext> => {
+
+const mutationKey = ['recordAcademicDeparture'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordAcademicDeparture>>, {enrollmentId: string;data: BodyType<AcademicDepartureInput>}> = (props) => {
+          const {enrollmentId,data} = props ?? {};
+
+          return  recordAcademicDeparture(enrollmentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordAcademicDepartureMutationResult = NonNullable<Awaited<ReturnType<typeof recordAcademicDeparture>>>
+    export type RecordAcademicDepartureMutationBody = BodyType<AcademicDepartureInput>
+    export type RecordAcademicDepartureMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Transfer or withdraw an enrollment without deleting records or balances
+ */
+export const useRecordAcademicDeparture = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordAcademicDeparture>>, TError,{enrollmentId: string;data: BodyType<AcademicDepartureInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recordAcademicDeparture>>,
+        TError,
+        {enrollmentId: string;data: BodyType<AcademicDepartureInput>},
+        TContext
+      > => {
+      return useMutation(getRecordAcademicDepartureMutationOptions(options));
+    }
+
+export const getCreatePromotionCycleUrl = () => {
+
+
+
+
+  return `/api/academic/promotion-cycles`
+}
+
+/**
+ * @summary Open a review cycle and prepare one following year for decisions
+ */
+export const createPromotionCycle = async (promotionCycleInput: PromotionCycleInput, options?: Parameters<typeof customFetch>[1]): Promise<PromotionCycle> => {
+
+  return customFetch<PromotionCycle>(getCreatePromotionCycleUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(promotionCycleInput)
+  }
+);}
+
+
+
+
+
+export const getCreatePromotionCycleMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPromotionCycle>>, TError,{data: BodyType<PromotionCycleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPromotionCycle>>, TError,{data: BodyType<PromotionCycleInput>}, TContext> => {
+
+const mutationKey = ['createPromotionCycle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPromotionCycle>>, {data: BodyType<PromotionCycleInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPromotionCycle(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePromotionCycleMutationResult = NonNullable<Awaited<ReturnType<typeof createPromotionCycle>>>
+    export type CreatePromotionCycleMutationBody = BodyType<PromotionCycleInput>
+    export type CreatePromotionCycleMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Open a review cycle and prepare one following year for decisions
+ */
+export const useCreatePromotionCycle = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPromotionCycle>>, TError,{data: BodyType<PromotionCycleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPromotionCycle>>,
+        TError,
+        {data: BodyType<PromotionCycleInput>},
+        TContext
+      > => {
+      return useMutation(getCreatePromotionCycleMutationOptions(options));
+    }
+
+export const getListPromotionDecisionsUrl = (cycleId: string,) => {
+
+
+
+
+  return `/api/academic/promotion-cycles/${cycleId}/decisions`
+}
+
+/**
+ * @summary Review promotion decisions for every active pupil
+ */
+export const listPromotionDecisions = async (cycleId: string, options?: Parameters<typeof customFetch>[1]): Promise<PromotionReviewRow[]> => {
+
+  return customFetch<PromotionReviewRow[]>(getListPromotionDecisionsUrl(cycleId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPromotionDecisionsQueryKey = (cycleId: string,) => {
+    return [
+    `/api/academic/promotion-cycles/${cycleId}/decisions`
+    ] as const;
+    }
+
+
+export const getListPromotionDecisionsQueryOptions = <TData = Awaited<ReturnType<typeof listPromotionDecisions>>, TError = ErrorType<unknown>>(cycleId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPromotionDecisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPromotionDecisionsQueryKey(cycleId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPromotionDecisions>>> = ({ signal }) => listPromotionDecisions(cycleId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: cycleId !== null && cycleId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPromotionDecisions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPromotionDecisionsQueryResult = NonNullable<Awaited<ReturnType<typeof listPromotionDecisions>>>
+export type ListPromotionDecisionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Review promotion decisions for every active pupil
+ */
+
+export function useListPromotionDecisions<TData = Awaited<ReturnType<typeof listPromotionDecisions>>, TError = ErrorType<unknown>>(
+ cycleId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPromotionDecisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPromotionDecisionsQueryOptions(cycleId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdatePromotionDecisionUrl = (cycleId: string,
+    enrollmentId: string,) => {
+
+
+
+
+  return `/api/academic/promotion-cycles/${cycleId}/decisions/${enrollmentId}`
+}
+
+/**
+ * @summary Set a reviewed promotion, repetition, transfer, withdrawal, or graduation decision
+ */
+export const updatePromotionDecision = async (cycleId: string,
+    enrollmentId: string,
+    promotionDecisionInput: PromotionDecisionInput, options?: Parameters<typeof customFetch>[1]): Promise<PromotionDecision> => {
+
+  return customFetch<PromotionDecision>(getUpdatePromotionDecisionUrl(cycleId,enrollmentId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(promotionDecisionInput)
+  }
+);}
+
+
+
+
+
+export const getUpdatePromotionDecisionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePromotionDecision>>, TError,{cycleId: string;enrollmentId: string;data: BodyType<PromotionDecisionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePromotionDecision>>, TError,{cycleId: string;enrollmentId: string;data: BodyType<PromotionDecisionInput>}, TContext> => {
+
+const mutationKey = ['updatePromotionDecision'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePromotionDecision>>, {cycleId: string;enrollmentId: string;data: BodyType<PromotionDecisionInput>}> = (props) => {
+          const {cycleId,enrollmentId,data} = props ?? {};
+
+          return  updatePromotionDecision(cycleId,enrollmentId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePromotionDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof updatePromotionDecision>>>
+    export type UpdatePromotionDecisionMutationBody = BodyType<PromotionDecisionInput>
+    export type UpdatePromotionDecisionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Set a reviewed promotion, repetition, transfer, withdrawal, or graduation decision
+ */
+export const useUpdatePromotionDecision = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePromotionDecision>>, TError,{cycleId: string;enrollmentId: string;data: BodyType<PromotionDecisionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePromotionDecision>>,
+        TError,
+        {cycleId: string;enrollmentId: string;data: BodyType<PromotionDecisionInput>},
+        TContext
+      > => {
+      return useMutation(getUpdatePromotionDecisionMutationOptions(options));
+    }
+
+export const getConfirmPromotionCycleUrl = (cycleId: string,) => {
+
+
+
+
+  return `/api/academic/promotion-cycles/${cycleId}/confirm`
+}
+
+/**
+ * @summary Confirm reviewed decisions and create eligible new-year enrollments once
+ */
+export const confirmPromotionCycle = async (cycleId: string, options?: Parameters<typeof customFetch>[1]): Promise<PromotionConfirmation> => {
+
+  return customFetch<PromotionConfirmation>(getConfirmPromotionCycleUrl(cycleId),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getConfirmPromotionCycleMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPromotionCycle>>, TError,{cycleId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof confirmPromotionCycle>>, TError,{cycleId: string}, TContext> => {
+
+const mutationKey = ['confirmPromotionCycle'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof confirmPromotionCycle>>, {cycleId: string}> = (props) => {
+          const {cycleId} = props ?? {};
+
+          return  confirmPromotionCycle(cycleId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConfirmPromotionCycleMutationResult = NonNullable<Awaited<ReturnType<typeof confirmPromotionCycle>>>
+
+    export type ConfirmPromotionCycleMutationError = ErrorType<void>
+
+    /**
+ * @summary Confirm reviewed decisions and create eligible new-year enrollments once
+ */
+export const useConfirmPromotionCycle = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof confirmPromotionCycle>>, TError,{cycleId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof confirmPromotionCycle>>,
+        TError,
+        {cycleId: string},
+        TContext
+      > => {
+      return useMutation(getConfirmPromotionCycleMutationOptions(options));
+    }
+
+export const getGetAcademicDashboardUrl = (params?: GetAcademicDashboardParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/academic/dashboard?${stringifiedParams}` : `/api/academic/dashboard`
+}
+
+/**
+ * @summary Get real term finance and promotion summaries for a year
+ */
+export const getAcademicDashboard = async (params?: GetAcademicDashboardParams, options?: Parameters<typeof customFetch>[1]): Promise<AcademicDashboard> => {
+
+  return customFetch<AcademicDashboard>(getGetAcademicDashboardUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAcademicDashboardQueryKey = (params?: GetAcademicDashboardParams,) => {
+    return [
+    `/api/academic/dashboard`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAcademicDashboardQueryOptions = <TData = Awaited<ReturnType<typeof getAcademicDashboard>>, TError = ErrorType<unknown>>(params?: GetAcademicDashboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAcademicDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAcademicDashboardQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAcademicDashboard>>> = ({ signal }) => getAcademicDashboard(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAcademicDashboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAcademicDashboardQueryResult = NonNullable<Awaited<ReturnType<typeof getAcademicDashboard>>>
+export type GetAcademicDashboardQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get real term finance and promotion summaries for a year
+ */
+
+export function useGetAcademicDashboard<TData = Awaited<ReturnType<typeof getAcademicDashboard>>, TError = ErrorType<unknown>>(
+ params?: GetAcademicDashboardParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAcademicDashboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAcademicDashboardQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetStudentAcademicHistoryUrl = (studentId: string,) => {
+
+
+
+
+  return `/api/academic/students/${studentId}/history`
+}
+
+/**
+ * @summary View a pupil's preserved enrollments, fee charges, and allocations
+ */
+export const getStudentAcademicHistory = async (studentId: string, options?: Parameters<typeof customFetch>[1]): Promise<StudentAcademicHistory> => {
+
+  return customFetch<StudentAcademicHistory>(getGetStudentAcademicHistoryUrl(studentId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStudentAcademicHistoryQueryKey = (studentId: string,) => {
+    return [
+    `/api/academic/students/${studentId}/history`
+    ] as const;
+    }
+
+
+export const getGetStudentAcademicHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getStudentAcademicHistory>>, TError = ErrorType<unknown>>(studentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentAcademicHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStudentAcademicHistoryQueryKey(studentId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStudentAcademicHistory>>> = ({ signal }) => getStudentAcademicHistory(studentId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: studentId !== null && studentId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStudentAcademicHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStudentAcademicHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getStudentAcademicHistory>>>
+export type GetStudentAcademicHistoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary View a pupil's preserved enrollments, fee charges, and allocations
+ */
+
+export function useGetStudentAcademicHistory<TData = Awaited<ReturnType<typeof getStudentAcademicHistory>>, TError = ErrorType<unknown>>(
+ studentId: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStudentAcademicHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStudentAcademicHistoryQueryOptions(studentId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getGetTimetableUrl = () => {
 

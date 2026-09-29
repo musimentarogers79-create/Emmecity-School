@@ -49,7 +49,8 @@ export const LoginResponse = zod.object({
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
-  "studentId": zod.string().nullish()
+  "studentId": zod.string().nullish(),
+  "isSupport": zod.boolean().optional()
 }),
   "expiresAt": zod.string()
 })
@@ -85,7 +86,8 @@ export const GetCurrentUserResponse = zod.object({
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
-  "studentId": zod.string().nullish()
+  "studentId": zod.string().nullish(),
+  "isSupport": zod.boolean().optional()
 }),
   "expiresAt": zod.string()
 })
@@ -129,7 +131,8 @@ export const UpdateCurrentUserResponse = zod.object({
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
-  "studentId": zod.string().nullish()
+  "studentId": zod.string().nullish(),
+  "isSupport": zod.boolean().optional()
 }),
   "expiresAt": zod.string()
 })
@@ -229,6 +232,152 @@ export const DeleteSupportPupilResponse = zod.object({
 
 
 /**
+ * @summary View the school's SMS allowance and support adjustment audit
+ */
+export const getSupportSmsAllowanceResponseOneAvailableMessagesMin = 0;
+export const getSupportSmsAllowanceResponseOneAvailableMessagesMultipleOf = 1;
+
+export const getSupportSmsAllowanceResponseOneReservedMessagesMin = 0;
+export const getSupportSmsAllowanceResponseOneReservedMessagesMultipleOf = 1;
+
+export const getSupportSmsAllowanceResponseOneSentMessagesMin = 0;
+export const getSupportSmsAllowanceResponseOneSentMessagesMultipleOf = 1;
+
+export const getSupportSmsAllowanceResponseTwoAdjustmentsItemMessagesMultipleOf = 1;
+
+
+
+export const GetSupportSmsAllowanceResponse = zod.object({
+  "availableMessages": zod.number().min(getSupportSmsAllowanceResponseOneAvailableMessagesMin).multipleOf(getSupportSmsAllowanceResponseOneAvailableMessagesMultipleOf),
+  "reservedMessages": zod.number().min(getSupportSmsAllowanceResponseOneReservedMessagesMin).multipleOf(getSupportSmsAllowanceResponseOneReservedMessagesMultipleOf),
+  "sentMessages": zod.number().min(getSupportSmsAllowanceResponseOneSentMessagesMin).multipleOf(getSupportSmsAllowanceResponseOneSentMessagesMultipleOf)
+}).and(zod.object({
+  "schoolName": zod.string(),
+  "adjustments": zod.array(zod.object({
+  "messages": zod.number().multipleOf(getSupportSmsAllowanceResponseTwoAdjustmentsItemMessagesMultipleOf),
+  "note": zod.string(),
+  "actor": zod.string(),
+  "occurredAt": zod.coerce.date()
+}))
+}))
+
+
+/**
+ * @summary Grant or adjust the school's prepaid SMS message allowance
+ */
+export const adjustSupportSmsAllowanceBodyMessagesMin = -1000000;
+export const adjustSupportSmsAllowanceBodyMessagesMax = 1000000;
+export const adjustSupportSmsAllowanceBodyMessagesMultipleOf = 1;
+
+export const adjustSupportSmsAllowanceBodyNoteMax = 500;
+
+
+
+export const AdjustSupportSmsAllowanceBody = zod.object({
+  "messages": zod.number().min(adjustSupportSmsAllowanceBodyMessagesMin).max(adjustSupportSmsAllowanceBodyMessagesMax).multipleOf(adjustSupportSmsAllowanceBodyMessagesMultipleOf),
+  "note": zod.string().max(adjustSupportSmsAllowanceBodyNoteMax)
+})
+
+export const adjustSupportSmsAllowanceResponseOneAvailableMessagesMin = 0;
+export const adjustSupportSmsAllowanceResponseOneAvailableMessagesMultipleOf = 1;
+
+export const adjustSupportSmsAllowanceResponseOneReservedMessagesMin = 0;
+export const adjustSupportSmsAllowanceResponseOneReservedMessagesMultipleOf = 1;
+
+export const adjustSupportSmsAllowanceResponseOneSentMessagesMin = 0;
+export const adjustSupportSmsAllowanceResponseOneSentMessagesMultipleOf = 1;
+
+export const adjustSupportSmsAllowanceResponseTwoAdjustmentsItemMessagesMultipleOf = 1;
+
+
+
+export const AdjustSupportSmsAllowanceResponse = zod.object({
+  "availableMessages": zod.number().min(adjustSupportSmsAllowanceResponseOneAvailableMessagesMin).multipleOf(adjustSupportSmsAllowanceResponseOneAvailableMessagesMultipleOf),
+  "reservedMessages": zod.number().min(adjustSupportSmsAllowanceResponseOneReservedMessagesMin).multipleOf(adjustSupportSmsAllowanceResponseOneReservedMessagesMultipleOf),
+  "sentMessages": zod.number().min(adjustSupportSmsAllowanceResponseOneSentMessagesMin).multipleOf(adjustSupportSmsAllowanceResponseOneSentMessagesMultipleOf)
+}).and(zod.object({
+  "schoolName": zod.string(),
+  "adjustments": zod.array(zod.object({
+  "messages": zod.number().multipleOf(adjustSupportSmsAllowanceResponseTwoAdjustmentsItemMessagesMultipleOf),
+  "note": zod.string(),
+  "actor": zod.string(),
+  "occurredAt": zod.coerce.date()
+}))
+}))
+
+
+/**
+ * @summary List SMS deliveries whose provider outcome needs reconciliation
+ */
+export const listSupportSmsReconciliationsResponseDeliveriesItemRecipientCountMultipleOf = 1;
+
+export const listSupportSmsReconciliationsResponseResolutionsItemMessagesMultipleOf = 1;
+
+
+
+export const ListSupportSmsReconciliationsResponse = zod.object({
+  "deliveries": zod.array(zod.object({
+  "id": zod.string(),
+  "channel": zod.string(),
+  "recipientCount": zod.number().min(1).multipleOf(listSupportSmsReconciliationsResponseDeliveriesItemRecipientCountMultipleOf),
+  "status": zod.enum(['sending', 'reconciliation_required']),
+  "occurredAt": zod.coerce.date(),
+  "failureCode": zod.string().optional()
+})),
+  "resolutions": zod.array(zod.object({
+  "deliveryId": zod.string(),
+  "outcome": zod.enum(['sent', 'failed']),
+  "messages": zod.number().min(1).multipleOf(listSupportSmsReconciliationsResponseResolutionsItemMessagesMultipleOf),
+  "note": zod.string(),
+  "actor": zod.string(),
+  "occurredAt": zod.coerce.date()
+}))
+})
+
+
+/**
+ * @summary Resolve an ambiguous SMS reservation after checking provider status
+ */
+export const ReconcileSupportSmsDeliveryParams = zod.object({
+  "deliveryId": zod.coerce.string()
+})
+
+export const reconcileSupportSmsDeliveryBodyNoteMax = 500;
+
+
+
+export const ReconcileSupportSmsDeliveryBody = zod.object({
+  "outcome": zod.enum(['sent', 'failed']),
+  "note": zod.string().min(1).max(reconcileSupportSmsDeliveryBodyNoteMax)
+})
+
+export const ReconcileSupportSmsDeliveryResponse = zod.object({
+  "message": zod.string()
+})
+
+
+/**
+ * @summary View the school's remaining prepaid SMS messages
+ */
+export const getSmsAllowanceResponseAvailableMessagesMin = 0;
+export const getSmsAllowanceResponseAvailableMessagesMultipleOf = 1;
+
+export const getSmsAllowanceResponseReservedMessagesMin = 0;
+export const getSmsAllowanceResponseReservedMessagesMultipleOf = 1;
+
+export const getSmsAllowanceResponseSentMessagesMin = 0;
+export const getSmsAllowanceResponseSentMessagesMultipleOf = 1;
+
+
+
+export const GetSmsAllowanceResponse = zod.object({
+  "availableMessages": zod.number().min(getSmsAllowanceResponseAvailableMessagesMin).multipleOf(getSmsAllowanceResponseAvailableMessagesMultipleOf),
+  "reservedMessages": zod.number().min(getSmsAllowanceResponseReservedMessagesMin).multipleOf(getSmsAllowanceResponseReservedMessagesMultipleOf),
+  "sentMessages": zod.number().min(getSmsAllowanceResponseSentMessagesMin).multipleOf(getSmsAllowanceResponseSentMessagesMultipleOf)
+})
+
+
+/**
  * @summary List school user accounts for authorized administrators
  */
 export const listUsersResponseMonthlySalaryMin = 0;
@@ -249,7 +398,8 @@ export const ListUsersResponseItem = zod.object({
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
-  "studentId": zod.string().nullish()
+  "studentId": zod.string().nullish(),
+  "isSupport": zod.boolean().optional()
 })
 export const ListUsersResponse = zod.array(ListUsersResponseItem)
 
@@ -297,7 +447,8 @@ export const CreateUserResponse = zod.object({
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
-  "studentId": zod.string().nullish()
+  "studentId": zod.string().nullish(),
+  "isSupport": zod.boolean().optional()
 })
 
 
@@ -349,7 +500,8 @@ export const UpdateUserProfileByAdminResponse = zod.object({
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
-  "studentId": zod.string().nullish()
+  "studentId": zod.string().nullish(),
+  "isSupport": zod.boolean().optional()
 })
 
 
@@ -395,7 +547,8 @@ export const UpdateUserPermissionsResponse = zod.object({
   "role": zod.enum(['super_admin', 'administrator', 'teacher', 'accountant', 'secretary', 'librarian', 'nurse', 'guardian', 'student', 'staff']),
   "initials": zod.string(),
   "schoolName": zod.string(),
-  "studentId": zod.string().nullish()
+  "studentId": zod.string().nullish(),
+  "isSupport": zod.boolean().optional()
 })
 
 
@@ -1345,7 +1498,20 @@ export const ListPaymentsResponseItem = zod.object({
   "reference": zod.string(),
   "date": zod.string(),
   "status": zod.enum(['completed', 'pending', 'reversed']),
-  "balance": zod.number()
+  "balance": zod.number(),
+  "academicYearId": zod.string().nullish(),
+  "academicYear": zod.number().nullish(),
+  "termId": zod.string().nullish(),
+  "termNumber": zod.number().nullish(),
+  "attributionStatus": zod.enum(['assigned', 'unassigned', 'multiple']).optional(),
+  "academicAllocations": zod.array(zod.object({
+  "chargeId": zod.string(),
+  "termId": zod.string(),
+  "academicYearId": zod.string(),
+  "termNumber": zod.number(),
+  "academicYear": zod.number(),
+  "amount": zod.number()
+})).optional()
 })
 export const ListPaymentsResponse = zod.array(ListPaymentsResponseItem)
 
@@ -1353,11 +1519,15 @@ export const ListPaymentsResponse = zod.array(ListPaymentsResponseItem)
 /**
  * @summary Record a fee payment
  */
+export const recordPaymentBodyIdempotencyKeyMax = 150;
+
 
 
 
 export const RecordPaymentBody = zod.object({
   "studentId": zod.string(),
+  "chargeId": zod.string().optional().describe('Explicit academic term charge to allocate this payment to. Omitted legacy payments remain unassigned and are not attributed to a guessed term.'),
+  "idempotencyKey": zod.string().min(1).max(recordPaymentBodyIdempotencyKeyMax).optional(),
   "amount": zod.number().min(1),
   "method": zod.string(),
   "reference": zod.string()
@@ -1374,7 +1544,20 @@ export const RecordPaymentResponse = zod.object({
   "reference": zod.string(),
   "date": zod.string(),
   "status": zod.enum(['completed', 'pending', 'reversed']),
-  "balance": zod.number()
+  "balance": zod.number(),
+  "academicYearId": zod.string().nullish(),
+  "academicYear": zod.number().nullish(),
+  "termId": zod.string().nullish(),
+  "termNumber": zod.number().nullish(),
+  "attributionStatus": zod.enum(['assigned', 'unassigned', 'multiple']).optional(),
+  "academicAllocations": zod.array(zod.object({
+  "chargeId": zod.string(),
+  "termId": zod.string(),
+  "academicYearId": zod.string(),
+  "termNumber": zod.number(),
+  "academicYear": zod.number(),
+  "amount": zod.number()
+})).optional()
 })
 
 
@@ -1407,7 +1590,20 @@ export const UpdatePaymentResponse = zod.object({
   "reference": zod.string(),
   "date": zod.string(),
   "status": zod.enum(['completed', 'pending', 'reversed']),
-  "balance": zod.number()
+  "balance": zod.number(),
+  "academicYearId": zod.string().nullish(),
+  "academicYear": zod.number().nullish(),
+  "termId": zod.string().nullish(),
+  "termNumber": zod.number().nullish(),
+  "attributionStatus": zod.enum(['assigned', 'unassigned', 'multiple']).optional(),
+  "academicAllocations": zod.array(zod.object({
+  "chargeId": zod.string(),
+  "termId": zod.string(),
+  "academicYearId": zod.string(),
+  "termNumber": zod.number(),
+  "academicYear": zod.number(),
+  "amount": zod.number()
+})).optional()
 })
 
 
@@ -1631,8 +1827,400 @@ export const SendDirectMessageResponse = zod.object({
   "recipientCount": zod.number(),
   "acceptedCount": zod.number(),
   "failedCount": zod.number(),
-  "duplicateCount": zod.number()
+  "duplicateCount": zod.number(),
+  "quotaExceeded": zod.boolean().optional()
 })
+
+
+/**
+ * @summary List academic years and their three terms
+ */
+export const ListAcademicYearsResponseItem = zod.record(zod.string(), zod.unknown())
+export const ListAcademicYearsResponse = zod.array(ListAcademicYearsResponseItem)
+
+
+/**
+ * @summary Create an academic year and its three planned terms
+ */
+export const createAcademicYearBodyYearMin = 1900;
+export const createAcademicYearBodyYearMax = 2200;
+
+
+
+export const CreateAcademicYearBody = zod.object({
+  "year": zod.number().min(createAcademicYearBodyYearMin).max(createAcademicYearBodyYearMax)
+})
+
+export const CreateAcademicYearResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary Add current existing pupil profiles to an academic year once
+ */
+export const ImportCurrentEnrollmentsParams = zod.object({
+  "yearId": zod.coerce.string()
+})
+
+export const ImportCurrentEnrollmentsResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary List current and former enrollments for an academic year
+ */
+export const ListAcademicEnrollmentsParams = zod.object({
+  "yearId": zod.coerce.string()
+})
+
+export const ListAcademicEnrollmentsResponseItem = zod.record(zod.string(), zod.unknown())
+export const ListAcademicEnrollmentsResponse = zod.array(ListAcademicEnrollmentsResponseItem)
+
+
+/**
+ * @summary Enroll an existing pupil profile without creating another pupil
+ */
+
+
+
+export const CreateAcademicEnrollmentBody = zod.object({
+  "yearId": zod.string(),
+  "studentId": zod.string(),
+  "className": zod.string().min(1),
+  "stream": zod.string().optional(),
+  "enrolledOn": zod.coerce.date().optional()
+})
+
+export const CreateAcademicEnrollmentResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary Generate scheduled charges atomically and open a dated academic term
+ */
+export const OpenAcademicTermParams = zod.object({
+  "termId": zod.coerce.string()
+})
+
+export const OpenAcademicTermBody = zod.object({
+  "startsOn": zod.coerce.date(),
+  "endsOn": zod.coerce.date()
+})
+
+export const OpenAcademicTermResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary Close a term while preserving all financial and enrollment history
+ */
+export const CloseAcademicTermParams = zod.object({
+  "termId": zod.coerce.string()
+})
+
+export const CloseAcademicTermResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary Get term charges, allocations, and outstanding amounts
+ */
+export const GetTermFeeStatementParams = zod.object({
+  "termId": zod.coerce.string()
+})
+
+export const GetTermFeeStatementResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary Create an idempotent term-specific fee charge
+ */
+export const CreateAcademicFeeChargeParams = zod.object({
+  "termId": zod.coerce.string()
+})
+
+
+export const createAcademicFeeChargeBodyAmountMin = 0;
+
+export const createAcademicFeeChargeBodyIdempotencyKeyMax = 150;
+
+
+
+export const CreateAcademicFeeChargeBody = zod.object({
+  "enrollmentId": zod.string(),
+  "category": zod.string().min(1),
+  "amount": zod.number().min(createAcademicFeeChargeBodyAmountMin),
+  "description": zod.string().optional(),
+  "idempotencyKey": zod.string().min(1).max(createAcademicFeeChargeBodyIdempotencyKeyMax)
+})
+
+export const CreateAcademicFeeChargeResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary List administrator-configured fee schedule lines for a term
+ */
+export const ListAcademicTermFeeSchedulesParams = zod.object({
+  "termId": zod.coerce.string()
+})
+
+export const listAcademicTermFeeSchedulesResponseOneClassNameMax = 120;
+
+export const listAcademicTermFeeSchedulesResponseOneStreamMax = 120;
+
+export const listAcademicTermFeeSchedulesResponseOneCategoryMax = 120;
+
+export const listAcademicTermFeeSchedulesResponseOneAmountMin = 0;
+
+export const listAcademicTermFeeSchedulesResponseOneDescriptionMax = 500;
+
+
+
+export const ListAcademicTermFeeSchedulesResponseItem = zod.object({
+  "className": zod.string().min(1).max(listAcademicTermFeeSchedulesResponseOneClassNameMax),
+  "stream": zod.string().max(listAcademicTermFeeSchedulesResponseOneStreamMax),
+  "enrollmentType": zod.enum(['', 'day', 'boarding']),
+  "category": zod.string().min(1).max(listAcademicTermFeeSchedulesResponseOneCategoryMax),
+  "amount": zod.number().min(listAcademicTermFeeSchedulesResponseOneAmountMin),
+  "description": zod.string().max(listAcademicTermFeeSchedulesResponseOneDescriptionMax)
+}).and(zod.object({
+  "id": zod.string(),
+  "schoolId": zod.string(),
+  "academicYearId": zod.string(),
+  "termId": zod.string(),
+  "stream": zod.string(),
+  "enrollmentType": zod.string(),
+  "description": zod.string(),
+  "createdBy": zod.string(),
+  "updatedBy": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}))
+export const ListAcademicTermFeeSchedulesResponse = zod.array(ListAcademicTermFeeSchedulesResponseItem)
+
+
+/**
+ * @summary Create or update one class, stream, and enrollment-type fee schedule line
+ */
+export const UpsertAcademicTermFeeScheduleParams = zod.object({
+  "termId": zod.coerce.string()
+})
+
+export const upsertAcademicTermFeeScheduleBodyClassNameMax = 120;
+
+export const upsertAcademicTermFeeScheduleBodyStreamMax = 120;
+
+export const upsertAcademicTermFeeScheduleBodyCategoryMax = 120;
+
+export const upsertAcademicTermFeeScheduleBodyAmountMin = 0;
+
+export const upsertAcademicTermFeeScheduleBodyDescriptionMax = 500;
+
+
+
+export const UpsertAcademicTermFeeScheduleBody = zod.object({
+  "className": zod.string().min(1).max(upsertAcademicTermFeeScheduleBodyClassNameMax),
+  "stream": zod.string().max(upsertAcademicTermFeeScheduleBodyStreamMax).optional(),
+  "enrollmentType": zod.enum(['', 'day', 'boarding']).optional(),
+  "category": zod.string().min(1).max(upsertAcademicTermFeeScheduleBodyCategoryMax),
+  "amount": zod.number().min(upsertAcademicTermFeeScheduleBodyAmountMin),
+  "description": zod.string().max(upsertAcademicTermFeeScheduleBodyDescriptionMax).optional()
+})
+
+export const upsertAcademicTermFeeScheduleResponseOneClassNameMax = 120;
+
+export const upsertAcademicTermFeeScheduleResponseOneStreamMax = 120;
+
+export const upsertAcademicTermFeeScheduleResponseOneCategoryMax = 120;
+
+export const upsertAcademicTermFeeScheduleResponseOneAmountMin = 0;
+
+export const upsertAcademicTermFeeScheduleResponseOneDescriptionMax = 500;
+
+
+
+export const UpsertAcademicTermFeeScheduleResponse = zod.object({
+  "className": zod.string().min(1).max(upsertAcademicTermFeeScheduleResponseOneClassNameMax),
+  "stream": zod.string().max(upsertAcademicTermFeeScheduleResponseOneStreamMax),
+  "enrollmentType": zod.enum(['', 'day', 'boarding']),
+  "category": zod.string().min(1).max(upsertAcademicTermFeeScheduleResponseOneCategoryMax),
+  "amount": zod.number().min(upsertAcademicTermFeeScheduleResponseOneAmountMin),
+  "description": zod.string().max(upsertAcademicTermFeeScheduleResponseOneDescriptionMax)
+}).and(zod.object({
+  "id": zod.string(),
+  "schoolId": zod.string(),
+  "academicYearId": zod.string(),
+  "termId": zod.string(),
+  "stream": zod.string(),
+  "enrollmentType": zod.string(),
+  "description": zod.string(),
+  "createdBy": zod.string(),
+  "updatedBy": zod.string(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}))
+
+
+/**
+ * @summary Record a payment explicitly against an original term charge
+ */
+export const RecordAcademicPaymentParams = zod.object({
+  "chargeId": zod.coerce.string()
+})
+
+export const recordAcademicPaymentBodyAmountExclusiveMin = 0;
+
+
+export const recordAcademicPaymentBodyIdempotencyKeyMax = 150;
+
+
+
+export const RecordAcademicPaymentBody = zod.object({
+  "amount": zod.number().gt(recordAcademicPaymentBodyAmountExclusiveMin),
+  "method": zod.string().min(1),
+  "reference": zod.string().optional(),
+  "idempotencyKey": zod.string().min(1).max(recordAcademicPaymentBodyIdempotencyKeyMax)
+})
+
+export const RecordAcademicPaymentResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary Explicitly allocate an unassigned legacy payment to an original term charge
+ */
+export const AllocateExistingAcademicPaymentParams = zod.object({
+  "paymentId": zod.coerce.string()
+})
+
+export const allocateExistingAcademicPaymentBodyAmountExclusiveMin = 0;
+
+export const allocateExistingAcademicPaymentBodyIdempotencyKeyMax = 150;
+
+
+
+export const AllocateExistingAcademicPaymentBody = zod.object({
+  "chargeId": zod.string(),
+  "amount": zod.number().gt(allocateExistingAcademicPaymentBodyAmountExclusiveMin),
+  "idempotencyKey": zod.string().min(1).max(allocateExistingAcademicPaymentBodyIdempotencyKeyMax)
+})
+
+export const AllocateExistingAcademicPaymentResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary Record an authorized, audited financial adjustment
+ */
+export const CreateAcademicAdjustmentParams = zod.object({
+  "chargeId": zod.coerce.string()
+})
+
+export const createAcademicAdjustmentBodyAmountExclusiveMin = 0;
+
+export const createAcademicAdjustmentBodyReasonMin = 3;
+
+
+
+export const CreateAcademicAdjustmentBody = zod.object({
+  "kind": zod.enum(['waiver', 'write_off', 'credit', 'refund', 'correction']),
+  "amount": zod.number().gt(createAcademicAdjustmentBodyAmountExclusiveMin),
+  "reason": zod.string().min(createAcademicAdjustmentBodyReasonMin),
+  "notes": zod.string().optional()
+})
+
+export const CreateAcademicAdjustmentResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary Transfer or withdraw an enrollment without deleting records or balances
+ */
+export const RecordAcademicDepartureParams = zod.object({
+  "enrollmentId": zod.coerce.string()
+})
+
+export const recordAcademicDepartureBodyReasonMin = 3;
+
+
+
+export const RecordAcademicDepartureBody = zod.object({
+  "kind": zod.enum(['transferred', 'withdrawn']),
+  "leavingOn": zod.coerce.date(),
+  "reason": zod.string().min(recordAcademicDepartureBodyReasonMin),
+  "destinationSchool": zod.string().optional(),
+  "remarks": zod.string().optional()
+})
+
+export const RecordAcademicDepartureResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary Open a review cycle and prepare one following year for decisions
+ */
+export const createPromotionCycleBodyToYearMin = 1900;
+export const createPromotionCycleBodyToYearMax = 2200;
+
+
+
+export const CreatePromotionCycleBody = zod.object({
+  "fromYearId": zod.string(),
+  "toYear": zod.number().min(createPromotionCycleBodyToYearMin).max(createPromotionCycleBodyToYearMax)
+})
+
+export const CreatePromotionCycleResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary Review promotion decisions for every active pupil
+ */
+export const ListPromotionDecisionsParams = zod.object({
+  "cycleId": zod.coerce.string()
+})
+
+export const ListPromotionDecisionsResponseItem = zod.record(zod.string(), zod.unknown())
+export const ListPromotionDecisionsResponse = zod.array(ListPromotionDecisionsResponseItem)
+
+
+/**
+ * @summary Set a reviewed promotion, repetition, transfer, withdrawal, or graduation decision
+ */
+export const UpdatePromotionDecisionParams = zod.object({
+  "cycleId": zod.coerce.string(),
+  "enrollmentId": zod.coerce.string()
+})
+
+export const UpdatePromotionDecisionBody = zod.object({
+  "decision": zod.enum(['promote', 'repeat', 'transfer', 'withdraw', 'graduate', 'hold']),
+  "nextClassName": zod.string().optional(),
+  "nextStream": zod.string().optional(),
+  "recommendation": zod.string().optional(),
+  "approvalNotes": zod.string().optional()
+})
+
+export const UpdatePromotionDecisionResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary Confirm reviewed decisions and create eligible new-year enrollments once
+ */
+export const ConfirmPromotionCycleParams = zod.object({
+  "cycleId": zod.coerce.string()
+})
+
+export const ConfirmPromotionCycleResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary Get real term finance and promotion summaries for a year
+ */
+export const GetAcademicDashboardQueryParams = zod.object({
+  "academicYearId": zod.coerce.string().optional()
+})
+
+export const GetAcademicDashboardResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
+ * @summary View a pupil's preserved enrollments, fee charges, and allocations
+ */
+export const GetStudentAcademicHistoryParams = zod.object({
+  "studentId": zod.coerce.string()
+})
+
+export const GetStudentAcademicHistoryResponse = zod.record(zod.string(), zod.unknown())
 
 
 /**

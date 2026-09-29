@@ -1,11 +1,13 @@
-import { createHash } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { createHash, randomUUID } from "node:crypto";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db, notifications } from "@workspace/db";
 import { getSchoolId, getSchoolSettings, getStudent, listStudents, listUsers } from "./school-data";
 import type { OperationRecord, SchoolStudent, SchoolUser } from "./school-data";
 import { logger } from "./logger";
 import { compactSingleSegmentSms } from "./single-segment-sms";
 import { isYoolaSmsConfigured, normalizeYoolaPhone, sendYoolaSms } from "./yoola-sms";
+import { isAmbiguousSmsFailure, reserveSmsMessages, settleSmsMessages } from "./sms-allowance-policy";
+import type { SmsQuotaBalance } from "./sms-allowance-policy";
 
 const SCHOOL_TIME_ZONE = "Africa/Kampala";
 const FEE_REMINDER_HOUR = 9;
@@ -31,7 +33,246 @@ type SmsDispatchSummary = {
   failedCount: number;
   duplicateCount: number;
   disabled: boolean;
+  quotaExceeded: boolean;
 };
+export type SmsAllowanceBalance = SmsQuotaBalance;
+
+function smsAllowanceId(schoolId: string): string {
+  return deterministicUuid(`${schoolId}:school-system:sms-allowance`);
+}
+
+function readAllowance(data: Record<string, unknown> | undefined): SmsAllowanceBalance {
+  if (!data) return { availableMessages: 0, reservedMessages: 0, sentMessages: 0 };
+  if (data["recordType"] !== "sms_allowance") throw new Error("SMS allowance data is invalid.");
+  const values = [data["availableMessages"], data["reservedMessages"], data["sentMessages"]];
+  if (values.some((value) => typeof value !== "number" || !Number.isSafeInteger(value) || value < 0)) {
+    throw new Error("SMS allowance data is invalid.");
+  }
+  return {
+    availableMessages: values[0] as number,
+    reservedMessages: values[1] as number,
+    sentMessages: values[2] as number,
+  };
+}
+
+type SmsDbSession = Pick<typeof db, "insert" | "select" | "update">;
+async function lockedAllowance(tx: SmsDbSession): Promise<{ id: string; schoolId: string; data: Record<string, unknown> }> {
+  const schoolId = await getSchoolId();
+  const id = smsAllowanceId(schoolId);
+  await tx.insert(notifications).values({
+    id,
+    schoolId,
+    data: { smsDelivery: true, recordType: "sms_allowance", availableMessages: 0, reservedMessages: 0, sentMessages: 0 },
+  }).onConflictDoNothing({ target: notifications.id });
+  const row = (await tx.select({ data: notifications.data }).from(notifications).where(and(
+    eq(notifications.id, id),
+    eq(notifications.schoolId, schoolId),
+  )).for("update").limit(1))[0];
+  if (!row) throw new Error("SMS allowance could not be checked.");
+  readAllowance(row.data);
+  return { id, schoolId, data: row.data };
+}
+
+export async function getSmsAllowanceBalance(): Promise<SmsAllowanceBalance> {
+  const schoolId = await getSchoolId();
+  const row = (await db.select({ data: notifications.data }).from(notifications).where(and(
+    eq(notifications.id, smsAllowanceId(schoolId)),
+    eq(notifications.schoolId, schoolId),
+  )).limit(1))[0];
+  return readAllowance(row?.data);
+}
+
+export async function getSupportSmsAllowance() {
+  const [schoolId, settings, balance] = await Promise.all([getSchoolId(), getSchoolSettings(), getSmsAllowanceBalance()]);
+  const rows = await db.select({ data: notifications.data, createdAt: notifications.createdAt }).from(notifications).where(and(
+    eq(notifications.schoolId, schoolId),
+    sql`${notifications.data}->>'recordType' = 'sms_allowance_audit'`,
+  )).orderBy(desc(notifications.createdAt)).limit(100);
+  const adjustments = rows.flatMap((row) => {
+    const data = row.data;
+    if (data["recordType"] !== "sms_allowance_audit") return [];
+    if (typeof data["messages"] !== "number" || typeof data["note"] !== "string" || typeof data["actor"] !== "string") return [];
+    return [{
+      messages: data["messages"],
+      note: data["note"],
+      actor: data["actor"],
+      occurredAt: row.createdAt.toISOString(),
+    }];
+  });
+  return { ...balance, schoolName: settings.schoolName, adjustments };
+}
+
+export async function adjustSmsAllowance(messages: number, note: string, actorId: string, actorName = "Corenexa Support"): Promise<void> {
+  if (!Number.isSafeInteger(messages) || messages === 0 || Math.abs(messages) > 1_000_000) {
+    throw new Error("Enter a non-zero whole-number SMS adjustment.");
+  }
+  if (!note.trim()) throw new Error("An audit note is required for this adjustment.");
+  await db.transaction(async (tx) => {
+    const allowance = await lockedAllowance(tx);
+    const current = readAllowance(allowance.data);
+    if (current.availableMessages + messages < 0) throw new Error("The adjustment cannot reduce the remaining SMS balance below zero.");
+    const now = new Date();
+    await tx.update(notifications).set({
+      data: { ...allowance.data, availableMessages: current.availableMessages + messages },
+      updatedAt: now,
+    }).where(and(eq(notifications.id, allowance.id), eq(notifications.schoolId, allowance.schoolId)));
+    await tx.insert(notifications).values({
+      id: randomUUID(),
+      schoolId: allowance.schoolId,
+      data: {
+        smsDelivery: true,
+        recordType: "sms_allowance_audit",
+        messages,
+        note: note.trim(),
+        actor: actorName,
+        actorId,
+        occurredAt: now.toISOString(),
+      },
+      createdAt: now,
+      updatedAt: now,
+    });
+  });
+}
+
+export async function listSmsDeliveriesForReconciliation() {
+  const schoolId = await getSchoolId();
+  const stuckBefore = new Date(Date.now() - 2 * 60 * 1000);
+  const [rows, auditRows] = await Promise.all([
+    db.select({ id: notifications.id, data: notifications.data, createdAt: notifications.createdAt }).from(notifications).where(and(
+      eq(notifications.schoolId, schoolId),
+      sql`${notifications.data}->>'recordType' = 'sms_delivery'`,
+      sql`${notifications.data}->>'smsDelivery' = 'true'`,
+      sql`${notifications.data}->>'status' in ('sending', 'reconciliation_required')`,
+    )).orderBy(desc(notifications.createdAt)),
+    db.select({ data: notifications.data, createdAt: notifications.createdAt }).from(notifications).where(and(
+      eq(notifications.schoolId, schoolId),
+      sql`${notifications.data}->>'recordType' = 'sms_delivery_reconciliation'`,
+    )).orderBy(desc(notifications.createdAt)).limit(50),
+  ]);
+  const resolutions = auditRows.flatMap((row) => {
+    const data = row.data;
+    if (
+      typeof data["deliveryId"] !== "string"
+      || (data["outcome"] !== "sent" && data["outcome"] !== "failed")
+      || typeof data["messages"] !== "number"
+      || !Number.isSafeInteger(data["messages"])
+      || data["messages"] < 1
+      || typeof data["note"] !== "string"
+      || typeof data["actor"] !== "string"
+    ) return [];
+    return [{
+      deliveryId: data["deliveryId"],
+      outcome: data["outcome"],
+      messages: data["messages"],
+      note: data["note"],
+      actor: data["actor"],
+      occurredAt: row.createdAt.toISOString(),
+    }];
+  });
+  return {
+    resolutions,
+    deliveries: rows.flatMap((row) => {
+      const data = row.data;
+      const status = data["status"];
+      const recipientCount = data["recipientCount"];
+      if ((status !== "reconciliation_required" && (status !== "sending" || row.createdAt > stuckBefore))
+        || typeof data["channel"] !== "string"
+        || typeof recipientCount !== "number"
+        || !Number.isSafeInteger(recipientCount)
+        || recipientCount < 1) return [];
+      return [{
+        id: row.id,
+        channel: data["channel"],
+        recipientCount,
+        status: status as "sending" | "reconciliation_required",
+        occurredAt: row.createdAt.toISOString(),
+        ...(typeof data["failureCode"] === "string" ? { failureCode: data["failureCode"] } : {}),
+      }];
+    }),
+  };
+}
+
+export async function markSmsDeliveryForReconciliation(
+  reservation: { id: string; schoolId: string },
+  failureCode: string,
+): Promise<void> {
+  await db.transaction(async (tx) => {
+    await lockedAllowance(tx);
+    const row = (await tx.select({ data: notifications.data }).from(notifications).where(and(
+      eq(notifications.id, reservation.id),
+      eq(notifications.schoolId, reservation.schoolId),
+    )).for("update").limit(1))[0];
+    if (!row || row.data["status"] !== "sending") return;
+    await tx.update(notifications).set({
+      data: { ...row.data, status: "reconciliation_required", failureCode },
+      updatedAt: new Date(),
+    }).where(and(
+      eq(notifications.id, reservation.id),
+      eq(notifications.schoolId, reservation.schoolId),
+    ));
+  });
+}
+
+export async function reconcileSmsDelivery(
+  deliveryId: string,
+  outcome: "sent" | "failed",
+  note: string,
+  actor: string,
+): Promise<void> {
+  if (!note.trim()) throw new Error("An audit note is required for delivery reconciliation.");
+  const schoolId = await getSchoolId();
+  await db.transaction(async (tx) => {
+    const allowance = await lockedAllowance(tx);
+    const row = (await tx.select({ data: notifications.data }).from(notifications).where(and(
+      eq(notifications.id, deliveryId),
+      eq(notifications.schoolId, schoolId),
+    )).for("update").limit(1))[0];
+    if (row?.data["recordType"] !== "sms_delivery" || !["sending", "reconciliation_required"].includes(String(row.data["status"]))) {
+      throw new Error("This SMS delivery is no longer awaiting reconciliation.");
+    }
+    const reservedMessages = row.data["reservedMessages"];
+    if (typeof reservedMessages !== "number" || !Number.isSafeInteger(reservedMessages) || reservedMessages < 1) {
+      throw new Error("The SMS reservation data is invalid and cannot be reconciled.");
+    }
+    const balance = readAllowance(allowance.data);
+    const settledBalance = settleSmsMessages(balance, reservedMessages, outcome);
+    const now = new Date();
+    await tx.update(notifications).set({
+      data: {
+        ...allowance.data,
+        ...settledBalance,
+      },
+      updatedAt: now,
+    }).where(and(eq(notifications.id, allowance.id), eq(notifications.schoolId, schoolId)));
+    await tx.update(notifications).set({
+      data: {
+        ...row.data,
+        status: outcome,
+        reconciledAt: now.toISOString(),
+        reconciledBy: actor,
+        reconciliationNote: note.trim(),
+      },
+      updatedAt: now,
+    }).where(and(eq(notifications.id, deliveryId), eq(notifications.schoolId, schoolId)));
+    await tx.insert(notifications).values({
+      id: randomUUID(),
+      schoolId,
+      data: {
+        smsDelivery: true,
+        recordType: "sms_delivery_reconciliation",
+        deliveryId,
+        outcome,
+        messages: reservedMessages,
+        note: note.trim(),
+        actor: "Corenexa Support",
+        actorId: actor,
+        occurredAt: now.toISOString(),
+      },
+      createdAt: now,
+      updatedAt: now,
+    });
+  });
+}
 
 function hash(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -99,44 +340,81 @@ async function reserveSmsDelivery(
   channel: SmsChannel,
   recipientCount: number,
   actorId?: string,
-): Promise<{ id: string; schoolId: string } | undefined> {
+): Promise<{ reservation?: { id: string; schoolId: string }; duplicate?: true; quotaExceeded?: true }> {
   const schoolId = await getSchoolId();
   const id = deterministicUuid(`${schoolId}:${deliveryKey}`);
-  const inserted = (await db.insert(notifications).values({
-    id,
-    schoolId,
-    data: {
-      smsDelivery: true,
-      provider: "yoola",
-      channel,
-      status: "sending",
-      deliveryKeyHash: hash(deliveryKey),
-      recipientCount,
-      ...(actorId ? { initiatedBy: actorId } : {}),
-    },
-  }).onConflictDoNothing({ target: notifications.id }).returning({ id: notifications.id }))[0];
-  return inserted ? { id, schoolId } : undefined;
+  return db.transaction(async (tx) => {
+    const allowance = await lockedAllowance(tx);
+    const existing = (await tx.select({ id: notifications.id }).from(notifications).where(and(
+      eq(notifications.id, id),
+      eq(notifications.schoolId, schoolId),
+    )).limit(1))[0];
+    if (existing) return { duplicate: true };
+    const balance = readAllowance(allowance.data);
+    const reservedBalance = reserveSmsMessages(balance, recipientCount);
+    if (!reservedBalance) return { quotaExceeded: true };
+    await tx.update(notifications).set({
+      data: {
+        ...allowance.data,
+        ...reservedBalance,
+      },
+      updatedAt: new Date(),
+    }).where(and(eq(notifications.id, allowance.id), eq(notifications.schoolId, schoolId)));
+    await tx.insert(notifications).values({
+      id,
+      schoolId,
+      data: {
+        smsDelivery: true,
+        recordType: "sms_delivery",
+        provider: "yoola",
+        channel,
+        status: "sending",
+        deliveryKeyHash: hash(deliveryKey),
+        recipientCount,
+        reservedMessages: recipientCount,
+        ...(actorId ? { initiatedBy: actorId } : {}),
+      },
+    });
+    return { reservation: { id, schoolId } };
+  });
 }
 
 async function finishSmsDelivery(
   reservation: { id: string; schoolId: string },
   result: { status: "sent" | "failed"; messageId?: string; reason?: string },
 ): Promise<void> {
-  const row = (await db.select({ data: notifications.data }).from(notifications).where(and(
-    eq(notifications.id, reservation.id),
-    eq(notifications.schoolId, reservation.schoolId),
-  )).limit(1))[0];
-  if (!row) return;
-  await db.update(notifications).set({
-    data: {
-      ...row.data,
-      status: result.status,
-      ...(result.status === "sent" ? { sentAt: new Date().toISOString() } : {}),
-      ...(result.messageId ? { providerMessageId: result.messageId } : {}),
-      ...(result.reason ? { failureCode: result.reason } : {}),
-    },
-    updatedAt: new Date(),
-  }).where(and(eq(notifications.id, reservation.id), eq(notifications.schoolId, reservation.schoolId)));
+  await db.transaction(async (tx) => {
+    const allowance = await lockedAllowance(tx);
+    const row = (await tx.select({ data: notifications.data }).from(notifications).where(and(
+      eq(notifications.id, reservation.id),
+      eq(notifications.schoolId, reservation.schoolId),
+    )).for("update").limit(1))[0];
+    if (!row || row.data["status"] !== "sending") return;
+    const reservedMessages = row.data["reservedMessages"];
+    if (typeof reservedMessages !== "number" || !Number.isSafeInteger(reservedMessages) || reservedMessages < 0) {
+      throw new Error("SMS reservation data is invalid.");
+    }
+    const balance = readAllowance(allowance.data);
+    const settledBalance = settleSmsMessages(balance, reservedMessages, result.status);
+    const now = new Date();
+    await tx.update(notifications).set({
+      data: {
+        ...allowance.data,
+        ...settledBalance,
+      },
+      updatedAt: now,
+    }).where(and(eq(notifications.id, allowance.id), eq(notifications.schoolId, reservation.schoolId)));
+    await tx.update(notifications).set({
+      data: {
+        ...row.data,
+        status: result.status,
+        ...(result.status === "sent" ? { sentAt: now.toISOString() } : {}),
+        ...(result.messageId ? { providerMessageId: result.messageId } : {}),
+        ...(result.reason ? { failureCode: result.reason } : {}),
+      },
+      updatedAt: now,
+    }).where(and(eq(notifications.id, reservation.id), eq(notifications.schoolId, reservation.schoolId)));
+  });
 }
 
 async function dispatchSms(
@@ -154,6 +432,7 @@ async function dispatchSms(
     failedCount: 0,
     duplicateCount: 0,
     disabled: false,
+    quotaExceeded: false,
   };
   if (!message || !phones.length) return summary;
   if (!isYoolaSmsConfigured()) return { ...summary, disabled: true };
@@ -163,23 +442,52 @@ async function dispatchSms(
     const batchKey = `${channel}:${deliveryKey}:${hash(batch.join(","))}`;
     let reservation: { id: string; schoolId: string } | undefined;
     try {
-      reservation = await reserveSmsDelivery(batchKey, channel, batch.length, actorId);
+      const reserved = await reserveSmsDelivery(batchKey, channel, batch.length, actorId);
+      reservation = reserved.reservation;
+      if (reserved.duplicate) {
+        summary.duplicateCount += batch.length;
+        continue;
+      }
+      if (reserved.quotaExceeded) {
+        summary.failedCount += batch.length;
+        summary.quotaExceeded = true;
+        logger.warn({ channel, recipientCount: batch.length }, "SMS allowance exhausted; outgoing SMS batch was blocked");
+        continue;
+      }
     } catch {
       summary.failedCount += batch.length;
       logger.error({ channel, recipientCount: batch.length }, "Could not reserve Yoola SMS delivery; message not sent");
       continue;
     }
     if (!reservation) {
-      summary.duplicateCount += batch.length;
+      summary.failedCount += batch.length;
+      logger.error({ channel, recipientCount: batch.length }, "SMS reservation returned no reservation; message not sent");
       continue;
     }
 
-    const result = await sendYoolaSms(batch, message);
+    let result: Awaited<ReturnType<typeof sendYoolaSms>>;
+    try {
+      result = await sendYoolaSms(batch, message);
+    } catch {
+      summary.failedCount += batch.length;
+      try {
+        await markSmsDeliveryForReconciliation(reservation, "dispatcher_exception");
+      } catch {
+        logger.error({ channel, recipientCount: batch.length }, "Thrown Yoola dispatcher left a reservation for reconciliation");
+      }
+      logger.error({ channel, recipientCount: batch.length }, "Yoola dispatcher threw; reservation held for outcome reconciliation");
+      continue;
+    }
     if (result.status === "sent") {
       summary.acceptedCount += result.recipientCount;
       try {
         await finishSmsDelivery(reservation, result);
       } catch {
+        try {
+          await markSmsDeliveryForReconciliation(reservation, "finalization_failed_after_provider_acceptance");
+        } catch {
+          logger.error({ channel, recipientCount: batch.length }, "Accepted Yoola batch remains reserved and will require reconciliation");
+        }
         logger.error({ channel, recipientCount: batch.length }, "Yoola accepted an SMS batch but its delivery record could not be updated");
       }
       continue;
@@ -188,9 +496,24 @@ async function dispatchSms(
     const failureCode = result.status === "failed" ? result.reason : result.status;
     if (result.status === "disabled") summary.disabled = true;
     else summary.failedCount += batch.length;
+    const ambiguousFailure = result.status === "failed" && isAmbiguousSmsFailure(result.reason);
+    if (ambiguousFailure) {
+      try {
+        await markSmsDeliveryForReconciliation(reservation, result.status === "failed" ? result.reason : "ambiguous_provider_result");
+      } catch {
+        logger.error({ channel, recipientCount: batch.length }, "Ambiguous Yoola result remains reserved and will require reconciliation");
+      }
+      logger.warn({ channel, recipientCount: batch.length, reason: failureCode }, "Yoola outcome is ambiguous; reservation held to prevent duplicate sends or refunds");
+      continue;
+    }
     try {
       await finishSmsDelivery(reservation, { status: "failed", reason: failureCode });
     } catch {
+      try {
+        await markSmsDeliveryForReconciliation(reservation, `finalization_failed_${failureCode}`);
+      } catch {
+        logger.error({ channel, recipientCount: batch.length }, "Failed Yoola result remains reserved and will require reconciliation");
+      }
       logger.error({ channel, recipientCount: batch.length }, "Yoola SMS failure status could not be saved");
     }
     logger.warn({ channel, recipientCount: batch.length, reason: failureCode }, "Yoola SMS batch failed; automatic retry suppressed");
@@ -315,6 +638,7 @@ export async function sendDirectSchoolMessage(
         acceptedCount: number;
         failedCount: number;
         duplicateCount: number;
+        quotaExceeded: boolean;
       };
     }
 > {
@@ -383,6 +707,7 @@ export async function sendDirectSchoolMessage(
       acceptedCount: summary.acceptedCount,
       failedCount: summary.failedCount,
       duplicateCount: summary.duplicateCount,
+      quotaExceeded: summary.quotaExceeded,
     },
   };
 }

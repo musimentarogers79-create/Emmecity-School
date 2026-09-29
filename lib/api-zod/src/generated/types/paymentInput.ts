@@ -8,6 +8,13 @@
 
 export interface PaymentInput {
   studentId: string;
+  /** Explicit academic term charge to allocate this payment to. Omitted legacy payments remain unassigned and are not attributed to a guessed term. */
+  chargeId?: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  idempotencyKey?: string;
   /** @minimum 1 */
   amount: number;
   method: string;

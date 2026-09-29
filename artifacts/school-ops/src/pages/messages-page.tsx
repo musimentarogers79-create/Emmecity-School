@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { getGetSettingsQueryKey, getListMessageRecipientsQueryKey, useGetCurrentUser, useGetSettings, useListMessageRecipients, useSendDirectMessage } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { getGetSettingsQueryKey, getGetSmsAllowanceQueryKey, getListMessageRecipientsQueryKey, useGetCurrentUser, useGetSettings, useListMessageRecipients, useSendDirectMessage } from "@workspace/api-client-react";
 import { ArrowLeft, Search, Send, Users } from "lucide-react";
 import { Link } from "wouter";
 import { AppShell, Button, PageHeader, Panel } from "@/components/school-shell";
@@ -11,6 +12,7 @@ type SendSummary = {
   acceptedCount: number;
   failedCount: number;
   duplicateCount: number;
+  quotaExceeded?: boolean;
 };
 
 function RecipientSection({
@@ -97,6 +99,7 @@ function mutationErrorMessage(error: unknown): string {
 }
 
 export default function MessagesPage() {
+  const queryClient = useQueryClient();
   const sessionQuery = useGetCurrentUser();
   const role = sessionQuery.data?.user.role;
   const isAdministrator = role === "administrator" || role === "super_admin";
@@ -169,6 +172,7 @@ export default function MessagesPage() {
     }, {
       onSuccess: (result) => {
         setSendSummary(result);
+        void queryClient.invalidateQueries({ queryKey: getGetSmsAllowanceQueryKey() });
         if (result.status === "accepted") requestRef.current = undefined;
       },
     });
@@ -328,10 +332,10 @@ export default function MessagesPage() {
                   <p>Yoola accepted the SMS for {sendSummary.acceptedCount} unique phone number{sendSummary.acceptedCount === 1 ? "" : "s"}.</p>
                 )}
                 {sendSummary.status === "partial" && (
-                  <p>Yoola accepted {sendSummary.acceptedCount} of {sendSummary.recipientCount} unique phone numbers. {sendSummary.failedCount} failed and {sendSummary.duplicateCount} were already processed.</p>
+                  <p>Yoola accepted {sendSummary.acceptedCount} of {sendSummary.recipientCount} unique phone numbers. {sendSummary.failedCount} failed and {sendSummary.duplicateCount} were already processed.{sendSummary.quotaExceeded ? " The available SMS allowance was insufficient for the remaining selected recipients; ask support to grant more messages." : ""}</p>
                 )}
                 {sendSummary.status === "failed" && (
-                  <p>Yoola did not confirm this message for delivery. Automatic retries are suppressed; check the provider status before composing another send.</p>
+                  <p>{sendSummary.quotaExceeded ? "The school's SMS allowance does not cover this recipient batch, so no SMS was sent. Ask support to grant more messages." : "Yoola did not confirm this message for delivery. Automatic retries are suppressed; check the provider status before composing another send."}</p>
                 )}
                 {sendSummary.status === "disabled" && (
                   <p>SMS is not configured, so no message was sent. Configure Yoola before sending.</p>

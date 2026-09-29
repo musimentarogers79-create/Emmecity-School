@@ -52,6 +52,7 @@ export const students = pgTable("students", {
 }, (table) => [
   uniqueIndex("students_registration_idx").on(table.schoolId, table.registrationNumber),
   unique("students_school_id_unique").on(table.id, table.schoolId),
+  uniqueIndex("students_school_id_ordered_idx").on(table.schoolId, table.id),
   index("students_class_idx").on(table.schoolId, table.className, table.stream),
   index("students_status_idx").on(table.schoolId, table.status),
   check("students_fee_balance_nonnegative", sql`${table.feeBalance} >= 0`),
@@ -127,6 +128,7 @@ export const payments = pgTable("payments", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   uniqueIndex("payments_receipt_idx").on(table.schoolId, table.receiptNumber),
+  uniqueIndex("payments_school_id_student_idx").on(table.schoolId, table.id, table.studentId),
   index("payments_student_idx").on(table.studentId),
   index("payments_school_paid_on_idx").on(table.schoolId, table.paidOn),
   check("payments_amount_nonnegative", sql`${table.amount} >= 0`),
@@ -225,3 +227,14 @@ export type Payment = typeof payments.$inferSelect;
 export type Attendance = typeof attendance.$inferSelect;
 export type OperationRecord = typeof expenses.$inferSelect;
 export type PayrollPayment = typeof payrollPayments.$inferSelect;
+
+export {
+  academicYears, academicTerms, academicEnrollments, academicFeeCharges, academicFeeSchedules,
+  academicPaymentAllocations, academicAdjustments, academicDepartures,
+  promotionCycles, promotionDecisions,
+} from "./academic";
+export type {
+  AcademicYear, AcademicTerm, AcademicEnrollment, AcademicFeeCharge, AcademicFeeSchedule,
+  AcademicPaymentAllocation, AcademicAdjustment, AcademicDeparture,
+  PromotionCycle, PromotionDecision,
+} from "./academic";

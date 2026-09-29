@@ -1,10 +1,19 @@
 import { Router, raw, type IRouter } from "express";
-import { classAssignmentKey, currentUserFromToken, findStudentByPhotoPath, listOperation } from "../lib/school-data";
+import { classAssignmentKey, currentUserFromToken, findStudentByPhotoPath, findSupportUser, listOperation } from "../lib/school-data";
 import { isPupilPhotoPath, MAX_UPLOAD_BYTES, requestObjectDownload, uploadPupilPhoto } from "../lib/object-storage";
+import { isValidSupportSession, SUPPORT_COOKIE_NAME } from "../lib/support-auth";
 
 const router: IRouter = Router();
 const getSession = (req: Parameters<Parameters<IRouter["get"]>[1]>[0]) =>
   req.headers.cookie?.split(";").map((value) => value.trim()).find((value) => value.startsWith("schoolops_session="))?.slice("schoolops_session=".length);
+const getCookie = (req: Parameters<Parameters<IRouter["get"]>[1]>[0], name: string) =>
+  req.headers.cookie?.split(";").map((value) => value.trim()).find((value) => value.startsWith(`${name}=`))?.slice(name.length + 1);
+const currentUser = async (req: Parameters<Parameters<IRouter["get"]>[1]>[0]) => {
+  if (isValidSupportSession(getCookie(req, SUPPORT_COOKIE_NAME))) {
+    return findSupportUser();
+  }
+  return currentUserFromToken(getSession(req));
+};
 
 router.post("/storage/uploads/request-url", (_req, res): void => {
   res.status(410).json({ error: "Direct uploads are disabled. Upload image bytes to /api/storage/photos." });
@@ -18,7 +27,7 @@ const isValidImage = (bytes: Buffer, type: string) => {
 };
 
 router.post("/storage/photos", async (req, res, next): Promise<void> => {
-  const user = await currentUserFromToken(getSession(req));
+  const user = await currentUser(req);
   if (!user || !["administrator", "super_admin"].includes(user.role)) {
     res.status(403).json({ error: "Only administrators can upload pupil photos." });
     return;
@@ -39,7 +48,7 @@ router.post("/storage/photos", async (req, res, next): Promise<void> => {
 });
 
 router.get("/storage/objects/*path", async (req, res): Promise<void> => {
-  const user = await currentUserFromToken(getSession(req));
+  const user = await currentUser(req);
   if (!user) {
     res.status(401).json({ error: "Not signed in" });
     return;

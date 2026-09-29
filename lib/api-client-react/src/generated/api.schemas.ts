@@ -57,6 +57,95 @@ export interface SupportSession {
   expiresAt: string;
 }
 
+export interface SmsAllowanceBalance {
+  /** @minimum 0 */
+  availableMessages: number;
+  /** @minimum 0 */
+  reservedMessages: number;
+  /** @minimum 0 */
+  sentMessages: number;
+}
+
+export interface SmsAllowanceAdjustmentInput {
+  /**
+     * @minimum -1000000
+     * @maximum 1000000
+     */
+  messages: number;
+  /** @maxLength 500 */
+  note: string;
+}
+
+export interface SmsAllowanceAuditEntry {
+  messages: number;
+  note: string;
+  actor: string;
+  occurredAt: string;
+}
+
+export type SupportSmsAllowance = SmsAllowanceBalance & {
+  schoolName: string;
+  adjustments: SmsAllowanceAuditEntry[];
+};
+
+export type SupportSmsReconciliationStatus = typeof SupportSmsReconciliationStatus[keyof typeof SupportSmsReconciliationStatus];
+
+
+export const SupportSmsReconciliationStatus = {
+  sending: 'sending',
+  reconciliation_required: 'reconciliation_required',
+} as const;
+
+export interface SupportSmsReconciliation {
+  id: string;
+  channel: string;
+  /** @minimum 1 */
+  recipientCount: number;
+  status: SupportSmsReconciliationStatus;
+  occurredAt: string;
+  failureCode?: string;
+}
+
+export type SupportSmsReconciliationAuditOutcome = typeof SupportSmsReconciliationAuditOutcome[keyof typeof SupportSmsReconciliationAuditOutcome];
+
+
+export const SupportSmsReconciliationAuditOutcome = {
+  sent: 'sent',
+  failed: 'failed',
+} as const;
+
+export interface SupportSmsReconciliationAudit {
+  deliveryId: string;
+  outcome: SupportSmsReconciliationAuditOutcome;
+  /** @minimum 1 */
+  messages: number;
+  note: string;
+  actor: string;
+  occurredAt: string;
+}
+
+export interface SupportSmsReconciliationList {
+  deliveries: SupportSmsReconciliation[];
+  resolutions: SupportSmsReconciliationAudit[];
+}
+
+export type SmsDeliveryReconciliationInputOutcome = typeof SmsDeliveryReconciliationInputOutcome[keyof typeof SmsDeliveryReconciliationInputOutcome];
+
+
+export const SmsDeliveryReconciliationInputOutcome = {
+  sent: 'sent',
+  failed: 'failed',
+} as const;
+
+export interface SmsDeliveryReconciliationInput {
+  outcome: SmsDeliveryReconciliationInputOutcome;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  note: string;
+}
+
 export type SupportPupilStatus = typeof SupportPupilStatus[keyof typeof SupportPupilStatus];
 
 
@@ -154,6 +243,7 @@ export interface AuthUser {
   schoolName: string;
   /** @nullable */
   studentId?: string | null;
+  isSupport?: boolean;
 }
 
 export interface UserProfileUpdate {
@@ -616,6 +706,24 @@ export const PaymentStatus = {
   reversed: 'reversed',
 } as const;
 
+export type PaymentAttributionStatus = typeof PaymentAttributionStatus[keyof typeof PaymentAttributionStatus];
+
+
+export const PaymentAttributionStatus = {
+  assigned: 'assigned',
+  unassigned: 'unassigned',
+  multiple: 'multiple',
+} as const;
+
+export interface AcademicPaymentAttribution {
+  chargeId: string;
+  termId: string;
+  academicYearId: string;
+  termNumber: number;
+  academicYear: number;
+  amount: number;
+}
+
 export interface Payment {
   id: string;
   studentId: string;
@@ -628,10 +736,27 @@ export interface Payment {
   date: string;
   status: PaymentStatus;
   balance: number;
+  /** @nullable */
+  academicYearId?: string | null;
+  /** @nullable */
+  academicYear?: number | null;
+  /** @nullable */
+  termId?: string | null;
+  /** @nullable */
+  termNumber?: number | null;
+  attributionStatus?: PaymentAttributionStatus;
+  academicAllocations?: AcademicPaymentAttribution[];
 }
 
 export interface PaymentInput {
   studentId: string;
+  /** Explicit academic term charge to allocate this payment to. Omitted legacy payments remain unassigned and are not attributed to a guessed term. */
+  chargeId?: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  idempotencyKey?: string;
   /** @minimum 1 */
   amount: number;
   method: string;
@@ -791,6 +916,7 @@ export interface DirectMessageResult {
   acceptedCount: number;
   failedCount: number;
   duplicateCount: number;
+  quotaExceeded?: boolean;
 }
 
 export interface TimetableEntry {
@@ -1222,6 +1348,209 @@ export type FullBackupResponse = BackupSummary & {
   downloadUrl: string;
 };
 
+export interface AcademicYearInput {
+  /**
+     * @minimum 1900
+     * @maximum 2200
+     */
+  year: number;
+}
+
+export interface AcademicEnrollmentInput {
+  yearId: string;
+  studentId: string;
+  /** @minLength 1 */
+  className: string;
+  stream?: string;
+  enrolledOn?: string;
+}
+
+export interface AcademicFeeChargeInput {
+  enrollmentId: string;
+  /** @minLength 1 */
+  category: string;
+  /** @minimum 0 */
+  amount: number;
+  description?: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  idempotencyKey: string;
+}
+
+export interface AcademicPaymentInput {
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  /** @minLength 1 */
+  method: string;
+  reference?: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  idempotencyKey: string;
+}
+
+export interface OpenAcademicTermInput {
+  startsOn: string;
+  endsOn: string;
+}
+
+export type AcademicFeeScheduleInputEnrollmentType = typeof AcademicFeeScheduleInputEnrollmentType[keyof typeof AcademicFeeScheduleInputEnrollmentType];
+
+
+export const AcademicFeeScheduleInputEnrollmentType = {
+  '': '',
+  day: 'day',
+  boarding: 'boarding',
+} as const;
+
+export interface AcademicFeeScheduleInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  className: string;
+  /** @maxLength 120 */
+  stream?: string;
+  enrollmentType?: AcademicFeeScheduleInputEnrollmentType;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  category: string;
+  /** @minimum 0 */
+  amount: number;
+  /** @maxLength 500 */
+  description?: string;
+}
+
+export type AcademicFeeSchedule = AcademicFeeScheduleInput & {
+  id: string;
+  schoolId: string;
+  academicYearId: string;
+  termId: string;
+  stream: string;
+  enrollmentType: string;
+  description: string;
+  createdBy: string;
+  updatedBy: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export interface LegacyPaymentAllocationInput {
+  chargeId: string;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  idempotencyKey: string;
+}
+
+export type AcademicAdjustmentInputKind = typeof AcademicAdjustmentInputKind[keyof typeof AcademicAdjustmentInputKind];
+
+
+export const AcademicAdjustmentInputKind = {
+  waiver: 'waiver',
+  write_off: 'write_off',
+  credit: 'credit',
+  refund: 'refund',
+  correction: 'correction',
+} as const;
+
+export interface AcademicAdjustmentInput {
+  kind: AcademicAdjustmentInputKind;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  /** @minLength 3 */
+  reason: string;
+  notes?: string;
+}
+
+export type AcademicDepartureInputKind = typeof AcademicDepartureInputKind[keyof typeof AcademicDepartureInputKind];
+
+
+export const AcademicDepartureInputKind = {
+  transferred: 'transferred',
+  withdrawn: 'withdrawn',
+} as const;
+
+export interface AcademicDepartureInput {
+  kind: AcademicDepartureInputKind;
+  leavingOn: string;
+  /** @minLength 3 */
+  reason: string;
+  destinationSchool?: string;
+  remarks?: string;
+}
+
+export interface PromotionCycleInput {
+  fromYearId: string;
+  /**
+     * @minimum 1900
+     * @maximum 2200
+     */
+  toYear: number;
+}
+
+export type PromotionDecisionInputDecision = typeof PromotionDecisionInputDecision[keyof typeof PromotionDecisionInputDecision];
+
+
+export const PromotionDecisionInputDecision = {
+  promote: 'promote',
+  repeat: 'repeat',
+  transfer: 'transfer',
+  withdraw: 'withdraw',
+  graduate: 'graduate',
+  hold: 'hold',
+} as const;
+
+export interface PromotionDecisionInput {
+  decision: PromotionDecisionInputDecision;
+  nextClassName?: string;
+  nextStream?: string;
+  recommendation?: string;
+  approvalNotes?: string;
+}
+
+export interface AcademicObject { [key: string]: unknown }
+
+export type AcademicYear = AcademicObject;
+
+export type AcademicTerm = AcademicObject;
+
+export type AcademicEnrollment = AcademicObject;
+
+export type AcademicFeeCharge = AcademicObject;
+
+export type AcademicPayment = AcademicObject;
+
+export type AcademicAdjustment = AcademicObject;
+
+export type AcademicPromotionDecision = AcademicObject;
+
+export type AcademicPromotionCycle = AcademicObject;
+
+export type PromotionDecision = AcademicObject;
+
+export type AcademicTermStatement = AcademicObject;
+
+export type PromotionCycle = AcademicObject;
+
+export type EnrollmentImportResult = AcademicObject;
+
+export type PromotionReviewRow = AcademicObject;
+
+export type PromotionConfirmation = AcademicObject;
+
+export type AcademicDashboard = AcademicObject;
+
+export type StudentAcademicHistory = AcademicObject;
+
 export type ListSupportPupilsParams = {
 /**
  * @minLength 2
@@ -1247,5 +1576,9 @@ export const ListStudentsStatus = {
 export type GetAttendanceParams = {
 date?: string;
 className?: string;
+};
+
+export type GetAcademicDashboardParams = {
+academicYearId?: string;
 };
 

@@ -1,5 +1,5 @@
 import { gzipSync } from "node:zlib";
-import { createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHmac, randomUUID, timingSafeEqual } from "node:crypto";
 import { Router, type IRouter } from "express";
 import {
   AttendanceRecord, CreateAnnouncementBody, CreateAnnouncementResponse, CreateAttendanceRegisterBody, CreateAttendanceRegisterResponse, CreateClassBody, CreateExpenseBody, CreateExpenseResponse, CreateEventBody, CreateEventResponse,
@@ -15,49 +15,47 @@ import {
   ListSubjectsResponse, CreateSubjectBody, CreateSubjectResponse, UpdateSubjectParams, UpdateSubjectBody, UpdateSubjectResponse,
   DeleteSubjectParams, DeleteSubjectResponse, ListMessageRecipientsResponse, SendDirectMessageBody, SendDirectMessageResponse,
   SupportLoginBody, SupportLoginResponse, SupportLogoutResponse, GetSupportSessionResponse, ListSupportPupilsQueryParams, ListSupportPupilsResponse,
-  DeleteSupportPupilParams, DeleteSupportPupilBody, DeleteSupportPupilResponse,
+  DeleteSupportPupilParams, DeleteSupportPupilBody, DeleteSupportPupilResponse, AdjustSupportSmsAllowanceBody, GetSupportSmsAllowanceResponse, GetSmsAllowanceResponse,
+  ListSupportSmsReconciliationsResponse, ReconcileSupportSmsDeliveryBody, ReconcileSupportSmsDeliveryResponse,
 } from "@workspace/api-zod";
 import {
-  AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, currentUserFromToken, getAdmissionForm,
+  AttendanceStatus, classAssignmentKey, consumeLoginAttempt, currencyOptions, createAttendanceRegister, createClass, createOperation, createStudentWithPayment, currentUserFromToken, findSupportUser, getAdmissionForm,
   buildFullBackup, clearLoginFailures, deleteSession, findUser, findUserById, getOperation, getSchoolSettings, getStudent, getDateLabel, hashPassword, initializeSchoolData,
   listAttendance, listDeletedAttendanceRegisters, listOperation, listPayments, listSalaryPayments, listSalaryStaff, listStudents, listUsers, makeSession, publicUser, recordPayment, recordSalaryPayment, saveAttendance, deleteAttendanceRegister, updateStudent, createSchoolNotification,
   createUser, deleteOperation, deleteUser, updatePayment, updateOperation, updateSchoolSettings, updateStudentBalance, updateUserAdmin, updateUserProfile, verifyPassword, type OperationKind, type OperationRecord, type PermissionKey, type SchoolRole, type SchoolUser,
-  permanentlyDeleteSupportPupil, searchSupportPupils,
+  permanentlyDeleteSupportPupil, provisionSupportUser, searchSupportPupils,
 } from "../lib/school-data";
 import { deletePupilPhoto, isBackupObjectPath, isPupilPhotoPath, requestBackupDownload, uploadBackupObject } from "../lib/object-storage";
-import { getFeeReminderSmsAuthorization, listMessageRecipients, sendAnnouncementSms, sendDirectSchoolMessage, sendEventSms, sendPaymentConfirmationSms, setFeeReminderSmsAuthorization } from "../lib/school-notification-sms";
+import { adjustSmsAllowance, getFeeReminderSmsAuthorization, getSmsAllowanceBalance, getSupportSmsAllowance, listSmsDeliveriesForReconciliation, listMessageRecipients, reconcileSmsDelivery, sendAnnouncementSms, sendDirectSchoolMessage, sendEventSms, sendPaymentConfirmationSms, setFeeReminderSmsAuthorization } from "../lib/school-notification-sms";
+import { createSupportSession, isSupportUser, isValidSupportSession, SUPPORT_COOKIE_NAME, supportSessionExpiry } from "../lib/support-auth";
+import { recordAcademicPayment } from "../lib/academic-finance";
 
 const router: IRouter = Router();
 const getCookie = (req: Parameters<Parameters<IRouter["get"]>[1]>[0], name: string) =>
   req.headers.cookie?.split(";").map((value) => value.trim()).find((value) => value.startsWith(`${name}=`))?.slice(name.length + 1);
 const setSessionCookie = (res: Parameters<Parameters<IRouter["get"]>[1]>[1], token: string) =>
   res.setHeader("Set-Cookie", `schoolops_session=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=28800${process.env["NODE_ENV"] === "production" ? "; Secure" : ""}`);
-const requireUser = (req: Parameters<Parameters<IRouter["get"]>[1]>[0]) => currentUserFromToken(getCookie(req, "schoolops_session"));
-const supportCookieName = "schoolops_support_session";
-const supportSessionDurationMs = 8 * 60 * 60 * 1000;
+const requireUser = async (req: Parameters<Parameters<IRouter["get"]>[1]>[0]) => {
+  const supportToken = getCookie(req, SUPPORT_COOKIE_NAME);
+  if (isValidSupportSession(supportToken)) {
+    return findSupportUser();
+  }
+  return currentUserFromToken(getCookie(req, "schoolops_session"));
+};
 const setSupportSessionCookie = (res: Parameters<Parameters<IRouter["get"]>[1]>[1], token: string) =>
-  res.setHeader("Set-Cookie", `${supportCookieName}=${token}; HttpOnly; Path=/; SameSite=Strict; Max-Age=28800${process.env["NODE_ENV"] === "production" ? "; Secure" : ""}`);
+  res.setHeader("Set-Cookie", [
+    `schoolops_session=${token}; HttpOnly; Path=/; SameSite=Lax; Max-Age=28800${process.env["NODE_ENV"] === "production" ? "; Secure" : ""}`,
+    `${SUPPORT_COOKIE_NAME}=${token}; HttpOnly; Path=/; SameSite=Strict; Max-Age=28800${process.env["NODE_ENV"] === "production" ? "; Secure" : ""}`,
+  ]);
 const clearSupportSessionCookie = (res: Parameters<Parameters<IRouter["get"]>[1]>[1]) =>
-  res.setHeader("Set-Cookie", `${supportCookieName}=; HttpOnly; Path=/; SameSite=Strict; Max-Age=0${process.env["NODE_ENV"] === "production" ? "; Secure" : ""}`);
-function createSupportSession() {
-  const sessionSecret = process.env["SESSION_SECRET"];
-  if (!sessionSecret) throw new Error("Support session signing is not configured.");
-  const expiresAtMs = Date.now() + supportSessionDurationMs;
-  const payload = `${expiresAtMs}.${randomBytes(32).toString("hex")}`;
-  const signature = createHmac("sha256", sessionSecret).update(payload).digest("hex");
-  return { token: `${payload}.${signature}`, expiresAt: new Date(expiresAtMs).toISOString() };
-}
-function isValidSupportSession(token: string | undefined) {
-  const sessionSecret = process.env["SESSION_SECRET"];
-  if (!sessionSecret || !process.env["SCHOOL_SUPPORT_PASSWORD"] || !token) return false;
-  const [expiresAt, nonce, signature, extra] = token.split(".");
-  if (extra !== undefined || !expiresAt || !nonce || !signature || !/^\d+$/.test(expiresAt) || !/^[a-f0-9]{64}$/.test(nonce) || !/^[a-f0-9]{64}$/.test(signature) || Number(expiresAt) <= Date.now()) return false;
-  const expected = createHmac("sha256", sessionSecret).update(`${expiresAt}.${nonce}`).digest();
-  const actual = Buffer.from(signature, "hex");
-  return actual.length === expected.length && timingSafeEqual(actual, expected);
-}
-const requireSupport = (req: Parameters<Parameters<IRouter["get"]>[1]>[0]) =>
-  isValidSupportSession(getCookie(req, supportCookieName));
+  res.setHeader("Set-Cookie", [
+    `schoolops_session=; HttpOnly; Path=/; SameSite=Lax; Max-Age=0${process.env["NODE_ENV"] === "production" ? "; Secure" : ""}`,
+    `${SUPPORT_COOKIE_NAME}=; HttpOnly; Path=/; SameSite=Strict; Max-Age=0${process.env["NODE_ENV"] === "production" ? "; Secure" : ""}`,
+  ]);
+const requireSupport = async (req: Parameters<Parameters<IRouter["get"]>[1]>[0]) => {
+  if (!isValidSupportSession(getCookie(req, SUPPORT_COOKIE_NAME))) return undefined;
+  return findSupportUser();
+};
 const administratorRoles: SchoolRole[] = ["super_admin", "administrator"];
 const isAdministrator = (user?: SchoolUser) => !!user && administratorRoles.includes(user.role);
 const canManageEvents = (user?: SchoolUser) => !!user && (isAdministrator(user) || user.role === "secretary");
@@ -198,6 +196,12 @@ router.post("/support/auth/login", async (req, res): Promise<void> => {
   const expected = createHmac("sha256", sessionSecret).update(configuredPassword).digest();
   if (!timingSafeEqual(actual, expected)) { errorResponse(res, 401, "Those support details do not match."); return; }
   await clearLoginFailures(attemptKey);
+  try {
+    await provisionSupportUser();
+  } catch {
+    errorResponse(res, 503, "The Support identity could not be provisioned. Try again later.");
+    return;
+  }
   const session = createSupportSession();
   setSupportSessionCookie(res, session.token);
   res.json(SupportLoginResponse.parse({ expiresAt: session.expiresAt }));
@@ -209,19 +213,65 @@ router.post("/support/auth/logout", async (_req, res): Promise<void> => {
 });
 
 router.get("/support/auth/me", async (req, res): Promise<void> => {
-  if (!requireSupport(req)) { errorResponse(res, 401, "Not signed in to support."); return; }
-  res.json(GetSupportSessionResponse.parse({ expiresAt: new Date(Date.now() + supportSessionDurationMs).toISOString() }));
+  const token = getCookie(req, SUPPORT_COOKIE_NAME);
+  if (!token || !isValidSupportSession(token) || !await findSupportUser()) { errorResponse(res, 401, "Not signed in to support."); return; }
+  res.json(GetSupportSessionResponse.parse({ expiresAt: supportSessionExpiry(token) }));
+});
+
+router.get("/support/sms-allowance", async (req, res): Promise<void> => {
+  if (!await requireSupport(req)) { errorResponse(res, 401, "Not signed in to support."); return; }
+  res.json(GetSupportSmsAllowanceResponse.parse(await getSupportSmsAllowance()));
+});
+
+router.post("/support/sms-allowance", async (req, res): Promise<void> => {
+  const actor = await requireSupport(req);
+  if (!actor) { errorResponse(res, 401, "Not signed in to support."); return; }
+  const parsed = AdjustSupportSmsAllowanceBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Enter a non-zero whole-number adjustment and an audit note."); return; }
+  try {
+    await adjustSmsAllowance(parsed.data.messages, parsed.data.note, actor.id);
+  } catch (error) {
+    if (error instanceof Error && (error.message.includes("adjustment") || error.message.includes("remaining SMS balance"))) {
+      errorResponse(res, 400, error.message);
+      return;
+    }
+    throw error;
+  }
+  res.json(GetSupportSmsAllowanceResponse.parse(await getSupportSmsAllowance()));
+});
+
+router.get("/support/sms-reconciliation", async (req, res): Promise<void> => {
+  if (!await requireSupport(req)) { errorResponse(res, 401, "Not signed in to support."); return; }
+  res.json(ListSupportSmsReconciliationsResponse.parse(await listSmsDeliveriesForReconciliation()));
+});
+
+router.post("/support/sms-reconciliation/:deliveryId", async (req, res): Promise<void> => {
+  const actor = await requireSupport(req);
+  if (!actor) { errorResponse(res, 401, "Not signed in to support."); return; }
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu.test(req.params.deliveryId)) {
+    errorResponse(res, 400, "The delivery identifier is invalid.");
+    return;
+  }
+  const parsed = ReconcileSupportSmsDeliveryBody.safeParse(req.body);
+  if (!parsed.success) { errorResponse(res, 400, "Choose a delivery outcome and record an audit note."); return; }
+  try {
+    await reconcileSmsDelivery(req.params.deliveryId, parsed.data.outcome, parsed.data.note, actor.id);
+  } catch (error) {
+    errorResponse(res, 400, error instanceof Error ? error.message : "The delivery could not be reconciled.");
+    return;
+  }
+  res.json(ReconcileSupportSmsDeliveryResponse.parse({ message: "SMS delivery outcome was reconciled and audited." }));
 });
 
 router.get("/support/pupils", async (req, res): Promise<void> => {
-  if (!requireSupport(req)) { errorResponse(res, 401, "Not signed in to support."); return; }
+  if (!await requireSupport(req)) { errorResponse(res, 401, "Not signed in to support."); return; }
   const parsed = ListSupportPupilsQueryParams.safeParse(req.query);
   if (!parsed.success) { errorResponse(res, 400, "Search with at least two letters or digits."); return; }
   res.json(ListSupportPupilsResponse.parse({ pupils: await searchSupportPupils(parsed.data.search) }));
 });
 
 router.delete("/support/pupils/:studentId", async (req, res): Promise<void> => {
-  if (!requireSupport(req)) { errorResponse(res, 401, "Not signed in to support."); return; }
+  if (!await requireSupport(req)) { errorResponse(res, 401, "Not signed in to support."); return; }
   const params = DeleteSupportPupilParams.safeParse(req.params);
   const body = DeleteSupportPupilBody.safeParse(req.body);
   if (!params.success || !body.success) { errorResponse(res, 400, "Confirm the pupil's exact registration number."); return; }
@@ -278,7 +328,7 @@ router.post("/auth/login", async (req, res): Promise<void> => {
     return;
   }
   const user = await findUser(parsed.data.identifier, parsed.data.userType);
-  if (!user || user.status !== "active" || !verifyPassword(parsed.data.password, user.password)) {
+  if (!user || isSupportUser(user) || user.status !== "active" || !verifyPassword(parsed.data.password, user.password)) {
     errorResponse(res, 401, "Those details do not match an active account.");
     return;
   }
@@ -301,6 +351,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
 router.patch("/auth/me", async (req, res): Promise<void> => {
   const user = await requireUser(req);
   if (!user) { errorResponse(res, 401, "Not signed in"); return; }
+  if (isSupportUser(user)) { errorResponse(res, 403, "Support identity profiles are managed separately."); return; }
   const parsed = UpdateCurrentUserBody.safeParse(req.body);
   if (!parsed.success) { errorResponse(res, 400, "Enter valid profile details."); return; }
   if (parsed.data.newPassword && (!parsed.data.currentPassword || !verifyPassword(parsed.data.currentPassword, user.password))) {
@@ -346,6 +397,8 @@ router.patch("/users/:userId", async (req, res): Promise<void> => {
   const actor = await requireUser(req);
   if (!canManageUsers(actor)) { errorResponse(res, 403, "Administrator access required."); return; }
   if (actor?.id === req.params.userId && req.body?.status === "inactive") { errorResponse(res, 400, "You cannot deactivate your own account."); return; }
+  const targetBeforeUpdate = await findUserById(req.params.userId);
+  if (targetBeforeUpdate?.isSupport) { errorResponse(res, 403, "The protected Support identity cannot be edited here."); return; }
   const parsed = UpdateUserProfileByAdminBody.safeParse(req.body);
   if (!parsed.success) { errorResponse(res, 400, "Enter valid account details."); return; }
   if (parsed.data.role && actor?.role !== "super_admin" && parsed.data.role !== (await findUserById(req.params.userId))?.role) {
@@ -367,7 +420,11 @@ router.delete("/users/:userId", async (req, res): Promise<void> => {
   const actor = await requireUser(req);
   if (actor?.role !== "super_admin") { errorResponse(res, 403, "Only the Super Admin can delete accounts."); return; }
   if (actor.id === req.params.userId) { errorResponse(res, 400, "You cannot delete your own account."); return; }
-  const deleted = await deleteUser(req.params.userId);
+  const target = await findUserById(req.params.userId);
+  if (target?.isSupport) { errorResponse(res, 403, "The protected Support identity cannot be deleted."); return; }
+  let deleted: boolean;
+  try { deleted = await deleteUser(req.params.userId); }
+  catch (error) { errorResponse(res, 403, error instanceof Error ? error.message : "The account cannot be deleted."); return; }
   if (!deleted) { errorResponse(res, 404, "Account not found."); return; }
   req.log.info({ actorId: actor.id, accountId: req.params.userId }, "School account deleted");
   await recordAccountAudit(actor, "deleted", req.params.userId);
@@ -493,8 +550,8 @@ router.patch("/students/:studentId", async (req, res): Promise<void> => {
     const updated = await updateStudent(req.params.studentId, parsed.data);
     if (!updated) { errorResponse(res, 404, "Student not found."); return; }
     res.json(UpdateStudentResponse.parse({ ...updated, academicHistory: [] }));
-  } catch {
-    errorResponse(res, 409, "The pupil record could not be updated.");
+  } catch (error) {
+    errorResponse(res, 409, error instanceof Error ? error.message : "The pupil record could not be updated.");
   }
 });
 
@@ -567,16 +624,23 @@ router.get("/finance/payments", async (req, res): Promise<void> => {
 });
 router.post("/finance/payments", async (req, res): Promise<void> => {
   const user = await requireUser(req);
+  if (!user) { errorResponse(res, 401, "Not signed in"); return; }
   if (!canManagePayments(user)) { errorResponse(res, 403, "Only users allowed to manage payments can record them."); return; }
   const parsed = RecordPaymentBody.safeParse(req.body);
   if (!parsed.success) { errorResponse(res, 400, "Enter a valid student, amount, method, and reference."); return; }
+  if (parsed.data.chargeId && !parsed.data.idempotencyKey) { errorResponse(res, 400, "Term-specific payments require an idempotency key."); return; }
   try {
-    const payment = await recordPayment(parsed.data.studentId, parsed.data.amount, parsed.data.method, parsed.data.reference);
+    const payment = parsed.data.chargeId
+      ? await recordAcademicPayment({
+        studentId: parsed.data.studentId, chargeId: parsed.data.chargeId, amount: parsed.data.amount,
+        method: parsed.data.method, reference: parsed.data.reference, idempotencyKey: parsed.data.idempotencyKey!, actorId: user.id,
+      })
+      : await recordPayment(parsed.data.studentId, parsed.data.amount, parsed.data.method, parsed.data.reference);
     if (!payment) { errorResponse(res, 404, "Student not found"); return; }
     await sendPaymentConfirmationSms(payment);
     res.status(201).json(RecordPaymentResponse.parse(payment));
-  } catch {
-    errorResponse(res, 409, "The payment exceeds the pupil’s current fee balance.");
+  } catch (error) {
+    errorResponse(res, 409, error instanceof Error ? error.message : "The payment could not be recorded.");
   }
 });
 router.patch("/finance/payments/:paymentId", async (req, res): Promise<void> => {
@@ -643,6 +707,17 @@ router.post("/finance/salaries", async (req, res): Promise<void> => {
     res.status(201).json(CreateSalaryPaymentResponse.parse(item));
   } catch (error) {
     errorResponse(res, 409, error instanceof Error ? error.message : "Salary payment could not be recorded.");
+  }
+});
+
+router.get("/sms/allowance", async (req, res): Promise<void> => {
+  const user = await requireUser(req);
+  if (!user) { errorResponse(res, 401, "Not signed in."); return; }
+  try {
+    res.json(GetSmsAllowanceResponse.parse(await getSmsAllowanceBalance()));
+  } catch (error) {
+    req.log.error({ error }, "SMS allowance could not be checked");
+    errorResponse(res, 503, "The SMS allowance could not be checked. No outgoing SMS can be sent until it is available.");
   }
 });
 

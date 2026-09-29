@@ -24,6 +24,8 @@ tags:
     description: Announcements
   - name: academics
     description: Timetable and report cards
+  - name: academicLifecycle
+    description: Academic years, enrollments, fees, and rollover history
   - name: operations
     description: Role-filtered school operations
   - name: settings
@@ -211,6 +213,97 @@ paths:
           description: Not signed in to support
         "404":
           description: Pupil not found
+  /support/sms-allowance:
+    get:
+      operationId: getSupportSmsAllowance
+      tags: [support]
+      summary: View the school's SMS allowance and support adjustment audit
+      responses:
+        "200":
+          description: SMS allowance and recent support adjustments
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportSmsAllowance"
+        "401":
+          description: Not signed in to support
+    post:
+      operationId: adjustSupportSmsAllowance
+      tags: [support]
+      summary: Grant or adjust the school's prepaid SMS message allowance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SmsAllowanceAdjustmentInput"
+      responses:
+        "200":
+          description: Updated SMS allowance
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportSmsAllowance"
+        "400":
+          description: Invalid adjustment or insufficient remaining balance
+        "401":
+          description: Not signed in to support
+  /support/sms-reconciliation:
+    get:
+      operationId: listSupportSmsReconciliations
+      tags: [support]
+      summary: List SMS deliveries whose provider outcome needs reconciliation
+      responses:
+        "200":
+          description: Ambiguous or stuck SMS reservations
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SupportSmsReconciliationList"
+        "401":
+          description: Not signed in to support
+  /support/sms-reconciliation/{deliveryId}:
+    parameters:
+      - in: path
+        name: deliveryId
+        required: true
+        schema:
+          type: string
+    post:
+      operationId: reconcileSupportSmsDelivery
+      tags: [support]
+      summary: Resolve an ambiguous SMS reservation after checking provider status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SmsDeliveryReconciliationInput"
+      responses:
+        "200":
+          description: Reconciliation recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+        "400":
+          description: Invalid reconciliation or delivery is not pending
+        "401":
+          description: Not signed in to support
+  /sms/allowance:
+    get:
+      operationId: getSmsAllowance
+      tags: [communication]
+      summary: View the school's remaining prepaid SMS messages
+      responses:
+        "200":
+          description: Remaining and in-flight SMS message counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SmsAllowanceBalance"
+        "401":
+          description: Not signed in
   /users:
     get:
       operationId: listUsers
@@ -771,6 +864,383 @@ paths:
           description: Not signed in
         "403":
           description: Administrator access required
+  /academic/years:
+    get:
+      operationId: listAcademicYears
+      tags: [academicLifecycle]
+      summary: List academic years and their three terms
+      responses:
+        "200":
+          description: Academic years
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AcademicYear"
+    post:
+      operationId: createAcademicYear
+      tags: [academicLifecycle]
+      summary: Create an academic year and its three planned terms
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcademicYearInput"
+      responses:
+        "201":
+          description: Created or existing academic year
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicYear"
+  /academic/years/{yearId}/import-current:
+    post:
+      operationId: importCurrentEnrollments
+      tags: [academicLifecycle]
+      summary: Add current existing pupil profiles to an academic year once
+      parameters:
+        - $ref: "#/components/parameters/AcademicYearId"
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnrollmentImportResult"
+  /academic/years/{yearId}/enrollments:
+    get:
+      operationId: listAcademicEnrollments
+      tags: [academicLifecycle]
+      summary: List current and former enrollments for an academic year
+      parameters:
+        - $ref: "#/components/parameters/AcademicYearId"
+      responses:
+        "200":
+          description: Academic enrollment history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AcademicEnrollment"
+  /academic/enrollments:
+    post:
+      operationId: createAcademicEnrollment
+      tags: [academicLifecycle]
+      summary: Enroll an existing pupil profile without creating another pupil
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcademicEnrollmentInput"
+      responses:
+        "201":
+          description: Academic enrollment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicEnrollment"
+        "409":
+          description: Pupil already has an enrollment for the year
+  /academic/terms/{termId}/open:
+    post:
+      operationId: openAcademicTerm
+      tags: [academicLifecycle]
+      summary: Generate scheduled charges atomically and open a dated academic term
+      parameters:
+        - $ref: "#/components/parameters/AcademicTermId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OpenAcademicTermInput"
+      responses:
+        "200":
+          description: Open term after applying its complete fee schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicTerm"
+        "409":
+          description: Missing schedule, conflicting charge, or invalid date range
+  /academic/terms/{termId}/close:
+    post:
+      operationId: closeAcademicTerm
+      tags: [academicLifecycle]
+      summary: Close a term while preserving all financial and enrollment history
+      parameters:
+        - $ref: "#/components/parameters/AcademicTermId"
+      responses:
+        "200":
+          description: Closed term
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicTerm"
+  /academic/terms/{termId}/charges:
+    get:
+      operationId: getTermFeeStatement
+      tags: [academicLifecycle]
+      summary: Get term charges, allocations, and outstanding amounts
+      parameters:
+        - $ref: "#/components/parameters/AcademicTermId"
+      responses:
+        "200":
+          description: Term fee statement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicTermStatement"
+    post:
+      operationId: createAcademicFeeCharge
+      tags: [academicLifecycle]
+      summary: Create an idempotent term-specific fee charge
+      parameters:
+        - $ref: "#/components/parameters/AcademicTermId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcademicFeeChargeInput"
+      responses:
+        "201":
+          description: Fee charge
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicFeeCharge"
+        "409":
+          description: Duplicate or inconsistent charge
+  /academic/terms/{termId}/fee-schedules:
+    get:
+      operationId: listAcademicTermFeeSchedules
+      tags: [academicLifecycle, finance]
+      summary: List administrator-configured fee schedule lines for a term
+      parameters:
+        - $ref: "#/components/parameters/AcademicTermId"
+      responses:
+        "200":
+          description: Fee schedule lines
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AcademicFeeSchedule"
+    put:
+      operationId: upsertAcademicTermFeeSchedule
+      tags: [academicLifecycle, finance]
+      summary: Create or update one class, stream, and enrollment-type fee schedule line
+      parameters:
+        - $ref: "#/components/parameters/AcademicTermId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcademicFeeScheduleInput"
+      responses:
+        "200":
+          description: Configured fee schedule line
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicFeeSchedule"
+        "409":
+          description: Schedule is locked or the term cannot be changed
+  /academic/charges/{chargeId}/payments:
+    post:
+      operationId: recordAcademicPayment
+      tags: [academicLifecycle, finance]
+      summary: Record a payment explicitly against an original term charge
+      parameters:
+        - $ref: "#/components/parameters/AcademicChargeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcademicPaymentInput"
+      responses:
+        "201":
+          description: Payment and term allocation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicPayment"
+        "409":
+          description: Amount exceeds the charge balance
+  /academic/payments/{paymentId}/allocations:
+    post:
+      operationId: allocateExistingAcademicPayment
+      tags: [academicLifecycle, finance]
+      summary: Explicitly allocate an unassigned legacy payment to an original term charge
+      parameters:
+        - $ref: "#/components/parameters/LegacyPaymentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LegacyPaymentAllocationInput"
+      responses:
+        "201":
+          description: Explicit payment allocation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicPayment"
+        "404":
+          description: Legacy payment not found
+        "409":
+          description: Allocation conflicts with the receipt or term charge
+  /academic/charges/{chargeId}/adjustments:
+    post:
+      operationId: createAcademicAdjustment
+      tags: [academicLifecycle, finance]
+      summary: Record an authorized, audited financial adjustment
+      parameters:
+        - $ref: "#/components/parameters/AcademicChargeId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcademicAdjustmentInput"
+      responses:
+        "201":
+          description: Audited financial adjustment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicAdjustment"
+  /academic/enrollments/{enrollmentId}/departure:
+    post:
+      operationId: recordAcademicDeparture
+      tags: [academicLifecycle]
+      summary: Transfer or withdraw an enrollment without deleting records or balances
+      parameters:
+        - $ref: "#/components/parameters/AcademicEnrollmentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcademicDepartureInput"
+      responses:
+        "200":
+          description: Former enrollment
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicEnrollment"
+  /academic/promotion-cycles:
+    post:
+      operationId: createPromotionCycle
+      tags: [academicLifecycle]
+      summary: Open a review cycle and prepare one following year for decisions
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromotionCycleInput"
+      responses:
+        "201":
+          description: Review cycle with pending decisions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromotionCycle"
+  /academic/promotion-cycles/{cycleId}/decisions:
+    get:
+      operationId: listPromotionDecisions
+      tags: [academicLifecycle]
+      summary: Review promotion decisions for every active pupil
+      parameters:
+        - $ref: "#/components/parameters/PromotionCycleId"
+      responses:
+        "200":
+          description: Promotion review rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PromotionReviewRow"
+  /academic/promotion-cycles/{cycleId}/decisions/{enrollmentId}:
+    put:
+      operationId: updatePromotionDecision
+      tags: [academicLifecycle]
+      summary: Set a reviewed promotion, repetition, transfer, withdrawal, or graduation decision
+      parameters:
+        - $ref: "#/components/parameters/PromotionCycleId"
+        - $ref: "#/components/parameters/AcademicEnrollmentId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PromotionDecisionInput"
+      responses:
+        "200":
+          description: Updated decision
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromotionDecision"
+  /academic/promotion-cycles/{cycleId}/confirm:
+    post:
+      operationId: confirmPromotionCycle
+      tags: [academicLifecycle]
+      summary: Confirm reviewed decisions and create eligible new-year enrollments once
+      parameters:
+        - $ref: "#/components/parameters/PromotionCycleId"
+      responses:
+        "200":
+          description: Confirmed rollover
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PromotionConfirmation"
+        "409":
+          description: One or more pupils are still awaiting a decision
+  /academic/dashboard:
+    get:
+      operationId: getAcademicDashboard
+      tags: [academicLifecycle]
+      summary: Get real term finance and promotion summaries for a year
+      parameters:
+        - name: academicYearId
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Academic lifecycle dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicDashboard"
+  /academic/students/{studentId}/history:
+    get:
+      operationId: getStudentAcademicHistory
+      tags: [academicLifecycle]
+      summary: View a pupil's preserved enrollments, fee charges, and allocations
+      parameters:
+        - $ref: "#/components/parameters/StudentId"
+      responses:
+        "200":
+          description: Academic and finance history for the permanent pupil profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StudentAcademicHistory"
   /academics/timetable:
     get:
       operationId: getTimetable
@@ -1095,6 +1565,42 @@ components:
       required: true
       schema:
         type: string
+    AcademicYearId:
+      name: yearId
+      in: path
+      required: true
+      schema:
+        type: string
+    AcademicTermId:
+      name: termId
+      in: path
+      required: true
+      schema:
+        type: string
+    AcademicEnrollmentId:
+      name: enrollmentId
+      in: path
+      required: true
+      schema:
+        type: string
+    AcademicChargeId:
+      name: chargeId
+      in: path
+      required: true
+      schema:
+        type: string
+    LegacyPaymentId:
+      name: paymentId
+      in: path
+      required: true
+      schema:
+        type: string
+    PromotionCycleId:
+      name: cycleId
+      in: path
+      required: true
+      schema:
+        type: string
   schemas:
     HealthStatus:
       type: object
@@ -1140,6 +1646,125 @@ components:
           type: string
           format: date-time
       required: [expiresAt]
+    SmsAllowanceBalance:
+      type: object
+      properties:
+        availableMessages:
+          type: number
+          multipleOf: 1
+          minimum: 0
+        reservedMessages:
+          type: number
+          multipleOf: 1
+          minimum: 0
+        sentMessages:
+          type: number
+          multipleOf: 1
+          minimum: 0
+      required: [availableMessages, reservedMessages, sentMessages]
+    SmsAllowanceAdjustmentInput:
+      type: object
+      properties:
+        messages:
+          type: number
+          multipleOf: 1
+          minimum: -1000000
+          maximum: 1000000
+          not:
+            const: 0
+        note:
+          type: string
+          maxLength: 500
+      required: [messages, note]
+    SupportSmsAllowance:
+      allOf:
+        - $ref: "#/components/schemas/SmsAllowanceBalance"
+        - type: object
+          properties:
+            schoolName:
+              type: string
+            adjustments:
+              type: array
+              items:
+                $ref: "#/components/schemas/SmsAllowanceAuditEntry"
+          required: [schoolName, adjustments]
+    SmsAllowanceAuditEntry:
+      type: object
+      properties:
+        messages:
+          type: number
+          multipleOf: 1
+        note:
+          type: string
+        actor:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+      required: [messages, note, actor, occurredAt]
+    SupportSmsReconciliationList:
+      type: object
+      properties:
+        deliveries:
+          type: array
+          items:
+            $ref: "#/components/schemas/SupportSmsReconciliation"
+        resolutions:
+          type: array
+          items:
+            $ref: "#/components/schemas/SupportSmsReconciliationAudit"
+      required: [deliveries, resolutions]
+    SupportSmsReconciliation:
+      type: object
+      properties:
+        id:
+          type: string
+        channel:
+          type: string
+        recipientCount:
+          type: number
+          multipleOf: 1
+          minimum: 1
+        status:
+          type: string
+          enum: [sending, reconciliation_required]
+        occurredAt:
+          type: string
+          format: date-time
+        failureCode:
+          type: string
+      required: [id, channel, recipientCount, status, occurredAt]
+    SupportSmsReconciliationAudit:
+      type: object
+      properties:
+        deliveryId:
+          type: string
+        outcome:
+          type: string
+          enum: [sent, failed]
+        messages:
+          type: number
+          multipleOf: 1
+          minimum: 1
+        note:
+          type: string
+        actor:
+          type: string
+        occurredAt:
+          type: string
+          format: date-time
+      required: [deliveryId, outcome, messages, note, actor, occurredAt]
+    SmsDeliveryReconciliationInput:
+      type: object
+      properties:
+        outcome:
+          type: string
+          enum: [sent, failed]
+        note:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required: [outcome, note]
     SupportPupil:
       type: object
       properties:
@@ -1235,6 +1860,8 @@ components:
           type: string
         studentId:
           type: ["string", "null"]
+        isSupport:
+          type: boolean
       required: [id, name, identifier, email, phone, status, role, permissions, initials, schoolName]
     UserProfileUpdate:
       type: object
@@ -1883,12 +2510,34 @@ components:
           enum: [completed, pending, reversed]
         balance:
           type: number
+        academicYearId:
+          type: ["string", "null"]
+        academicYear:
+          type: ["number", "null"]
+        termId:
+          type: ["string", "null"]
+        termNumber:
+          type: ["number", "null"]
+        attributionStatus:
+          type: string
+          enum: [assigned, unassigned, multiple]
+        academicAllocations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AcademicPaymentAttribution"
       required: [id, studentId, receiptNumber, studentName, registrationNumber, amount, method, reference, date, status, balance]
     PaymentInput:
       type: object
       properties:
         studentId:
           type: string
+        chargeId:
+          type: string
+          description: Explicit academic term charge to allocate this payment to. Omitted legacy payments remain unassigned and are not attributed to a guessed term.
+        idempotencyKey:
+          type: string
+          minLength: 1
+          maxLength: 150
         amount:
           type: number
           minimum: 1
@@ -2116,6 +2765,8 @@ components:
           type: number
         duplicateCount:
           type: number
+        quotaExceeded:
+          type: boolean
       required: [status, recipientCount, acceptedCount, failedCount, duplicateCount]
     TimetableEntry:
       type: object
@@ -2873,4 +3524,170 @@ components:
             downloadUrl:
               type: string
           required: [downloadUrl]
+    AcademicYearInput:
+      type: object
+      properties:
+        year: { type: number, minimum: 1900, maximum: 2200 }
+      required: [year]
+    AcademicEnrollmentInput:
+      type: object
+      properties:
+        yearId: { type: string }
+        studentId: { type: string }
+        className: { type: string, minLength: 1 }
+        stream: { type: string }
+        enrolledOn: { type: string, format: date }
+      required: [yearId, studentId, className]
+    AcademicFeeChargeInput:
+      type: object
+      properties:
+        enrollmentId: { type: string }
+        category: { type: string, minLength: 1 }
+        amount: { type: number, minimum: 0 }
+        description: { type: string }
+        idempotencyKey: { type: string, minLength: 1, maxLength: 150 }
+      required: [enrollmentId, category, amount, idempotencyKey]
+    AcademicPaymentInput:
+      type: object
+      properties:
+        amount: { type: number, exclusiveMinimum: 0 }
+        method: { type: string, minLength: 1 }
+        reference: { type: string }
+        idempotencyKey: { type: string, minLength: 1, maxLength: 150 }
+      required: [amount, method, idempotencyKey]
+    OpenAcademicTermInput:
+      type: object
+      properties:
+        startsOn: { type: string, format: date }
+        endsOn: { type: string, format: date }
+      required: [startsOn, endsOn]
+    AcademicFeeScheduleInput:
+      type: object
+      properties:
+        className: { type: string, minLength: 1, maxLength: 120 }
+        stream: { type: string, maxLength: 120 }
+        enrollmentType: { type: string, enum: ["", day, boarding] }
+        category: { type: string, minLength: 1, maxLength: 120 }
+        amount: { type: number, minimum: 0 }
+        description: { type: string, maxLength: 500 }
+      required: [className, category, amount]
+    AcademicFeeSchedule:
+      allOf:
+        - $ref: "#/components/schemas/AcademicFeeScheduleInput"
+        - type: object
+          properties:
+            id: { type: string }
+            schoolId: { type: string }
+            academicYearId: { type: string }
+            termId: { type: string }
+            stream: { type: string }
+            enrollmentType: { type: string }
+            description: { type: string }
+            createdBy: { type: string }
+            updatedBy: { type: string }
+            createdAt: { type: string }
+            updatedAt: { type: string }
+          required: [id, schoolId, academicYearId, termId, stream, enrollmentType, description, createdBy, updatedBy, createdAt, updatedAt]
+    LegacyPaymentAllocationInput:
+      type: object
+      properties:
+        chargeId: { type: string }
+        amount: { type: number, exclusiveMinimum: 0 }
+        idempotencyKey: { type: string, minLength: 1, maxLength: 150 }
+      required: [chargeId, amount, idempotencyKey]
+    AcademicPaymentAttribution:
+      type: object
+      properties:
+        chargeId: { type: string }
+        termId: { type: string }
+        academicYearId: { type: string }
+        termNumber: { type: number }
+        academicYear: { type: number }
+        amount: { type: number }
+      required: [chargeId, termId, academicYearId, termNumber, academicYear, amount]
+    AcademicAdjustmentInput:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum: [waiver, write_off, credit, refund, correction]
+        amount: { type: number, exclusiveMinimum: 0 }
+        reason: { type: string, minLength: 3 }
+        notes: { type: string }
+      required: [kind, amount, reason]
+    AcademicDepartureInput:
+      type: object
+      properties:
+        kind: { type: string, enum: [transferred, withdrawn] }
+        leavingOn: { type: string, format: date }
+        reason: { type: string, minLength: 3 }
+        destinationSchool: { type: string }
+        remarks: { type: string }
+      required: [kind, leavingOn, reason]
+    PromotionCycleInput:
+      type: object
+      properties:
+        fromYearId: { type: string }
+        toYear: { type: number, minimum: 1900, maximum: 2200 }
+      required: [fromYearId, toYear]
+    PromotionDecisionInput:
+      type: object
+      properties:
+        decision: { type: string, enum: [promote, repeat, transfer, withdraw, graduate, hold] }
+        nextClassName: { type: string }
+        nextStream: { type: string }
+        recommendation: { type: string }
+        approvalNotes: { type: string }
+      required: [decision]
+    AcademicObject:
+      type: object
+      additionalProperties: true
+    AcademicYear:
+      allOf:
+        - $ref: "#/components/schemas/AcademicObject"
+    AcademicTerm:
+      allOf:
+        - $ref: "#/components/schemas/AcademicObject"
+    AcademicEnrollment:
+      allOf:
+        - $ref: "#/components/schemas/AcademicObject"
+    AcademicFeeCharge:
+      allOf:
+        - $ref: "#/components/schemas/AcademicObject"
+    AcademicPayment:
+      allOf:
+        - $ref: "#/components/schemas/AcademicObject"
+    AcademicAdjustment:
+      allOf:
+        - $ref: "#/components/schemas/AcademicObject"
+    AcademicPromotionDecision:
+      allOf:
+        - $ref: "#/components/schemas/AcademicObject"
+    AcademicPromotionCycle:
+      allOf:
+        - $ref: "#/components/schemas/AcademicObject"
+    PromotionDecision:
+      allOf:
+        - $ref: "#/components/schemas/AcademicObject"
+    AcademicTermStatement:
+      allOf:
+        - $ref: "#/components/schemas/AcademicObject"
+    PromotionCycle:
+      allOf:
+        - $ref: "#/components/schemas/AcademicObject"
+    EnrollmentImportResult:
+      allOf:
+        - $ref: "#/components/schemas/AcademicObject"
+    PromotionReviewRow:
+      allOf:
+        - $ref: "#/components/schemas/AcademicObject"
+    PromotionConfirmation:
+      allOf:
+        - $ref: "#/components/schemas/AcademicObject"
+    AcademicDashboard:
+      allOf:
+        - $ref: "#/components/schemas/AcademicObject"
+    StudentAcademicHistory:
+      allOf:
+        - $ref: "#/components/schemas/AcademicObject"
 
