@@ -8,6 +8,10 @@ import {
 } from "@workspace/db";
 import type { SchoolSettings, User } from "@workspace/db";
 import { requestObjectDownload } from "./object-storage";
+import {
+  academicEnrollmentSchemaState, academicFeeChargeSchemaState,
+  academicLedgerSchemaState, academicPaymentAllocationSchemaState,
+} from "./academic-schema";
 import { compactSingleSegmentSms } from "./single-segment-sms";
 import { isSupportUser, isValidSupportSession, SUPPORT_USER_IDENTIFIER, SUPPORT_USER_NAME, supportUserIdForSchool } from "./support-auth";
 
@@ -484,11 +488,16 @@ export async function updateStudent(id: string, data: {
   emergencyContactRelationship?: string; declarationAccepted?: boolean; declarationDate?: string; photoPath?: string | null;
 }) {
   const schoolId = await getSchoolId();
+  const enrollmentSchemaState = await academicEnrollmentSchemaState();
+  if (enrollmentSchemaState === "partial") {
+    throw new Error("Academic enrollment database setup is incomplete; pupil details were not changed.");
+  }
   const result = await db.transaction(async (tx) => {
     const current = (await tx.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.id, id))).for("update").limit(1))[0];
     if (!current) return undefined;
-    const academicHistory = (await tx.select({ id: academicEnrollments.id }).from(academicEnrollments)
-      .where(and(eq(academicEnrollments.schoolId, schoolId), eq(academicEnrollments.studentId, id))).limit(1)).length > 0;
+    const academicHistory = enrollmentSchemaState === "ready"
+      && (await tx.select({ id: academicEnrollments.id }).from(academicEnrollments)
+        .where(and(eq(academicEnrollments.schoolId, schoolId), eq(academicEnrollments.studentId, id))).limit(1)).length > 0;
     if (academicHistory) {
       const changesCanonicalHistory =
         (data.className !== undefined && data.className.trim() !== current.className)
@@ -763,17 +772,21 @@ export async function updateStudentBalance(studentId: string, amount: number) {
 export async function listPayments() {
   const schoolId = await getSchoolId();
   const rows = await db.select({ payment: payments, student: students }).from(payments).innerJoin(students, eq(payments.studentId, students.id)).where(eq(payments.schoolId, schoolId)).orderBy(desc(payments.createdAt));
-  const allocations = await db.select({
+  const ledgerState = await academicLedgerSchemaState();
+  if (ledgerState === "partial") {
+    throw new Error("Academic finance database setup is incomplete; receipt records were not loaded.");
+  }
+  const allocations = ledgerState === "ready" ? await db.select({
     allocation: academicPaymentAllocations, charge: academicFeeCharges, term: academicTerms, year: academicYears,
   }).from(academicPaymentAllocations).innerJoin(academicFeeCharges, eq(academicPaymentAllocations.chargeId, academicFeeCharges.id))
     .innerJoin(academicTerms, eq(academicFeeCharges.termId, academicTerms.id))
     .innerJoin(academicYears, eq(academicTerms.academicYearId, academicYears.id))
-    .where(eq(academicPaymentAllocations.schoolId, schoolId));
+    .where(eq(academicPaymentAllocations.schoolId, schoolId)) : [];
   const chargeIds = [...new Set(allocations.map((row) => row.charge.id))];
-  const chargeAllocations = chargeIds.length
+  const chargeAllocations = ledgerState === "ready" && chargeIds.length
     ? await db.select().from(academicPaymentAllocations).where(and(eq(academicPaymentAllocations.schoolId, schoolId), inArray(academicPaymentAllocations.chargeId, chargeIds)))
     : [];
-  const chargeAdjustments = chargeIds.length
+  const chargeAdjustments = ledgerState === "ready" && chargeIds.length
     ? await db.select().from(academicAdjustments).where(and(eq(academicAdjustments.schoolId, schoolId), inArray(academicAdjustments.chargeId, chargeIds)))
     : [];
   return rows.map(({ payment, student }) => {
@@ -806,12 +819,16 @@ export async function listPayments() {
 export async function recordPayment(studentId: string, amount: number, method: string, reference: string) {
   if (amount <= 0 || !validPaymentPrecision(amount)) throw new Error("Payment amount must be positive and have at most two decimal places");
   const schoolId = await getSchoolId();
+  const chargeSchemaState = await academicFeeChargeSchemaState();
+  if (chargeSchemaState === "partial") {
+    throw new Error("Academic finance database setup is incomplete; this payment was not recorded.");
+  }
   return db.transaction(async (tx) => {
     const lockedStudentRow = (await tx.select().from(students).where(and(eq(students.schoolId, schoolId), eq(students.id, studentId))).for("update").limit(1))[0];
     if (!lockedStudentRow) return undefined;
-    const existingAcademicCharge = (await tx.select({ id: academicFeeCharges.id }).from(academicFeeCharges)
+    const existingAcademicCharge = chargeSchemaState === "ready" ? (await tx.select({ id: academicFeeCharges.id }).from(academicFeeCharges)
       .innerJoin(academicEnrollments, and(eq(academicFeeCharges.enrollmentId, academicEnrollments.id), eq(academicFeeCharges.schoolId, academicEnrollments.schoolId)))
-      .where(and(eq(academicFeeCharges.schoolId, schoolId), eq(academicEnrollments.schoolId, schoolId), eq(academicEnrollments.studentId, studentId))).limit(1))[0];
+      .where(and(eq(academicFeeCharges.schoolId, schoolId), eq(academicEnrollments.schoolId, schoolId), eq(academicEnrollments.studentId, studentId))).limit(1))[0] : undefined;
     if (existingAcademicCharge) throw new Error("This pupil has term-specific charges. Select the original term charge or explicitly allocate a legacy receipt.");
     const student = studentRow(lockedStudentRow);
     if (amount > student.feeBalance) throw new Error("Payment cannot exceed the pupil fee balance");
@@ -835,11 +852,12 @@ export async function recordPayment(studentId: string, amount: number, method: s
 export async function updatePayment(paymentId: string, amount: number, method: string, reference: string) {
   if (amount < 0 || !validPaymentPrecision(amount)) throw new Error("Payment amount must be non-negative and have at most two decimal places");
   const schoolId = await getSchoolId();
+  const allocationSchemaState = await academicPaymentAllocationSchemaState();
   return db.transaction(async (tx) => {
     const existing = (await tx.select({ payment: payments, student: students }).from(payments).innerJoin(students, eq(payments.studentId, students.id)).where(and(eq(payments.schoolId, schoolId), eq(payments.id, paymentId))).for("update").limit(1))[0];
     if (!existing) return undefined;
-    const termAllocation = (await tx.select({ id: academicPaymentAllocations.id }).from(academicPaymentAllocations)
-      .where(and(eq(academicPaymentAllocations.schoolId, schoolId), eq(academicPaymentAllocations.paymentId, paymentId))).limit(1))[0];
+    const termAllocation = allocationSchemaState === "ready" ? (await tx.select({ id: academicPaymentAllocations.id }).from(academicPaymentAllocations)
+      .where(and(eq(academicPaymentAllocations.schoolId, schoolId), eq(academicPaymentAllocations.paymentId, paymentId))).limit(1))[0] : undefined;
     if (termAllocation) throw new Error("Term-allocated payments cannot be edited directly; use an audited adjustment or settlement.");
     const updated = (await tx.update(payments).set({ amount: String(amount), method, reference }).where(and(eq(payments.schoolId, schoolId), eq(payments.id, paymentId))).returning())[0];
     const totals = (await tx.select({ total: sql<string>`coalesce(sum(${payments.amount}) filter (where ${payments.status} = 'completed'), 0)` }).from(payments).where(and(eq(payments.schoolId, schoolId), eq(payments.studentId, existing.student.id))))[0];

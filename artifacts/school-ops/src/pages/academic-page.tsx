@@ -25,7 +25,15 @@ const money = (value: unknown): string => `UGX ${new Intl.NumberFormat('en-UG', 
 const date = (value: unknown): string => value ? new Date(str(value)).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
 const today = () => new Date().toISOString().slice(0, 10);
 const freshKey = () => crypto.randomUUID();
-const errorMessage = (error: unknown) => error instanceof Error ? error.message : 'The request could not be completed. Please try again.';
+const errorMessage = (error: unknown) => {
+  const data = error && typeof error === 'object' && 'data' in error
+    ? (error as { data?: unknown }).data
+    : undefined;
+  const message = data && typeof data === 'object' && 'error' in data
+    ? (data as { error?: unknown }).error
+    : undefined;
+  return typeof message === 'string' ? message : error instanceof Error ? error.message : 'The request could not be completed. Please try again.';
+};
 const classes = ['Daycare', 'Baby Class', 'Middle Class', 'Top Class', 'Primary 1', 'Primary 2', 'Primary 3', 'Primary 4', 'Primary 5', 'Primary 6', 'Primary 7'];
 const fieldClass = 'min-h-10 w-full rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--background))] px-3 py-2 text-sm text-[hsl(var(--foreground))] outline-none transition-colors focus:border-[hsl(var(--primary))]';
 const labelClass = 'mb-1.5 block text-[11px] font-bold uppercase tracking-[.12em] text-[hsl(var(--muted-foreground))]';
@@ -202,7 +210,7 @@ export default function AcademicPage() {
 
   return <AppShell><div className="mx-auto max-w-[1400px] pb-16">
     <PageHeader eyebrow="Academic administration / EMMECTY" title="Academic years" description="One continuous record for each pupil: their class, their term, and every shilling paid against its original charge." />
-    {user.isLoading || yearsQuery.isLoading ? <Panel>{loadingBlock}</Panel> : yearsQuery.isError ? <ErrorState onRetry={() => void yearsQuery.refetch()} message="Academic years could not be loaded." /> : <>
+    {user.isLoading || yearsQuery.isLoading ? <Panel>{loadingBlock}</Panel> : yearsQuery.isError ? <ErrorState onRetry={() => void yearsQuery.refetch()} message={errorMessage(yearsQuery.error)} /> : <>
       <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-[hsl(var(--border))] bg-[hsl(var(--secondary)/.55)] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
         <div className="flex items-center gap-3"><span className="flex size-11 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--primary))] text-[hsl(var(--primary-foreground))]"><BookOpen size={21} /></span><div><p className="text-[11px] font-bold uppercase tracking-[.16em] text-[hsl(var(--muted-foreground))]">Working register</p><p className="font-display text-xl font-semibold" data-testid="text-selected-academic-year">{year ? `${str(year.year)} academic year` : 'No year selected'}</p></div></div>
         <div className="flex flex-wrap items-end gap-3"><Field label="Academic year"><select className={fieldClass} value={yearId} onChange={(event) => setSelectedYearId(event.target.value)} data-testid="select-academic-year"><option value="">Select year</option>{years.map((item) => <option value={str(item.id)} key={str(item.id)}>{str(item.year)} · {str(item.status || 'planned')}</option>)}</select></Field>{!canManage && <span className="rounded-full border border-[hsl(var(--border))] px-3 py-2 text-xs font-semibold text-[hsl(var(--muted-foreground))]" data-testid="status-academic-access">{canRecordPayment ? 'Payments access' : 'Read-only access'}</span>}</div>

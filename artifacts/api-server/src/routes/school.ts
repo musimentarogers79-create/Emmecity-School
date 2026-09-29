@@ -465,6 +465,11 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const visibleClasses = user.role === "teacher" ? classesRows.filter((item) => matchesAssignedClass(teacherClasses, String(item.name), String(item.stream ?? ""))) : classesRows;
   const visibleStudents = user.studentId ? allStudents.filter((item) => item.id === user.studentId) : user.role === "teacher" ? allStudents.filter((item) => matchesAssignedClass(teacherClasses, item.className, item.stream)) : allStudents;
   const visibleAttendance = user.studentId ? allAttendance.filter((item) => item.studentId === user.studentId) : user.role === "teacher" ? allAttendance.filter((item) => matchesAssignedClass(teacherClasses, item.className)) : allAttendance;
+  const schoolDateParts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Kampala", year: "numeric", month: "2-digit", day: "2-digit",
+  }).formatToParts(new Date());
+  const schoolToday = `${schoolDateParts.find((part) => part.type === "year")?.value}-${schoolDateParts.find((part) => part.type === "month")?.value}-${schoolDateParts.find((part) => part.type === "day")?.value}`;
+  const todayAttendance = visibleAttendance.filter((item) => item.date === schoolToday);
   const present = visibleAttendance.filter((item) => item.status === "present").length;
   const trendDates = [...new Set(visibleAttendance.map((item) => item.date))].sort().slice(-7);
   const attendanceTrend = trendDates.map((date) => {
@@ -480,7 +485,7 @@ router.get("/dashboard", async (req, res): Promise<void> => {
   const staffCount = usersRows.filter((item) => item.userType === "staff" && !administratorRoles.includes(item.role)).length;
   const payload = {
     role: user.role, greeting: roleGreeting(user.name),
-    summary: { students: visibleStudents.length, teachers: teacherCount, staff: staffCount, classes: visibleClasses.length, attendance: visibleAttendance.length ? Math.round((present / visibleAttendance.length) * 100) : 0, absent: visibleAttendance.filter((item) => item.status === "absent").length, feesCollected: isAdministrator(user) || user.role === "accountant" ? allPayments.reduce((sum, item) => sum + item.amount, 0) : 0, outstandingFees: visibleStudents.reduce((sum, item) => sum + item.feeBalance, 0) },
+     summary: { students: visibleStudents.length, teachers: teacherCount, staff: staffCount, classes: visibleClasses.length, attendance: todayAttendance.length ? Math.round((todayAttendance.filter((item) => item.status === "present").length / todayAttendance.length) * 100) : 0, absent: todayAttendance.filter((item) => item.status === "absent").length, feesCollected: isAdministrator(user) || user.role === "accountant" ? allPayments.reduce((sum, item) => sum + item.amount, 0) : 0, outstandingFees: visibleStudents.reduce((sum, item) => sum + item.feeBalance, 0) },
     attendanceTrend, performance: [], recentAdmissions: visibleStudents.slice(0, 4), upcomingEvents: [], quickActions: [],
     assignedClasses: user.role === "teacher" ? teacherClasses : undefined, assignedSubjects: user.role === "teacher" ? subjectsRows.filter((item) => item.teacherId === user.id || matchesAssignedClass(teacherClasses, String(item.className), String(item.stream ?? ""))).map((item) => String(item.name)) : undefined,
     children: user.role === "guardian" ? visibleStudents : undefined, feeBalance: user.role === "guardian" || user.role === "student" ? visibleStudents[0]?.feeBalance ?? 0 : undefined, latestResult: user.role === "guardian" || user.role === "student" ? 0 : undefined,

@@ -18,6 +18,7 @@ import {
   AllocateExistingAcademicPaymentParams, AllocateExistingAcademicPaymentBody, AllocateExistingAcademicPaymentResponse,
 } from "@workspace/api-zod";
 import { currentUserFromToken } from "../lib/school-data";
+import { academicWorkspaceSchemaState } from "../lib/academic-schema";
 import {
   closeAcademicTerm, confirmPromotionCycle, createAcademicAdjustment, createAcademicYear,
   createEnrollment, createFeeCharge, createPromotionCycle, getAcademicDashboard,
@@ -38,6 +39,27 @@ const isAdministrator = (role: string) => role === "super_admin" || role === "ad
 const isFinanceUser = (role: string) => isAdministrator(role) || role === "accountant";
 const fail = (res: Response, status: number, message: string) => { res.status(status).json({ error: message }); };
 const errorText = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback;
+
+router.use(async (req, res, next) => {
+  const user = await userFromRequest(req);
+  if (!user) { next(); return; }
+  try {
+    const schemaState = await academicWorkspaceSchemaState();
+    if (schemaState !== "ready") {
+      fail(
+        res,
+        503,
+        schemaState === "partial"
+          ? "Academic database setup is incomplete. Ask the workspace owner to finish the approved database activation before using Academic Years."
+          : "Academic Years is not active in this database yet. Existing school records are unchanged; use the approved database activation process before using this workspace.",
+      );
+      return;
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+});
 
 router.get("/academic/years", async (req, res): Promise<void> => {
   const user = await userFromRequest(req);

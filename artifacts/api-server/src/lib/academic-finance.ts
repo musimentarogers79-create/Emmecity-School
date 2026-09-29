@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
+import { academicWorkspaceSchemaState } from "./academic-schema";
 import {
   academicAdjustments, academicDepartures, academicEnrollments, academicFeeCharges,
   academicFeeSchedules, academicPaymentAllocations, academicTerms, academicYears, payments, promotionCycles,
@@ -734,6 +735,9 @@ export async function getAcademicDashboard(yearId?: string) {
 }
 
 export async function getStudentAcademicHistory(studentId: string) {
+  const schemaState = await academicWorkspaceSchemaState();
+  if (schemaState === "missing") return [];
+  if (schemaState === "partial") throw new Error("Academic history database setup is incomplete.");
   const schoolId = await academicSchoolId();
   const rows = await db.select({ enrollment: academicEnrollments, year: academicYears })
     .from(academicEnrollments).innerJoin(academicYears, and(eq(academicEnrollments.academicYearId, academicYears.id), eq(academicEnrollments.schoolId, academicYears.schoolId)))

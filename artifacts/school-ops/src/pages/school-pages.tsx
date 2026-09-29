@@ -677,15 +677,56 @@ function DashboardCharts({ dashboard, payments, expenses, isFinance }: { dashboa
   </div>;
 }
 
+function AcademicYearOverviewCard({ canOpen, query }: { canOpen: boolean; query: ReturnType<typeof useListAcademicYears> }) {
+  const years = (Array.isArray(query.data) ? query.data : []).map((item: unknown) => item as Record<string, unknown>);
+  const year = years.find((item) => item.status === 'current') ?? years[0];
+  const terms = Array.isArray(year?.terms) ? year.terms as Record<string, unknown>[] : [];
+  const openTerm = terms.find((item) => item.status === 'open');
+  const errorData = query.error && typeof query.error === 'object' && 'data' in query.error
+    ? (query.error as { data?: unknown }).data
+    : undefined;
+  const errorValue = errorData && typeof errorData === 'object' && 'error' in errorData
+    ? (errorData as { error?: unknown }).error
+    : undefined;
+
+  return <Panel className="p-5 sm:p-6" testId="panel-overview-academic-year">
+    <div className="flex flex-wrap items-start justify-between gap-3">
+      <div>
+        <p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-[hsl(var(--primary))]">Academic calendar</p>
+        <h2 className="mt-1 font-display text-2xl">Current school year</h2>
+      </div>
+      {canOpen && <Link href="/academic-years" data-testid="link-overview-academic-years" className="inline-flex items-center gap-1 text-xs font-semibold text-[hsl(var(--primary))] hover:underline">Manage years <ArrowRight size={14} /></Link>}
+    </div>
+    {query.isLoading ? <div className="mt-4 space-y-2"><Skeleton className="h-7 w-40" /><Skeleton className="h-4 w-64" /></div>
+      : query.isError ? <div className="mt-4 rounded-xl border border-[hsl(var(--destructive)/.2)] bg-[hsl(var(--destructive)/.05)] p-4" role="status" data-testid="status-overview-academic-error">
+        <p className="text-sm font-semibold">Academic-year information could not be loaded.</p>
+        <p className="mt-1 text-xs leading-5 text-[hsl(var(--muted-foreground))]">{typeof errorValue === 'string' ? errorValue : 'Check the connection and try again. Existing school records are not changed by this view.'}</p>
+        <Button variant="secondary" className="mt-3" onClick={() => void query.refetch()} testId="button-retry-overview-academic-years">Retry</Button>
+      </div>
+      : year ? <div className="mt-4">
+        <p className="font-display text-3xl font-semibold tracking-tight" data-testid="text-overview-academic-year">{String(year.year ?? '—')}</p>
+        <p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">{openTerm ? `Term ${String(openTerm.number ?? '')} is open` : 'No term is currently open'}</p>
+        {terms.length > 0 && <div className="mt-3 flex flex-wrap gap-2">{terms.map((term, index) => <span key={String(term.id ?? term.number ?? index)} className="rounded-full border border-[hsl(var(--border))] px-3 py-1 text-xs capitalize text-[hsl(var(--muted-foreground))]">Term {String(term.number ?? index + 1)} · {String(term.status ?? 'planned')}</span>)}</div>}
+      </div>
+      : <div className="mt-4 rounded-xl border border-dashed border-[hsl(var(--border))] p-4" data-testid="empty-overview-academic-year">
+        <p className="text-sm font-semibold">No academic year has been set up yet.</p>
+        <p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">Once created, the active year and term will appear here.</p>
+        {canOpen && <Link href="/academic-years" className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-[hsl(var(--primary))] hover:underline">Set up academic years <ArrowRight size={14} /></Link>}
+      </div>}
+  </Panel>;
+}
+
 function DashboardPage() {
   const { data: session } = useGetCurrentUser();
   const query = useGetDashboard();
   const operations = useGetOperations();
+  const academicYearsQuery = useListAcademicYears();
   const dashboard = query.data as Dashboard | undefined;
   const role = session?.user.role || dashboard?.role || 'administrator';
   const summary = dashboard?.summary;
   const modules = operations.data?.modules;
   const resolvedRole = session?.user.role || dashboard?.role;
+  const canOpenAcademicYears = ['administrator', 'super_admin', 'accountant', 'secretary'].includes(resolvedRole || '');
   const isFinance = resolvedRole === 'administrator' || resolvedRole === 'super_admin' || resolvedRole === 'accountant';
   const canCreateEvents = resolvedRole === 'administrator' || resolvedRole === 'super_admin' || resolvedRole === 'secretary';
   const canSendMessages = resolvedRole === 'administrator' || resolvedRole === 'super_admin';
@@ -755,10 +796,16 @@ function DashboardPage() {
             { label: 'Fees collected', value: money(summary?.feesCollected), Icon: CircleDollarSign, color: 'text-[hsl(var(--primary))]', href: '/transactions?filter=collected', detail: 'Click to see the pupils and receipts' },
           ];
   const actionCards = dashboard?.roleActions || [];
+  const refreshOverview = () => {
+    const requests: Promise<unknown>[] = [query.refetch(), operations.refetch(), academicYearsQuery.refetch()];
+    if (isFinance) requests.push(paymentQuery.refetch());
+    void Promise.all(requests);
+  };
   return <AppShell>
-      <PageHeader eyebrow={`${todayLabel} · ${role.replace('_', ' ')}`} title={dashboard?.greeting || 'Your school day'} description={role === 'teacher' ? 'Your assigned classes, registers, and learning work in one calm view.' : role === 'accountant' ? 'A clear view of collections, spending, and the numbers that need follow-up.' : role === 'guardian' || role === 'student' ? 'Only the linked learner information relevant to your day.' : 'The right school information, arranged for the work in front of you.'} action={<div className="flex flex-wrap gap-2"><Link href="/operations?view=events" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-2.5 text-sm font-semibold text-[hsl(var(--foreground))] transition-colors hover:bg-[hsl(var(--muted))]" data-testid="button-dashboard-events"><CalendarDays className="size-4" /> Events</Link>{canCreateEvents && <Link href="/operations?view=events" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-semibold text-[hsl(var(--primary-foreground))] transition-colors hover:brightness-110" data-testid="button-dashboard-create-event"><Plus className="size-4" /> Create event</Link>}{canSendMessages && <Link href="/messages" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-semibold text-[hsl(var(--primary-foreground))] transition-colors hover:brightness-110" data-testid="button-dashboard-messages"><Send className="size-4" /> Messages</Link>}<Button testId="button-dashboard-refresh" variant="secondary" onClick={() => { void query.refetch(); void operations.refetch(); }}><RefreshCcw className="size-4" /> Refresh</Button></div>} />
+      <PageHeader eyebrow={`${todayLabel} · ${role.replace('_', ' ')}`} title={dashboard?.greeting || 'Your school day'} description={role === 'teacher' ? 'Your assigned classes, registers, and learning work in one calm view.' : role === 'accountant' ? 'A clear view of collections, spending, and the numbers that need follow-up.' : role === 'guardian' || role === 'student' ? 'Only the linked learner information relevant to your day.' : 'The right school information, arranged for the work in front of you.'} action={<div className="flex flex-wrap gap-2"><Link href="/operations?view=events" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-2.5 text-sm font-semibold text-[hsl(var(--foreground))] transition-colors hover:bg-[hsl(var(--muted))]" data-testid="button-dashboard-events"><CalendarDays className="size-4" /> Events</Link>{canCreateEvents && <Link href="/operations?view=events" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-semibold text-[hsl(var(--primary-foreground))] transition-colors hover:brightness-110" data-testid="button-dashboard-create-event"><Plus className="size-4" /> Create event</Link>}{canSendMessages && <Link href="/messages" className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-2.5 text-sm font-semibold text-[hsl(var(--primary-foreground))] transition-colors hover:brightness-110" data-testid="button-dashboard-messages"><Send className="size-4" /> Messages</Link>}<Button testId="button-dashboard-refresh" variant="secondary" disabled={query.isFetching || operations.isFetching || academicYearsQuery.isFetching || (isFinance && paymentQuery.isFetching)} onClick={refreshOverview}><RefreshCcw className="size-4" /> Refresh</Button></div>} />
     {query.isError ? <Panel><ErrorState onRetry={() => query.refetch()} /></Panel> : query.isLoading ? <DashboardSkeleton /> : <div className="space-y-6">
        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">{metrics.map((metric, index) => <DashboardMetricCard key={metric.label} metric={metric} index={index} />)}</div>
+       <AcademicYearOverviewCard canOpen={canOpenAcademicYears} query={academicYearsQuery} />
        <DashboardCharts dashboard={dashboard} payments={paymentQuery.data || []} expenses={modules?.expenses || []} isFinance={isFinance} />
       <div className="grid gap-6 xl:grid-cols-[1.15fr_.85fr]">
         <Panel className="overflow-hidden" testId="panel-role-actions"><div className="border-b border-[hsl(var(--border))] p-5 md:p-6"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-[hsl(var(--primary))]">Workday shortcuts</p><h2 className="mt-1 font-display text-2xl">What needs your attention</h2><p className="mt-1 text-sm text-[hsl(var(--muted-foreground))]">These actions come from your role permissions.</p></div>{actionCards.length ? <div className="divide-y divide-[hsl(var(--border))]">{actionCards.map((action) => <Link href={action.href} key={action.id} data-testid={`link-role-action-${action.id}`} className="group flex items-start gap-4 p-5 transition-colors hover:bg-[hsl(var(--muted)/.45)]"><span className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--secondary))] text-[hsl(var(--primary))]"><ArrowRight className="size-4 transition-transform group-hover:translate-x-0.5" /></span><span className="min-w-0 flex-1"><span className="block text-sm font-semibold">{action.label}</span><span className="mt-1 block text-xs leading-5 text-[hsl(var(--muted-foreground))]">{action.description}</span></span><ArrowRight className="mt-2 size-4 text-[hsl(var(--muted-foreground))]" /></Link>)}</div> : <EmptyState icon={ClipboardList} title="No actions assigned" description="Your school has not added any role-specific actions yet." />}</Panel>
