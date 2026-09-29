@@ -1408,9 +1408,18 @@ export interface AcademicPaymentInput {
   idempotencyKey: string;
 }
 
+export type OpenAcademicTermInputPricingSource = typeof OpenAcademicTermInputPricingSource[keyof typeof OpenAcademicTermInputPricingSource];
+
+
+export const OpenAcademicTermInputPricingSource = {
+  fee_schedule: 'fee_schedule',
+  current_pupil_term_fee: 'current_pupil_term_fee',
+} as const;
+
 export interface OpenAcademicTermInput {
   startsOn: string;
   endsOn: string;
+  pricingSource?: OpenAcademicTermInputPricingSource;
 }
 
 export interface AcademicTermDatesInput {

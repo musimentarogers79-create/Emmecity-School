@@ -126,7 +126,7 @@ router.post("/academic/terms/:termId/open", async (req, res): Promise<void> => {
     term = await openAcademicTerm(params.data.termId, {
       startsOn: parsed.data.startsOn.toISOString().slice(0, 10),
       endsOn: parsed.data.endsOn.toISOString().slice(0, 10),
-    }, user.id);
+    }, user.id, parsed.data.pricingSource);
   } catch (error) { fail(res, 409, errorText(error, "Unable to open academic term.")); return; }
   if (!term) { fail(res, 404, "Academic term not found."); return; }
   res.json(OpenAcademicTermResponse.parse(term));

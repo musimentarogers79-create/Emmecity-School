@@ -3592,6 +3592,9 @@ components:
       properties:
         startsOn: { type: string, format: date }
         endsOn: { type: string, format: date }
+        pricingSource:
+          type: string
+          enum: [fee_schedule, current_pupil_term_fee]
       required: [startsOn, endsOn]
     AcademicTermDatesInput:
       type: object

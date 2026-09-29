@@ -1967,7 +1967,8 @@ export const OpenAcademicTermParams = zod.object({
 
 export const OpenAcademicTermBody = zod.object({
   "startsOn": zod.coerce.date(),
-  "endsOn": zod.coerce.date()
+  "endsOn": zod.coerce.date(),
+  "pricingSource": zod.enum(['fee_schedule', 'current_pupil_term_fee']).optional()
 })
 
 export const OpenAcademicTermResponse = zod.record(zod.string(), zod.unknown())

@@ -5,8 +5,10 @@
  * EMMECTY Nursery & Primary School management API
  * OpenAPI spec version: 0.2.0
  */
+import type { OpenAcademicTermInputPricingSource } from './openAcademicTermInputPricingSource';
 
 export interface OpenAcademicTermInput {
   startsOn: Date;
   endsOn: Date;
+  pricingSource?: OpenAcademicTermInputPricingSource;
 }

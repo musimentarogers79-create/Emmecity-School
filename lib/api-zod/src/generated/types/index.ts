@@ -84,6 +84,7 @@ export * from './messagePupilRecipient';
 export * from './messageRecipient';
 export * from './messageRecipients';
 export * from './openAcademicTermInput';
+export * from './openAcademicTermInputPricingSource';
 export * from './operationAssignment';
 export * from './operationClass';
 export * from './operationDiscipline';

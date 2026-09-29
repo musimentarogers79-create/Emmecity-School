@@ -497,3 +497,53 @@ test("Scenario 9: Planned term dates are editable until charges exist", async ()
     /after fee charges have been created/,
   );
 });
+
+test("Scenario 10: Current pupil term fees create individual charges without a shared schedule", async () => {
+  const year = await academic.createAcademicYear(2041, actorId);
+  const { rows: terms } = await pool.query(
+    "SELECT id, number FROM academic_terms WHERE academic_year_id = $1 ORDER BY number",
+    [year.id],
+  );
+  const [term1, term2, term3] = terms;
+  const { rows: otherOpenTerms } = await pool.query(
+    "SELECT id FROM academic_terms WHERE school_id = $1 AND status = 'open'",
+    [schoolId],
+  );
+  for (const openTerm of otherOpenTerms) await academic.closeAcademicTerm(openTerm.id);
+  await academic.closeAcademicTerm(term1.id);
+  await academic.closeAcademicTerm(term2.id);
+
+  const pupils = [
+    { pupil: await addStudent("Scenario Ten Day One"), termFee: 125_000, sponsored: false },
+    { pupil: await addStudent("Scenario Ten Day Two"), termFee: 275_000, sponsored: false },
+    { pupil: await addStudent("Scenario Ten Sponsored"), termFee: 0, sponsored: true },
+  ];
+  const enrollments = [];
+  for (const { pupil, termFee, sponsored } of pupils) {
+    await pool.query("UPDATE students SET term_fee = $2, is_sponsored = $3 WHERE id = $1", [pupil.id, termFee, sponsored]);
+    enrollments.push(await academic.createEnrollment({
+      yearId: year.id, studentId: pupil.id, className: "P3", stream: "A", enrolledOn: "2041-09-14",
+    }));
+  }
+
+  const dates = { startsOn: "2041-09-14", endsOn: "2041-11-30" };
+  const opened = await academic.openAcademicTerm(term3.id, dates, actorId, "current_pupil_term_fee");
+  assert.equal(opened.status, "open");
+  assert.equal(opened.createdCharges, 3);
+  const { rows: charges } = await pool.query(
+    "SELECT student_id, category, amount::text, description FROM academic_fee_charges WHERE term_id = $1 ORDER BY amount",
+    [term3.id],
+  );
+  assert.deepEqual(charges.map((row) => Number(row.amount)), [0, 125_000, 275_000]);
+  assert.ok(charges.every((row) => row.category === "term fee"));
+  assert.ok(charges.every((row) => row.description.includes("existing term fee record")));
+
+  const repeatedOpen = await academic.openAcademicTerm(term3.id, dates, actorId, "current_pupil_term_fee");
+  assert.equal(repeatedOpen.createdCharges, 0);
+  await assert.rejects(
+    academic.openAcademicTerm(term3.id, dates, actorId, "fee_schedule"),
+    /Cannot switch to fee schedules after individual pupil fees/,
+  );
+  await academic.closeAcademicTerm(term3.id);
+  assert.equal(enrollments.length, 3);
+});

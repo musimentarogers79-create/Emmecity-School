@@ -43,7 +43,12 @@ export async function createAcademicYear(year: number, actorId: string) {
   });
 }
 
-export async function openAcademicTerm(termId: string, dates: { startsOn: string; endsOn: string }, actorId: string) {
+export async function openAcademicTerm(
+  termId: string,
+  dates: { startsOn: string; endsOn: string },
+  actorId: string,
+  pricingSource: "fee_schedule" | "current_pupil_term_fee" = "fee_schedule",
+) {
   const schoolId = await academicSchoolId();
   return db.transaction(async (tx) => {
     const term = (await tx.select().from(academicTerms)
@@ -69,24 +74,51 @@ export async function openAcademicTerm(termId: string, dates: { startsOn: string
         eq(academicEnrollments.schoolId, schoolId), eq(academicEnrollments.academicYearId, term.academicYearId),
         eq(academicEnrollments.status, "active"), eq(students.status, "active"),
       )).for("update");
-    const schedules = await tx.select().from(academicFeeSchedules)
-      .where(and(eq(academicFeeSchedules.schoolId, schoolId), eq(academicFeeSchedules.academicYearId, term.academicYearId), eq(academicFeeSchedules.termId, term.id)));
-    const schedulesByPupil = new Map<string, typeof schedules>();
+    const existingTermCharges = await tx.select({ idempotencyKey: academicFeeCharges.idempotencyKey }).from(academicFeeCharges)
+      .where(and(eq(academicFeeCharges.schoolId, schoolId), eq(academicFeeCharges.termId, term.id)));
+    const currentPupilFeePrefix = "term-current-pupil-fee:";
+    if (pricingSource === "current_pupil_term_fee" && existingTermCharges.some((charge) => !charge.idempotencyKey.startsWith(currentPupilFeePrefix))) {
+      throw new Error("Cannot apply individual pupil fees after other charges exist for this term; no charges were added.");
+    }
+    if (pricingSource === "fee_schedule" && existingTermCharges.some((charge) => charge.idempotencyKey.startsWith(currentPupilFeePrefix))) {
+      throw new Error("Cannot switch to fee schedules after individual pupil fees have been charged for this term.");
+    }
+    const schedules = pricingSource === "fee_schedule"
+      ? await tx.select().from(academicFeeSchedules)
+        .where(and(eq(academicFeeSchedules.schoolId, schoolId), eq(academicFeeSchedules.academicYearId, term.academicYearId), eq(academicFeeSchedules.termId, term.id)))
+      : [];
+    type TermChargeLine = { category: string; amount: string; description: string; idempotencyKey: string };
+    const chargeLinesByEnrollment = new Map<string, TermChargeLine[]>();
     for (const { enrollment, student } of active) {
-      const matches = schedules.filter((schedule) =>
-        normalizeScheduleValue(schedule.className) === normalizeScheduleValue(enrollment.className)
-        && normalizeScheduleValue(schedule.stream) === normalizeScheduleValue(enrollment.stream)
-        && normalizeScheduleValue(schedule.enrollmentType) === normalizeScheduleValue(student.enrollmentType));
-      if (!matches.length) {
-        throw new Error(`Missing fee schedule for ${enrollment.className}${enrollment.stream ? ` / ${enrollment.stream}` : ""} / ${student.enrollmentType || "unspecified enrollment type"}; no term charges were created.`);
+      if (pricingSource === "current_pupil_term_fee") {
+        const amount = student.isSponsored ? "0" : String(student.termFee ?? "0");
+        if (!Number.isFinite(amountNumber(amount)) || amountNumber(amount) < 0) {
+          throw new Error(`Invalid current term fee for ${student.firstName} ${student.lastName}; no term charges were created.`);
+        }
+        chargeLinesByEnrollment.set(enrollment.id, [{
+          category: "Term fee", amount: String(amountNumber(amount)),
+          description: "Individual amount copied from the pupil's existing term fee record by administrator direction.",
+          idempotencyKey: `term-current-pupil-fee:${term.id}:enrollment:${enrollment.id}`,
+        }]);
+      } else {
+        const matches = schedules.filter((schedule) =>
+          normalizeScheduleValue(schedule.className) === normalizeScheduleValue(enrollment.className)
+          && normalizeScheduleValue(schedule.stream) === normalizeScheduleValue(enrollment.stream)
+          && normalizeScheduleValue(schedule.enrollmentType) === normalizeScheduleValue(student.enrollmentType));
+        if (!matches.length) {
+          throw new Error(`Missing fee schedule for ${enrollment.className}${enrollment.stream ? ` / ${enrollment.stream}` : ""} / ${student.enrollmentType || "unspecified enrollment type"}; no term charges were created.`);
+        }
+        chargeLinesByEnrollment.set(enrollment.id, matches.map((schedule) => ({
+          category: schedule.category, amount: schedule.amount, description: schedule.description,
+          idempotencyKey: `term-schedule:${schedule.id}:enrollment:${enrollment.id}`,
+        })));
       }
-      schedulesByPupil.set(enrollment.id, matches);
     }
     let createdCharges = 0;
     for (const { enrollment, student } of active) {
-      for (const schedule of schedulesByPupil.get(enrollment.id) ?? []) {
-        const category = normalizeScheduleValue(schedule.category);
-        const chargeAmount = student.isSponsored ? 0 : amountNumber(schedule.amount);
+      for (const chargeLine of chargeLinesByEnrollment.get(enrollment.id) ?? []) {
+        const category = normalizeScheduleValue(chargeLine.category);
+        const chargeAmount = student.isSponsored ? 0 : amountNumber(chargeLine.amount);
         const existing = (await tx.select().from(academicFeeCharges).where(and(
           eq(academicFeeCharges.schoolId, schoolId), eq(academicFeeCharges.enrollmentId, enrollment.id),
           eq(academicFeeCharges.termId, term.id),
@@ -94,15 +126,14 @@ export async function openAcademicTerm(termId: string, dates: { startsOn: string
         )).limit(1))[0];
         if (existing) {
           if (amountNumber(existing.amount) !== chargeAmount) {
-            throw new Error(`Existing ${schedule.category} charge for ${enrollment.className} conflicts with its fee schedule; no term charges were added.`);
+            throw new Error(`Existing ${chargeLine.category} charge for ${enrollment.className} conflicts with the selected price; no term charges were added.`);
           }
           continue;
         }
-        const idempotencyKey = `term-schedule:${schedule.id}:enrollment:${enrollment.id}`;
         const [charge] = await tx.insert(academicFeeCharges).values({
           schoolId, enrollmentId: enrollment.id, studentId: student.id, academicYearId: term.academicYearId,
-          termId: term.id, category, amount: String(chargeAmount), description: schedule.description,
-          idempotencyKey, createdBy: actorId,
+          termId: term.id, category, amount: String(chargeAmount), description: chargeLine.description,
+          idempotencyKey: chargeLine.idempotencyKey, createdBy: actorId,
         }).onConflictDoNothing().returning({ id: academicFeeCharges.id });
         if (charge) {
           createdCharges++;

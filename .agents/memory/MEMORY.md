@@ -26,3 +26,4 @@
 - [Student registration response validation](student-registration-response-validation.md) — omit unset parent-status enums; post-transaction response failures can create misleading errors and duplicates.
 - [School security boundaries](school-security-boundaries.md) — preserve same-origin writes, actual-byte upload checks, and audience-aware notifications.
 - [Legacy term reconciliation](legacy-term-reconciliation.md) — preserve unattributed old balances and receipts separately until staff explicitly confirm their original period.
+- [Individual term fees](individual-term-fees.md) — saved term fees are pupil-specific; do not derive shared group rates from them.
