@@ -1,0 +1,897 @@
+I already have a working **Nursery and Primary School Management System for a school in Uganda**, and pupils are already registered in the system.
+
+**DO NOT rebuild the pupil registration system and DO NOT create duplicate pupil accounts.**
+
+The main problem that needs to be solved is how the existing registered pupils are handled when:
+
+1. They pay fees for Term 2.
+2. They pay fees for Term 3.
+3. They have unpaid fees from a previous term.
+4. They leave/transfer to another school before a term ends.
+5. They are promoted from one class to another at the end of the academic year.
+6. Some pupils repeat the same class.
+7. A pupil leaves and should no longer appear as an active pupil in the next term/year.
+8. A pupil returns after previously leaving.
+
+The system must be redesigned/updated so that **academic year, term, enrollment, fees, payments, promotion, repetition and transfers work together correctly while preserving all historical records.**
+
+---
+
+# 1. KEEP THE EXISTING PUPIL ACCOUNT
+
+Every pupil already registered in the system must keep their existing:
+
+* Pupil ID
+* Registration number
+* Name
+* Date of birth
+* Parent/guardian information
+* Contact information
+* Profile information
+* Previous academic records
+* Previous fee records
+* Previous payment records
+
+Never create a new pupil simply because:
+
+* A new term starts.
+* A new academic year starts.
+* The pupil changes class.
+* The pupil is promoted.
+* The pupil repeats.
+* The pupil transfers and later returns.
+
+The pupil should have **one permanent profile** and multiple academic enrollments/history records.
+
+---
+
+# 2. THREE TERMS EVERY ACADEMIC YEAR
+
+The system must properly support:
+
+**Academic Year → Term 1 → Term 2 → Term 3**
+
+Each term must have its own:
+
+* Fee charges
+* Payments
+* Outstanding balances
+* Payment history
+* Class enrollment
+* Attendance
+* Academic records
+* Reports
+
+Do not mix Term 1, Term 2 and Term 3 financial records together.
+
+For example:
+
+### 2026
+
+**Term 1**
+
+* Fees charged
+* Payments
+* Balance
+
+**Term 2**
+
+* Fees charged
+* Payments
+* Balance
+
+**Term 3**
+
+* Fees charged
+* Payments
+* Balance
+
+The system must allow a pupil to have a different payment status in each term.
+
+---
+
+# 3. TERM 2 FEES
+
+When Term 2 begins, the system must automatically recognize that the pupil already exists.
+
+The administrator should be able to open:
+
+**2026 → Term 2 → Fees**
+
+and see all pupils who are active/enrolled for Term 2.
+
+For each pupil show:
+
+* Term 2 fees required
+* Previous outstanding balance
+* New Term 2 charges
+* Total amount due
+* Amount paid for Term 2
+* Total payments received
+* Current outstanding balance
+* Credit/overpayment
+
+Example:
+
+Pupil: John
+
+Term 1:
+
+* Fees: UGX 500,000
+* Paid: UGX 400,000
+* Balance: UGX 100,000
+
+Term 2:
+
+* Term 2 fees: UGX 500,000
+* Previous balance: UGX 100,000
+* Total amount due: UGX 600,000
+* Paid Term 2: UGX 300,000
+* Outstanding: UGX 300,000
+
+The system must clearly show which amount belongs to which term.
+
+---
+
+# 4. TERM 3 FEES
+
+Do exactly the same for Term 3.
+
+When Term 3 begins, the system should automatically create/assign the appropriate Term 3 fee charges to pupils who are enrolled and active for Term 3.
+
+For example:
+
+### Term 3
+
+Previous balance: UGX 200,000
+Term 3 fees: UGX 500,000
+Total due: UGX 700,000
+
+If the parent pays UGX 250,000:
+
+Paid: UGX 250,000
+Outstanding: UGX 450,000
+
+The payment must be recorded against the correct pupil and term.
+
+Do not make the administrator manually create a completely new pupil record for Term 2 or Term 3.
+
+---
+
+# 5. PAYMENTS MUST BE TERM-SPECIFIC
+
+Every fee payment must contain at least:
+
+* Pupil ID
+* Academic year
+* Term
+* Amount
+* Payment date
+* Payment method
+* Receipt/reference number
+* Staff member who recorded it
+* Notes where necessary
+
+The system should never simply add money to a pupil's general balance without identifying the relevant term.
+
+The administrator must be able to open a pupil and see:
+
+### Fee History
+
+2026 Term 1
+Charged: UGX 500,000
+Paid: UGX 400,000
+Balance: UGX 100,000
+
+2026 Term 2
+Charged: UGX 500,000
+Paid: UGX 500,000
+Balance: UGX 0
+
+2026 Term 3
+Charged: UGX 500,000
+Paid: UGX 200,000
+Balance: UGX 300,000
+
+---
+
+# 6. PREVIOUS BALANCES MUST NOT DISAPPEAR
+
+If a pupil enters Term 2 with an unpaid Term 1 balance, the system must not erase it.
+
+Instead show:
+
+**Previous Term Balance**
+
+and
+
+**Current Term Charges**
+
+separately.
+
+This is extremely important because the school must be able to determine exactly which term generated the outstanding amount.
+
+---
+
+# 7. PUPIL LEAVES BEFORE THE TERM ENDS
+
+The system must properly handle pupils who leave/transfer to another school before the end of Term 1, Term 2 or Term 3.
+
+For example:
+
+A pupil is enrolled in:
+
+**2026 Term 2 — Primary 4**
+
+Term 2 fees = UGX 500,000
+
+The pupil has paid:
+
+UGX 200,000
+
+The pupil leaves the school during Term 2.
+
+The system must NOT:
+
+* Delete the pupil.
+* Delete their payments.
+* Mark the fees as paid.
+* Automatically remove the outstanding balance.
+* Create a duplicate pupil.
+* Continue treating the pupil as an active pupil after their leaving date.
+
+Instead, create an official **Transfer/Withdrawal process**.
+
+---
+
+# 8. TRANSFER/LEAVING PROCESS
+
+When the administrator selects:
+
+**Transfer/Withdraw Pupil**
+
+the system should request:
+
+* Leaving date
+* Academic year
+* Current term
+* Current class
+* Reason for leaving
+* Destination school, if available
+* Remarks
+* Staff member processing the transfer
+
+Then change the pupil's current enrollment status to:
+
+**Transferred** or **Withdrawn**
+
+The pupil should no longer appear in normal active-pupil lists.
+
+However, the pupil must remain searchable in:
+
+**Former Pupils / Transferred Pupils / Withdrawn Pupils**
+
+---
+
+# 9. FEES WHEN A PUPIL LEAVES
+
+When a pupil leaves before the term ends, the system must **not automatically cancel the outstanding fees**.
+
+Instead, calculate and display:
+
+* Fees charged
+* Amount paid
+* Outstanding amount
+* Credit balance, if any
+* Adjustments
+* Refunds, if any
+
+The system should allow an authorized administrator to decide what happens according to the school's financial policy.
+
+Possible actions:
+
+* Leave balance outstanding
+* Adjust/cancel approved amount
+* Record refund
+* Apply credit
+* Record settlement
+* Write off an approved amount
+
+Every adjustment must have:
+
+* Amount
+* Reason
+* Date
+* Authorized user
+* Notes
+* Audit record
+
+Never silently delete the financial record.
+
+---
+
+# 10. VERY IMPORTANT: DO NOT CHARGE A TRANSFERRED PUPIL IN FUTURE TERMS
+
+If a pupil leaves during Term 2:
+
+They may have:
+
+**Term 1 — historical record**
+
+**Term 2 — active until leaving date**
+
+But they should NOT automatically receive:
+
+**Term 3 charges**
+
+after they have officially transferred/withdrawn.
+
+Likewise, if they leave before the next academic year, they should not automatically appear as an active pupil in the next academic year.
+
+---
+
+# 11. PROMOTION AT THE END OF THE YEAR
+
+At the end of Term 3, create an:
+
+**END-OF-YEAR / PROMOTION PROCESS**
+
+Do not manually change the pupil's class in a way that destroys their previous class history.
+
+For example:
+
+2026:
+Pupil = Primary 3
+
+At the end of 2026:
+
+**Promote → Primary 4**
+
+The system should create a new academic enrollment:
+
+2027:
+Pupil = Primary 4
+
+But the pupil's permanent profile remains the same.
+
+The history should show:
+
+**2026 — Primary 3 — Completed/Promoted**
+
+**2027 — Primary 4 — Active**
+
+---
+
+# 12. PROMOTION MUST NOT CHANGE OLD RECORDS
+
+If a pupil was in Primary 3 during 2026, changing them to Primary 4 for 2027 must NOT change historical records.
+
+Their 2026 records must still show:
+
+* Primary 3
+* 2026
+* Term 1
+* Term 2
+* Term 3
+* Results
+* Attendance
+* Fees
+* Payments
+* Outstanding balances
+* Teacher comments
+
+The new class applies only to the new academic enrollment.
+
+---
+
+# 13. PUPILS WHO REPEAT
+
+Some pupils may not be promoted.
+
+The administrator should be able to select:
+
+**Repeat Class**
+
+Example:
+
+2026:
+Primary 4
+
+Decision:
+
+**Repeat Primary 4**
+
+Then the system creates:
+
+2027:
+Primary 4 — Repeating
+
+Do not create another pupil.
+
+Do not delete the previous Primary 4 records.
+
+The pupil's history should clearly show:
+
+2026 — P4 — Completed
+2027 — P4 — Repeating
+
+---
+
+# 14. BULK PROMOTION
+
+Because the school may have many pupils, provide a **Promotion Management** page.
+
+The administrator should be able to see:
+
+| Pupil | Current Class | Academic Year | Decision | Next Class |
+| ----- | ------------- | ------------- | -------- | ---------- |
+| John  | P3            | 2026          | Promote  | P4         |
+| Mary  | P3            | 2026          | Repeat   | P3         |
+| Peter | P3            | 2026          | Transfer | —          |
+
+Allow the administrator to:
+
+* Promote individual pupils
+* Promote an entire class
+* Mark pupils as repeating
+* Mark pupils as transferred
+* Correct individual decisions
+* Review all decisions
+* Confirm the promotion process
+
+Do not finalize the process until the administrator confirms it.
+
+---
+
+# 15. PROMOTION SHOULD BE BASED ON SCHOOL DECISION
+
+Do not automatically promote every pupil simply because Term 3 has ended.
+
+The system should allow the school to enter/review:
+
+* Final results
+* Teacher recommendation
+* Academic performance
+* Promotion decision
+* Administrator/headteacher approval
+
+Then the authorized user confirms:
+
+**Promoted**
+
+or
+
+**Repeating**
+
+or
+
+**Transferred**
+
+or another approved status.
+
+---
+
+# 16. NEW ACADEMIC YEAR
+
+When the administrator starts a new academic year, provide:
+
+**Start New Academic Year**
+
+The system should not copy everyone blindly.
+
+Instead, it should use the previous year's final status.
+
+For example:
+
+### 2026 final status
+
+John → Promoted
+Mary → Repeating
+Peter → Transferred
+Sarah → Graduated
+
+When creating 2027:
+
+John → P4
+Mary → P3
+Peter → Not active
+Sarah → Completed
+
+Only eligible pupils should become active pupils for the new year.
+
+---
+
+# 17. FEES FOR PROMOTED PUPILS
+
+When John moves from P3 to P4:
+
+His 2027 P4 fee structure should be applied to his new 2027 enrollment.
+
+Do not continue charging him using the old P3 fee structure.
+
+Example:
+
+2026 P3 fee = UGX 500,000
+
+2027 P4 fee = UGX 550,000
+
+The system should automatically use:
+
+**2027 P4 = UGX 550,000**
+
+while preserving all 2026 P3 financial history.
+
+---
+
+# 18. OUTSTANDING FEES WHEN PROMOTING
+
+If a pupil is promoted while owing money from the previous academic year, the outstanding amount must not disappear.
+
+Example:
+
+2026 Term 3:
+
+Fees = UGX 500,000
+Paid = UGX 300,000
+Balance = UGX 200,000
+
+Pupil is promoted to P4 in 2027.
+
+The system should show:
+
+**Previous Academic Year Outstanding: UGX 200,000**
+
+Then:
+
+**2027 P4 Fees: UGX 550,000**
+
+**Total Amount Due: UGX 750,000**
+
+But keep the two amounts separately identifiable.
+
+The school should always know that UGX 200,000 came from 2026 and UGX 550,000 is the 2027 charge.
+
+---
+
+# 19. IF A PUPIL WITH OUTSTANDING FEES LEAVES
+
+If a pupil transfers while owing fees, their financial record must remain.
+
+Example:
+
+2026 Term 2:
+
+Charged = UGX 500,000
+Paid = UGX 250,000
+Outstanding = UGX 250,000
+
+Pupil transfers.
+
+The system should show:
+
+**Status: Transferred**
+
+**Outstanding School Balance: UGX 250,000**
+
+Do not delete the balance.
+
+Do not automatically mark it as zero.
+
+Provide a separate financial action for authorized staff if the school later receives payment, approves a waiver, or records another settlement.
+
+---
+
+# 20. IF A FORMER PUPIL PAYS LATER
+
+The system must allow the school to receive payment from a pupil who has already transferred or left.
+
+Search for the former pupil and record the payment against the original outstanding fee.
+
+Example:
+
+Former pupil:
+
+2026 Term 2 balance = UGX 250,000
+
+Later payment:
+
+UGX 100,000
+
+The system updates:
+
+Original balance = UGX 250,000
+Later payment = UGX 100,000
+Remaining balance = UGX 150,000
+
+Do not create a new pupil.
+
+---
+
+# 21. OVERVIEW DASHBOARD
+
+Update the dashboard so management can immediately see:
+
+### Current Term
+
+* Total pupils
+* Total fees expected
+* Total fees collected
+* Total outstanding
+* Number fully paid
+* Number partially paid
+* Number with no payment
+* Total credits/overpayments
+
+### Previous Terms
+
+* Outstanding Term 1 fees
+* Outstanding Term 2 fees
+* Outstanding Term 3 fees
+
+### Former Pupils
+
+* Number transferred
+* Number withdrawn
+* Outstanding balances from former pupils
+* Amount recovered from former pupils
+
+### Academic Progress
+
+* Pupils promoted
+* Pupils repeating
+* Pupils transferred
+* Pupils completed/graduated
+* Pupils awaiting promotion decision
+
+Everything must update automatically from the actual database.
+
+---
+
+# 22. PUPIL PROFILE
+
+When opening a pupil, provide clear sections:
+
+**Personal Information**
+
+**Current Enrollment**
+
+**Academic History**
+
+**Fee Statement**
+
+**Payment History**
+
+**Outstanding Balances**
+
+**Term History**
+
+**Promotion History**
+
+**Transfer/Withdrawal History**
+
+**Attendance**
+
+**Results**
+
+The administrator should not have to search through multiple unrelated areas to understand the pupil's complete history.
+
+---
+
+# 23. IMPORTANT DATABASE LOGIC
+
+Use separate records for:
+
+### Pupil
+
+Permanent identity.
+
+### Enrollment
+
+Academic year + term + class + stream + status.
+
+### Fee Charge
+
+What the pupil was charged.
+
+### Payment
+
+What the school actually received.
+
+### Financial Adjustment
+
+Approved waiver, refund, correction, credit or write-off.
+
+### Promotion History
+
+Previous class → new class.
+
+### Transfer/Withdrawal
+
+Leaving date and status.
+
+This is important because changing the pupil's current class or status must never overwrite previous records.
+
+---
+
+# 24. PREVENT DUPLICATE CHARGES
+
+The system must prevent the same pupil from receiving duplicate fee charges for the same:
+
+**Academic Year + Term + Fee Category + Enrollment**
+
+unless an authorized user deliberately adds an additional approved charge.
+
+This must be enforced at the database level as well as in the interface.
+
+---
+
+# 25. PREVENT DUPLICATE PROMOTION
+
+A pupil must not accidentally be promoted twice.
+
+If the pupil has already been processed for:
+
+**2026 → 2027**
+
+the system should recognize this and prevent another promotion record from being created accidentally.
+
+Provide a controlled correction option for authorized administrators.
+
+---
+
+# 26. TERM CLOSING
+
+When closing a term, the system should automatically prepare:
+
+* Fees charged
+* Payments received
+* Outstanding balances
+* Credits
+* Pupils who left
+* Active pupils
+* Transferred pupils
+* Withdrawn pupils
+
+Do not delete or lock away historical records.
+
+They must remain available for reports and financial statements.
+
+---
+
+# 27. TEST THE EXISTING SYSTEM
+
+Before considering this feature complete, inspect the **existing application and database**.
+
+Do not assume the current implementation is correct.
+
+Check:
+
+* Existing pupil records
+* Existing fee records
+* Existing payment records
+* Existing classes
+* Existing academic years
+* Existing terms
+* Existing database relationships
+* Existing dashboards
+* Existing reports
+
+Identify any existing data structure that would cause duplicate pupils, duplicate charges, incorrect balances or lost history.
+
+If necessary, create a safe migration that preserves existing data.
+
+**Do not delete existing pupil or financial records simply to make the new system work.**
+
+---
+
+# 28. TEST THESE EXACT SCENARIOS
+
+The developer/AI must test the system using realistic scenarios:
+
+### Scenario 1
+
+Existing pupil pays Term 1 partially.
+
+Then pays the remaining balance.
+
+Then pays Term 2.
+
+Then pays Term 3.
+
+Verify that every payment appears under the correct term.
+
+### Scenario 2
+
+Pupil has a Term 1 balance.
+
+Term 2 starts.
+
+Verify the previous balance remains visible while Term 2 fees are added.
+
+### Scenario 3
+
+Pupil leaves halfway through Term 2.
+
+Verify:
+
+* Pupil is no longer active.
+* Previous records remain.
+* Term 2 payments remain.
+* Outstanding fees remain.
+* No Term 3 charges are created.
+
+### Scenario 4
+
+Pupil transfers while owing money.
+
+Verify the outstanding balance remains attached to the pupil's financial history.
+
+### Scenario 5
+
+Pupil transfers and later pays the outstanding balance.
+
+Verify the payment reduces the original outstanding balance.
+
+### Scenario 6
+
+Pupil is promoted from P3 to P4.
+
+Verify:
+
+* Same pupil ID.
+* Same registration number.
+* 2026 history remains P3.
+* 2027 enrollment becomes P4.
+* P4 fee structure is applied.
+
+### Scenario 7
+
+Pupil repeats P3.
+
+Verify:
+
+* Same pupil.
+* 2026 P3 history remains.
+* 2027 enrollment becomes P3 repeating.
+
+### Scenario 8
+
+Pupil transfers and returns the following year.
+
+Verify that the system reactivates the existing pupil profile through a new enrollment instead of creating a duplicate.
+
+---
+
+# 29. FINAL REQUIREMENT
+
+The goal is to make the **existing school system ready for continuous yearly use**.
+
+The school should be able to move from:
+
+**2026 Term 1 → 2026 Term 2 → 2026 Term 3 → 2027 → 2027 Term 1 → Term 2 → Term 3 → 2028...**
+
+without manually recreating pupils.
+
+The system must automatically preserve the complete history while allowing:
+
+**Term fees → payments → balances → transfers → promotion → repetition → new academic year → new term fees**
+
+to work as one connected process.
+
+Most importantly:
+
+**DO NOT DELETE EXISTING PUPILS.**
+
+**DO NOT CREATE DUPLICATE PUPILS.**
+
+**DO NOT DELETE OLD FEE RECORDS.**
+
+**DO NOT MIX DIFFERENT TERMS' PAYMENTS.**
+
+**DO NOT LOSE OUTSTANDING BALANCES.**
+
+**DO NOT CHARGE PUPILS AFTER THEY HAVE OFFICIALLY LEFT.**
+
+**DO NOT CHANGE OLD CLASS HISTORY WHEN PROMOTING A PUPIL.**
+
+Make the existing system capable of handling the school's real-life operations continuously and accurately.
