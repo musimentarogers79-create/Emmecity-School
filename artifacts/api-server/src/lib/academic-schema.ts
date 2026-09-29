@@ -6,6 +6,7 @@ const cache = new Map<string, { checkedAt: number; state: AcademicSchemaState }>
 const cacheTtlMs = 5_000;
 
 const enrollmentTables = ["academic_enrollments"] as const;
+const registrationTables = ["academic_years", "academic_terms", "academic_enrollments"] as const;
 const paymentAllocationTables = ["academic_payment_allocations"] as const;
 const feeChargeTables = ["academic_enrollments", "academic_fee_charges"] as const;
 const ledgerTables = [
@@ -49,6 +50,7 @@ async function checkTables(tables: readonly string[]): Promise<AcademicSchemaSta
 }
 
 export const academicEnrollmentSchemaState = () => checkTables(enrollmentTables);
+export const academicRegistrationSchemaState = () => checkTables(registrationTables);
 export const academicPaymentAllocationSchemaState = () => checkTables(paymentAllocationTables);
 export const academicFeeChargeSchemaState = () => checkTables(feeChargeTables);
 export const academicLedgerSchemaState = () => checkTables(ledgerTables);

@@ -515,7 +515,12 @@ router.post("/students", async (req, res): Promise<void> => {
   try {
     const created = await createStudentWithPayment(parsed.data);
     if (created.payment) await sendPaymentConfirmationSms(created.payment, created.student);
-    const result = { ...created.student, ...(created.payment ? { receiptNumber: created.payment.receiptNumber } : {}), admissionForm: created.admissionForm };
+    const result = {
+      ...created.student,
+      ...(created.payment ? { receiptNumber: created.payment.receiptNumber } : {}),
+      ...(created.academicEnrollment ? { academicEnrollment: created.academicEnrollment } : {}),
+      admissionForm: created.admissionForm,
+    };
     res.status(201).json(CreateStudentResponse.parse(result));
   } catch { errorResponse(res, 409, "A pupil could not be registered. Please try again."); }
 });

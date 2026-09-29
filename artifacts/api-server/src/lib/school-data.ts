@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
-import { and, asc, desc, eq, gt, ilike, inArray, isNotNull, isNull, lt, ne, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, ilike, inArray, isNotNull, isNull, lt, lte, ne, or, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import {
   announcements, attendance, assignments, classes, discipline, documents, events, expenses,
@@ -9,7 +9,7 @@ import {
 import type { SchoolSettings, User } from "@workspace/db";
 import { requestObjectDownload } from "./object-storage";
 import {
-  academicEnrollmentSchemaState, academicFeeChargeSchemaState,
+  academicEnrollmentSchemaState, academicFeeChargeSchemaState, academicRegistrationSchemaState,
   academicLedgerSchemaState, academicPaymentAllocationSchemaState,
 } from "./academic-schema";
 import { compactSingleSegmentSms } from "./single-segment-sms";
@@ -645,6 +645,11 @@ export async function createStudentWithPayment(data: {
   initialPayment?: number; previousFeeBalance?: number; paymentMethod?: string; paymentReference?: string;
 }) {
   const schoolId = await getSchoolId();
+  const registrationDate = isoDate();
+  const registrationSchemaState = await academicRegistrationSchemaState();
+  if (registrationSchemaState === "partial") {
+    throw new Error("Academic enrollment setup is incomplete; the pupil was not registered.");
+  }
   return db.transaction(async (tx) => {
     const text = (value?: string) => value?.trim() || "";
     const firstName = data.firstName.trim();
@@ -682,6 +687,35 @@ export async function createStudentWithPayment(data: {
        isSponsored, termFee: String(termFee), amountPaid: String(initialPayment), previousFeeBalance: String(previousFeeBalance), feeBalance: String(Math.max(0, previousFeeBalance + termFee - initialPayment)),
     }).returning())[0];
     if (!studentRowValue) throw new Error("Unable to register pupil");
+    let academicEnrollment: { id: string; academicYearId: string; academicYear: number; termNumber: number } | undefined;
+    if (registrationSchemaState === "ready") {
+      const datedTerms = await tx.select({
+        termId: academicTerms.id, academicYearId: academicYears.id,
+        academicYear: academicYears.year, termNumber: academicTerms.number,
+      }).from(academicTerms).innerJoin(academicYears, and(
+        eq(academicTerms.schoolId, academicYears.schoolId),
+        eq(academicTerms.academicYearId, academicYears.id),
+      )).where(and(
+        eq(academicTerms.schoolId, schoolId), ne(academicTerms.status, "closed"),
+        ne(academicYears.status, "closed"),
+        lte(academicTerms.startsOn, registrationDate), gte(academicTerms.endsOn, registrationDate),
+      )).for("update").limit(2);
+      if (datedTerms.length > 1) {
+        throw new Error("More than one non-closed academic term covers today; resolve the academic calendar before registering a pupil.");
+      }
+      const targetTerm = datedTerms[0];
+      if (targetTerm) {
+        const [enrollment] = await tx.insert(academicEnrollments).values({
+          schoolId, studentId: studentRowValue.id, academicYearId: targetTerm.academicYearId,
+          className, stream, status: "active", enrolledOn: registrationDate,
+        }).returning({ id: academicEnrollments.id });
+        if (!enrollment) throw new Error("Unable to add the new pupil to the dated academic term.");
+        academicEnrollment = {
+          id: enrollment.id, academicYearId: targetTerm.academicYearId,
+          academicYear: targetTerm.academicYear, termNumber: targetTerm.termNumber,
+        };
+      }
+    }
     let payment: Payment | undefined;
     if (initialPayment > 0) {
       const receiptCount = await tx.select({ count: sql<number>`count(*)` }).from(payments).where(and(eq(payments.schoolId, schoolId), ilike(payments.receiptNumber, `RCPT-${year}-%`)));
@@ -760,7 +794,11 @@ export async function createStudentWithPayment(data: {
     };
     const admissionDocument = (await tx.insert(documents).values({ schoolId, data: admissionFormData }).returning())[0];
     if (!admissionDocument) throw new Error("Unable to save admission form");
-    return { student: studentRow(studentRowValue), payment, admissionForm: { ...admissionFormData, id: admissionDocument.id } };
+    return {
+      student: studentRow(studentRowValue), payment,
+      ...(academicEnrollment ? { academicEnrollment } : {}),
+      admissionForm: { ...admissionFormData, id: admissionDocument.id },
+    };
   });
 }
 export async function updateStudentBalance(studentId: string, amount: number) {

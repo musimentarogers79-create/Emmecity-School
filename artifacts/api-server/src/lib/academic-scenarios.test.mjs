@@ -474,3 +474,26 @@ test("Scenario 8: A returning transfer reuses the pupil profile and registration
   assert.equal(enrollmentRows.find((row) => row.academic_year_id === nextYear.id).status, "active");
   assert.equal(returnedEnrollment.studentId, pupil.id);
 });
+
+test("Scenario 9: Planned term dates are editable until charges exist", async () => {
+  const { enrollment, terms } = await setupPupil(2040, "Scenario Nine");
+  const [, term2, term3] = terms;
+  const updated = await academic.updatePlannedAcademicTermDates(term3.id, {
+    startsOn: "2040-09-14", endsOn: "2040-11-30",
+  });
+  assert.equal(updated.status, "planned");
+  const { rows: savedDates } = await pool.query(
+    "SELECT starts_on::text, ends_on::text FROM academic_terms WHERE id = $1",
+    [term3.id],
+  );
+  assert.deepEqual(savedDates[0], { starts_on: "2040-09-14", ends_on: "2040-11-30" });
+  await assert.rejects(
+    academic.updatePlannedAcademicTermDates(term2.id, { startsOn: "2040-10-01", endsOn: "2040-10-31" }),
+    /overlap another planned or open term/,
+  );
+  await charge(enrollment.id, term3.id, 100_000, "s9-t3");
+  await assert.rejects(
+    academic.updatePlannedAcademicTermDates(term3.id, { startsOn: "2040-09-15", endsOn: "2040-11-30" }),
+    /after fee charges have been created/,
+  );
+});

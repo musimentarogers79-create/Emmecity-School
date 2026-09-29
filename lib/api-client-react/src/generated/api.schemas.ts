@@ -425,6 +425,21 @@ export interface AdmissionForm {
   generatedAt: string;
 }
 
+export interface AcademicEnrollmentPlacement {
+  id: string;
+  academicYearId: string;
+  /**
+     * @minimum 1900
+     * @maximum 2200
+     */
+  academicYear: number;
+  /**
+     * @minimum 1
+     * @maximum 3
+     */
+  termNumber: number;
+}
+
 export interface Student {
   id: string;
   registrationNumber: string;
@@ -448,6 +463,7 @@ export interface Student {
   previousFeeBalance: number;
   receiptNumber?: string;
   admissionForm?: AdmissionForm;
+  academicEnrollment?: AcademicEnrollmentPlacement;
 }
 
 export type StudentInputMotherStatus = typeof StudentInputMotherStatus[keyof typeof StudentInputMotherStatus];
@@ -1393,6 +1409,11 @@ export interface AcademicPaymentInput {
 }
 
 export interface OpenAcademicTermInput {
+  startsOn: string;
+  endsOn: string;
+}
+
+export interface AcademicTermDatesInput {
   startsOn: string;
   endsOn: string;
 }

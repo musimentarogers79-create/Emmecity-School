@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, ne, sql } from "drizzle-orm";
 import { db } from "@workspace/db";
 import { academicWorkspaceSchemaState } from "./academic-schema";
 import {
@@ -125,6 +125,31 @@ export async function openAcademicTerm(termId: string, dates: { startsOn: string
     await tx.update(academicYears).set({ status: "current", updatedAt: new Date() })
       .where(and(eq(academicYears.schoolId, schoolId), eq(academicYears.id, term.academicYearId)));
     return { ...currentTerm, status: "open", createdCharges };
+  });
+}
+
+export async function updatePlannedAcademicTermDates(termId: string, dates: { startsOn: string; endsOn: string }) {
+  const schoolId = await academicSchoolId();
+  if (dates.startsOn > dates.endsOn) throw new Error("Term start date must be on or before its end date");
+  return db.transaction(async (tx) => {
+    const term = (await tx.select().from(academicTerms)
+      .where(and(eq(academicTerms.schoolId, schoolId), eq(academicTerms.id, termId))).for("update").limit(1))[0];
+    if (!term) return undefined;
+    if (term.status !== "planned") throw new Error("Only planned terms can have their dates edited");
+    const existingCharges = await tx.select({ id: academicFeeCharges.id }).from(academicFeeCharges)
+      .where(and(eq(academicFeeCharges.schoolId, schoolId), eq(academicFeeCharges.termId, term.id))).limit(1);
+    if (existingCharges.length) throw new Error("Term dates cannot be changed after fee charges have been created");
+    const overlappingTerms = await tx.select({ id: academicTerms.id }).from(academicTerms)
+      .where(and(
+        eq(academicTerms.schoolId, schoolId), eq(academicTerms.academicYearId, term.academicYearId),
+        ne(academicTerms.id, term.id), ne(academicTerms.status, "closed"),
+        lte(academicTerms.startsOn, dates.endsOn), gte(academicTerms.endsOn, dates.startsOn),
+      )).limit(1);
+    if (overlappingTerms.length) throw new Error("These dates overlap another planned or open term in this academic year");
+    const [updated] = await tx.update(academicTerms).set({
+      startsOn: dates.startsOn, endsOn: dates.endsOn, updatedAt: new Date(),
+    }).where(and(eq(academicTerms.schoolId, schoolId), eq(academicTerms.id, term.id))).returning();
+    return updated;
   });
 }
 

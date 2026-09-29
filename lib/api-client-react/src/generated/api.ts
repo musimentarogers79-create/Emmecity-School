@@ -33,6 +33,7 @@ import type {
   AcademicPayment,
   AcademicPaymentInput,
   AcademicTerm,
+  AcademicTermDatesInput,
   AcademicTermStatement,
   AcademicYear,
   AcademicYearInput,
@@ -3997,6 +3998,78 @@ export const useOpenAcademicTerm = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getOpenAcademicTermMutationOptions(options));
+    }
+
+export const getUpdateAcademicTermUrl = (termId: string,) => {
+
+
+
+
+  return `/api/academic/terms/${termId}`
+}
+
+/**
+ * @summary Update dates for a planned academic term
+ */
+export const updateAcademicTerm = async (termId: string,
+    academicTermDatesInput: AcademicTermDatesInput, options?: Parameters<typeof customFetch>[1]): Promise<AcademicTerm> => {
+
+  return customFetch<AcademicTerm>(getUpdateAcademicTermUrl(termId),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(academicTermDatesInput)
+  }
+);}
+
+
+
+
+
+export const getUpdateAcademicTermMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAcademicTerm>>, TError,{termId: string;data: BodyType<AcademicTermDatesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAcademicTerm>>, TError,{termId: string;data: BodyType<AcademicTermDatesInput>}, TContext> => {
+
+const mutationKey = ['updateAcademicTerm'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAcademicTerm>>, {termId: string;data: BodyType<AcademicTermDatesInput>}> = (props) => {
+          const {termId,data} = props ?? {};
+
+          return  updateAcademicTerm(termId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAcademicTermMutationResult = NonNullable<Awaited<ReturnType<typeof updateAcademicTerm>>>
+    export type UpdateAcademicTermMutationBody = BodyType<AcademicTermDatesInput>
+    export type UpdateAcademicTermMutationError = ErrorType<void>
+
+    /**
+ * @summary Update dates for a planned academic term
+ */
+export const useUpdateAcademicTerm = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAcademicTerm>>, TError,{termId: string;data: BodyType<AcademicTermDatesInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAcademicTerm>>,
+        TError,
+        {termId: string;data: BodyType<AcademicTermDatesInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateAcademicTermMutationOptions(options));
     }
 
 export const getCloseAcademicTermUrl = (termId: string,) => {

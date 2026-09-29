@@ -16,6 +16,7 @@ import {
   ConfirmPromotionCycleParams, ConfirmPromotionCycleResponse, GetAcademicDashboardQueryParams,
   GetAcademicDashboardResponse, GetStudentAcademicHistoryParams, GetStudentAcademicHistoryResponse,
   AllocateExistingAcademicPaymentParams, AllocateExistingAcademicPaymentBody, AllocateExistingAcademicPaymentResponse,
+  UpdateAcademicTermParams, UpdateAcademicTermBody, UpdateAcademicTermResponse,
 } from "@workspace/api-zod";
 import { currentUserFromToken } from "../lib/school-data";
 import { academicWorkspaceSchemaState } from "../lib/academic-schema";
@@ -25,7 +26,7 @@ import {
   getStudentAcademicHistory, getTermFeeStatement, importCurrentEnrollments,
   allocateExistingPayment, listAcademicEnrollments, listAcademicYears, listPromotionDecisions,
   listTermFeeSchedules, openAcademicTerm, recordAcademicPayment, updatePromotionDecision,
-  upsertTermFeeSchedule, withdrawEnrollment,
+  updatePlannedAcademicTermDates, upsertTermFeeSchedule, withdrawEnrollment,
 } from "../lib/academic-finance";
 
 const router: IRouter = Router();
@@ -129,6 +130,23 @@ router.post("/academic/terms/:termId/open", async (req, res): Promise<void> => {
   } catch (error) { fail(res, 409, errorText(error, "Unable to open academic term.")); return; }
   if (!term) { fail(res, 404, "Academic term not found."); return; }
   res.json(OpenAcademicTermResponse.parse(term));
+});
+
+router.put("/academic/terms/:termId", async (req, res): Promise<void> => {
+  const user = await userFromRequest(req);
+  if (!user || !isAdministrator(user.role)) { fail(res, 403, "Administrator access is required."); return; }
+  const params = UpdateAcademicTermParams.safeParse(req.params);
+  const parsed = UpdateAcademicTermBody.safeParse(req.body);
+  if (!params.success || !parsed.success) { fail(res, 400, "Provide a valid term id and start/end dates."); return; }
+  let term;
+  try {
+    term = await updatePlannedAcademicTermDates(params.data.termId, {
+      startsOn: parsed.data.startsOn instanceof Date ? parsed.data.startsOn.toISOString().slice(0, 10) : parsed.data.startsOn,
+      endsOn: parsed.data.endsOn instanceof Date ? parsed.data.endsOn.toISOString().slice(0, 10) : parsed.data.endsOn,
+    });
+  } catch (error) { fail(res, 409, errorText(error, "Unable to update academic term dates.")); return; }
+  if (!term) { fail(res, 404, "Academic term not found."); return; }
+  res.json(UpdateAcademicTermResponse.parse(term));
 });
 
 router.post("/academic/terms/:termId/close", async (req, res): Promise<void> => {

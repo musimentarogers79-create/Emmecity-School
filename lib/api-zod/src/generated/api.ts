@@ -557,7 +557,17 @@ export const UpdateUserPermissionsResponse = zod.object({
  */
 
 
+export const getDashboardResponseRecentAdmissionsItemAcademicEnrollmentAcademicYearMin = 1900;
+export const getDashboardResponseRecentAdmissionsItemAcademicEnrollmentAcademicYearMax = 2200;
 
+export const getDashboardResponseRecentAdmissionsItemAcademicEnrollmentTermNumberMax = 3;
+
+
+
+export const getDashboardResponseChildrenItemAcademicEnrollmentAcademicYearMin = 1900;
+export const getDashboardResponseChildrenItemAcademicEnrollmentAcademicYearMax = 2200;
+
+export const getDashboardResponseChildrenItemAcademicEnrollmentTermNumberMax = 3;
 
 
 
@@ -662,6 +672,12 @@ export const GetDashboardResponse = zod.object({
   "feeBalance": zod.number(),
   "previousFeeBalance": zod.number(),
   "generatedAt": zod.string()
+}).optional(),
+  "academicEnrollment": zod.object({
+  "id": zod.string(),
+  "academicYearId": zod.string(),
+  "academicYear": zod.number().min(getDashboardResponseRecentAdmissionsItemAcademicEnrollmentAcademicYearMin).max(getDashboardResponseRecentAdmissionsItemAcademicEnrollmentAcademicYearMax),
+  "termNumber": zod.number().min(1).max(getDashboardResponseRecentAdmissionsItemAcademicEnrollmentTermNumberMax)
 }).optional()
 })),
   "upcomingEvents": zod.array(zod.object({
@@ -751,6 +767,12 @@ export const GetDashboardResponse = zod.object({
   "feeBalance": zod.number(),
   "previousFeeBalance": zod.number(),
   "generatedAt": zod.string()
+}).optional(),
+  "academicEnrollment": zod.object({
+  "id": zod.string(),
+  "academicYearId": zod.string(),
+  "academicYear": zod.number().min(getDashboardResponseChildrenItemAcademicEnrollmentAcademicYearMin).max(getDashboardResponseChildrenItemAcademicEnrollmentAcademicYearMax),
+  "termNumber": zod.number().min(1).max(getDashboardResponseChildrenItemAcademicEnrollmentTermNumberMax)
 }).optional()
 })).optional(),
   "feeBalance": zod.number().optional(),
@@ -775,6 +797,11 @@ export const ListStudentsQueryParams = zod.object({
 })
 
 
+
+export const listStudentsResponseAcademicEnrollmentAcademicYearMin = 1900;
+export const listStudentsResponseAcademicEnrollmentAcademicYearMax = 2200;
+
+export const listStudentsResponseAcademicEnrollmentTermNumberMax = 3;
 
 
 
@@ -857,6 +884,12 @@ export const ListStudentsResponseItem = zod.object({
   "feeBalance": zod.number(),
   "previousFeeBalance": zod.number(),
   "generatedAt": zod.string()
+}).optional(),
+  "academicEnrollment": zod.object({
+  "id": zod.string(),
+  "academicYearId": zod.string(),
+  "academicYear": zod.number().min(listStudentsResponseAcademicEnrollmentAcademicYearMin).max(listStudentsResponseAcademicEnrollmentAcademicYearMax),
+  "termNumber": zod.number().min(1).max(listStudentsResponseAcademicEnrollmentTermNumberMax)
 }).optional()
 })
 export const ListStudentsResponse = zod.array(ListStudentsResponseItem)
@@ -935,6 +968,11 @@ export const CreateStudentBody = zod.object({
 })
 
 
+
+export const createStudentResponseAcademicEnrollmentAcademicYearMin = 1900;
+export const createStudentResponseAcademicEnrollmentAcademicYearMax = 2200;
+
+export const createStudentResponseAcademicEnrollmentTermNumberMax = 3;
 
 
 
@@ -1017,6 +1055,12 @@ export const CreateStudentResponse = zod.object({
   "feeBalance": zod.number(),
   "previousFeeBalance": zod.number(),
   "generatedAt": zod.string()
+}).optional(),
+  "academicEnrollment": zod.object({
+  "id": zod.string(),
+  "academicYearId": zod.string(),
+  "academicYear": zod.number().min(createStudentResponseAcademicEnrollmentAcademicYearMin).max(createStudentResponseAcademicEnrollmentAcademicYearMax),
+  "termNumber": zod.number().min(1).max(createStudentResponseAcademicEnrollmentTermNumberMax)
 }).optional()
 })
 
@@ -1101,6 +1145,11 @@ export const GetStudentParams = zod.object({
 
 
 
+export const getStudentResponseOneAcademicEnrollmentAcademicYearMin = 1900;
+export const getStudentResponseOneAcademicEnrollmentAcademicYearMax = 2200;
+
+export const getStudentResponseOneAcademicEnrollmentTermNumberMax = 3;
+
 
 
 export const GetStudentResponse = zod.object({
@@ -1182,6 +1231,12 @@ export const GetStudentResponse = zod.object({
   "feeBalance": zod.number(),
   "previousFeeBalance": zod.number(),
   "generatedAt": zod.string()
+}).optional(),
+  "academicEnrollment": zod.object({
+  "id": zod.string(),
+  "academicYearId": zod.string(),
+  "academicYear": zod.number().min(getStudentResponseOneAcademicEnrollmentAcademicYearMin).max(getStudentResponseOneAcademicEnrollmentAcademicYearMax),
+  "termNumber": zod.number().min(1).max(getStudentResponseOneAcademicEnrollmentTermNumberMax)
 }).optional()
 }).and(zod.object({
   "dateOfBirth": zod.string(),
@@ -1272,6 +1327,11 @@ export const UpdateStudentBody = zod.object({
 
 
 
+export const updateStudentResponseOneAcademicEnrollmentAcademicYearMin = 1900;
+export const updateStudentResponseOneAcademicEnrollmentAcademicYearMax = 2200;
+
+export const updateStudentResponseOneAcademicEnrollmentTermNumberMax = 3;
+
 
 
 export const UpdateStudentResponse = zod.object({
@@ -1353,6 +1413,12 @@ export const UpdateStudentResponse = zod.object({
   "feeBalance": zod.number(),
   "previousFeeBalance": zod.number(),
   "generatedAt": zod.string()
+}).optional(),
+  "academicEnrollment": zod.object({
+  "id": zod.string(),
+  "academicYearId": zod.string(),
+  "academicYear": zod.number().min(updateStudentResponseOneAcademicEnrollmentAcademicYearMin).max(updateStudentResponseOneAcademicEnrollmentAcademicYearMax),
+  "termNumber": zod.number().min(1).max(updateStudentResponseOneAcademicEnrollmentTermNumberMax)
 }).optional()
 }).and(zod.object({
   "dateOfBirth": zod.string(),
@@ -1908,6 +1974,21 @@ export const OpenAcademicTermResponse = zod.record(zod.string(), zod.unknown())
 
 
 /**
+ * @summary Update dates for a planned academic term
+ */
+export const UpdateAcademicTermParams = zod.object({
+  "termId": zod.coerce.string()
+})
+
+export const UpdateAcademicTermBody = zod.object({
+  "startsOn": zod.coerce.date(),
+  "endsOn": zod.coerce.date()
+})
+
+export const UpdateAcademicTermResponse = zod.record(zod.string(), zod.unknown())
+
+
+/**
  * @summary Close a term while preserving all financial and enrollment history
  */
 export const CloseAcademicTermParams = zod.object({
@@ -2281,6 +2362,11 @@ export const GetReportCardParams = zod.object({
 
 
 
+export const getReportCardResponseStudentAcademicEnrollmentAcademicYearMin = 1900;
+export const getReportCardResponseStudentAcademicEnrollmentAcademicYearMax = 2200;
+
+export const getReportCardResponseStudentAcademicEnrollmentTermNumberMax = 3;
+
 
 
 export const GetReportCardResponse = zod.object({
@@ -2363,6 +2449,12 @@ export const GetReportCardResponse = zod.object({
   "feeBalance": zod.number(),
   "previousFeeBalance": zod.number(),
   "generatedAt": zod.string()
+}).optional(),
+  "academicEnrollment": zod.object({
+  "id": zod.string(),
+  "academicYearId": zod.string(),
+  "academicYear": zod.number().min(getReportCardResponseStudentAcademicEnrollmentAcademicYearMin).max(getReportCardResponseStudentAcademicEnrollmentAcademicYearMax),
+  "termNumber": zod.number().min(1).max(getReportCardResponseStudentAcademicEnrollmentTermNumberMax)
 }).optional()
 }),
   "term": zod.string(),
@@ -2426,6 +2518,11 @@ export const CreateReportCardBody = zod.object({
 })
 
 
+
+export const createReportCardResponseStudentAcademicEnrollmentAcademicYearMin = 1900;
+export const createReportCardResponseStudentAcademicEnrollmentAcademicYearMax = 2200;
+
+export const createReportCardResponseStudentAcademicEnrollmentTermNumberMax = 3;
 
 
 
@@ -2509,6 +2606,12 @@ export const CreateReportCardResponse = zod.object({
   "feeBalance": zod.number(),
   "previousFeeBalance": zod.number(),
   "generatedAt": zod.string()
+}).optional(),
+  "academicEnrollment": zod.object({
+  "id": zod.string(),
+  "academicYearId": zod.string(),
+  "academicYear": zod.number().min(createReportCardResponseStudentAcademicEnrollmentAcademicYearMin).max(createReportCardResponseStudentAcademicEnrollmentAcademicYearMax),
+  "termNumber": zod.number().min(1).max(createReportCardResponseStudentAcademicEnrollmentTermNumberMax)
 }).optional()
 }),
   "term": zod.string(),

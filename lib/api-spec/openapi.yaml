@@ -967,6 +967,28 @@ paths:
                 $ref: "#/components/schemas/AcademicTerm"
         "409":
           description: Missing schedule, conflicting charge, or invalid date range
+  /academic/terms/{termId}:
+    put:
+      operationId: updateAcademicTerm
+      tags: [academicLifecycle]
+      summary: Update dates for a planned academic term
+      parameters:
+        - $ref: "#/components/parameters/AcademicTermId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcademicTermDatesInput"
+      responses:
+        "200":
+          description: Updated planned term
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AcademicTerm"
+        "409":
+          description: Term is no longer editable or dates conflict with another term
   /academic/terms/{termId}/close:
     post:
       operationId: closeAcademicTerm
@@ -2024,7 +2046,17 @@ components:
           type: string
         admissionForm:
           $ref: "#/components/schemas/AdmissionForm"
+        academicEnrollment:
+          $ref: "#/components/schemas/AcademicEnrollmentPlacement"
       required: [id, registrationNumber, name, firstName, lastName, admissionDate, className, stream, gender, status, attendancePercentage, feeBalance, previousFeeBalance, avatarTone, enrollmentType, isSponsored, termFee, amountPaid]
+    AcademicEnrollmentPlacement:
+      type: object
+      properties:
+        id: { type: string }
+        academicYearId: { type: string }
+        academicYear: { type: number, minimum: 1900, maximum: 2200 }
+        termNumber: { type: number, minimum: 1, maximum: 3 }
+      required: [id, academicYearId, academicYear, termNumber]
     AdmissionForm:
       type: object
       properties:
@@ -3556,6 +3588,12 @@ components:
         idempotencyKey: { type: string, minLength: 1, maxLength: 150 }
       required: [amount, method, idempotencyKey]
     OpenAcademicTermInput:
+      type: object
+      properties:
+        startsOn: { type: string, format: date }
+        endsOn: { type: string, format: date }
+      required: [startsOn, endsOn]
+    AcademicTermDatesInput:
       type: object
       properties:
         startsOn: { type: string, format: date }

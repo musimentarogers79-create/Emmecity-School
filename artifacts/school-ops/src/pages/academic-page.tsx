@@ -11,7 +11,7 @@ import {
   useGetAcademicDashboard, useGetCurrentUser, useGetStudentAcademicHistory, useGetTermFeeStatement,
   useImportCurrentEnrollments, useListAcademicEnrollments, useListAcademicTermFeeSchedules, useListAcademicYears, useListPayments, useListPromotionDecisions,
   useListStudents, useOpenAcademicTerm, useRecordAcademicDeparture, useRecordAcademicPayment, useUpsertAcademicTermFeeSchedule,
-  useUpdatePromotionDecision,
+  useUpdateAcademicTerm, useUpdatePromotionDecision,
 } from '@workspace/api-client-react';
 import { AppShell, Button, EmptyState, ErrorState, PageHeader, Panel, Skeleton } from '@/components/school-shell';
 
@@ -60,13 +60,18 @@ function ConfirmDialog({ title, description, busy, onCancel, onConfirm }: { titl
   </div>;
 }
 
-function TermRow({ term, year, canManage, busy, onOpen, onClose, onError }: {
+function TermRow({ term, year, canManage, busy, onOpen, onSaveDates, onClose, onError }: {
   term: Row; year: string; canManage: boolean; busy: boolean;
-  onOpen: (startsOn: string, endsOn: string) => void; onClose: () => void; onError: (message: string) => void;
+  onOpen: (startsOn: string, endsOn: string) => void; onSaveDates: (startsOn: string, endsOn: string) => void;
+  onClose: () => void; onError: (message: string) => void;
 }) {
   const [startsOn, setStartsOn] = useState(str(term.startsOn).slice(0, 10));
   const [endsOn, setEndsOn] = useState(str(term.endsOn).slice(0, 10));
   const planned = term.status === 'planned';
+  useEffect(() => {
+    setStartsOn(str(term.startsOn).slice(0, 10));
+    setEndsOn(str(term.endsOn).slice(0, 10));
+  }, [term.startsOn, term.endsOn]);
   return <div className="flex flex-col gap-3 p-5 sm:px-6">
     <div className="flex items-center gap-4"><span className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--secondary))] font-mono-ui text-sm font-bold text-[hsl(var(--primary))]">{str(term.number).padStart(2, '0')}</span><div><p className="font-semibold">Term {str(term.number)} · {year}</p><p className="text-xs text-[hsl(var(--muted-foreground))]">Status: <span className="capitalize" data-testid={`status-term-${str(term.id)}`}>{str(term.status)}</span>{Boolean(term.startsOn) && ` · ${date(term.startsOn)}–${date(term.endsOn)}`}</p></div></div>
     {canManage && planned && <form className="grid gap-3 pl-0 sm:grid-cols-[1fr_1fr_auto] sm:items-end sm:pl-14" onSubmit={(event) => {
@@ -74,7 +79,7 @@ function TermRow({ term, year, canManage, busy, onOpen, onClose, onError }: {
       if (!startsOn || !endsOn) { onError('Enter both the start date and end date before opening this term.'); return; }
       if (startsOn > endsOn) { onError('The term start date must be on or before the end date.'); return; }
       onOpen(startsOn, endsOn);
-    }}><Field label="Starts on"><input type="date" className={fieldClass} value={startsOn} onChange={(event) => setStartsOn(event.target.value)} required data-testid={`input-term-start-${str(term.id)}`} /></Field><Field label="Ends on"><input type="date" className={fieldClass} value={endsOn} onChange={(event) => setEndsOn(event.target.value)} required data-testid={`input-term-end-${str(term.id)}`} /></Field><Button type="submit" disabled={busy} testId={`button-open-term-${str(term.id)}`}>Open term</Button></form>}
+    }}><Field label="Starts on"><input type="date" className={fieldClass} value={startsOn} onChange={(event) => setStartsOn(event.target.value)} required data-testid={`input-term-start-${str(term.id)}`} /></Field><Field label="Ends on"><input type="date" className={fieldClass} value={endsOn} onChange={(event) => setEndsOn(event.target.value)} required data-testid={`input-term-end-${str(term.id)}`} /></Field><div className="flex flex-wrap gap-2"><Button type="button" variant="secondary" disabled={busy || !startsOn || !endsOn || startsOn > endsOn || (startsOn === str(term.startsOn).slice(0, 10) && endsOn === str(term.endsOn).slice(0, 10))} onClick={() => onSaveDates(startsOn, endsOn)} testId={`button-save-term-dates-${str(term.id)}`}>Save dates</Button><Button type="submit" disabled={busy} testId={`button-open-term-${str(term.id)}`}>Open term</Button></div></form>}
     {canManage && term.status === 'open' && <div className="sm:pl-14"><Button variant="secondary" disabled={busy} onClick={onClose} testId={`button-close-term-${str(term.id)}`}>Close term</Button></div>}
   </div>;
 }
@@ -120,6 +125,7 @@ export default function AcademicPage() {
   const createEnrollment = useCreateAcademicEnrollment();
   const openTerm = useOpenAcademicTerm();
   const closeTerm = useCloseAcademicTerm();
+  const updateTerm = useUpdateAcademicTerm();
   const createCharge = useCreateAcademicFeeCharge();
   const recordPayment = useRecordAcademicPayment();
   const allocateExistingPayment = useAllocateExistingAcademicPayment();
@@ -240,7 +246,7 @@ export default function AcademicPage() {
               <div className="sm:col-span-2"><Button type="submit" disabled={busy || schedulesQuery.isLoading || schedulesQuery.isError} testId="button-save-fee-schedule">Save schedule</Button></div>
             </form>}
           </Panel>}
-          {year ? <Panel className="overflow-hidden"><div className="border-b border-[hsl(var(--border))] p-5 sm:p-6">{sectionTitle('01 / Calendar', `${str(year.year)} term ledger`, 'Set dates and complete fee schedules before opening. Closing preserves all original accounts and enrollment history.')}</div><div className="divide-y divide-[hsl(var(--border))]">{terms.map((item) => <TermRow key={str(item.id)} term={item} year={str(year.year)} canManage={canManage} busy={busy} onError={(text) => setNotice({ kind: 'error', text })} onOpen={(startsOn, endsOn) => requestConfirmation('Open this term and create its charges?', `Open Term ${str(item.number)} from ${date(startsOn)} to ${date(endsOn)}? This creates charges for active pupils from their matching class, stream and enrollment-type schedules. Sponsored pupils receive zero-amount charges. Prior receipts remain unassigned unless you allocate them explicitly.`, async () => { await execute(() => openTerm.mutateAsync({ termId: str(item.id), data: { startsOn, endsOn } }), `Term ${str(item.number)} opened and scheduled charges created.`); })} onClose={() => requestConfirmation('Close this term?', `Close Term ${str(item.number)}? Charges and payments remain attached to this term. Closed terms cannot be reopened.`, async () => { await execute(() => closeTerm.mutateAsync({ termId: str(item.id) }), `Term ${str(item.number)} closed.`); })} />)}</div></Panel> : <Panel><EmptyState icon={CalendarDays} title="Start with an academic year" description="Create a year to establish its three planned terms. Nothing is copied or charged automatically." /></Panel>}
+          {year ? <Panel className="overflow-hidden"><div className="border-b border-[hsl(var(--border))] p-5 sm:p-6">{sectionTitle('01 / Calendar', `${str(year.year)} term ledger`, 'Set dates and complete fee schedules before opening. Closing preserves all original accounts and enrollment history.')}</div><div className="divide-y divide-[hsl(var(--border))]">{terms.map((item) => <TermRow key={str(item.id)} term={item} year={str(year.year)} canManage={canManage} busy={busy} onError={(text) => setNotice({ kind: 'error', text })} onSaveDates={(startsOn, endsOn) => { void execute(() => updateTerm.mutateAsync({ termId: str(item.id), data: { startsOn, endsOn } }), `Term ${str(item.number)} dates saved.`); }} onOpen={(startsOn, endsOn) => requestConfirmation('Open this term and create its charges?', `Open Term ${str(item.number)} from ${date(startsOn)} to ${date(endsOn)}? This creates charges for active pupils from their matching class, stream and enrollment-type schedules. Sponsored pupils receive zero-amount charges. Prior receipts remain unassigned unless you allocate them explicitly.`, async () => { await execute(() => openTerm.mutateAsync({ termId: str(item.id), data: { startsOn, endsOn } }), `Term ${str(item.number)} opened and scheduled charges created.`); })} onClose={() => requestConfirmation('Close this term?', `Close Term ${str(item.number)}? Charges and payments remain attached to this term. Closed terms cannot be reopened.`, async () => { await execute(() => closeTerm.mutateAsync({ termId: str(item.id) }), `Term ${str(item.number)} closed.`); })} />)}</div></Panel> : <Panel><EmptyState icon={CalendarDays} title="Start with an academic year" description="Create a year to establish its three planned terms. Nothing is copied or charged automatically." /></Panel>}
           {year && <Panel className="p-5 sm:p-6">{sectionTitle('02 / At a glance', 'The year in numbers', 'Figures are calculated from this year’s enrolled pupils and term-specific financial records.')}{dashboard.isLoading ? loadingBlock : dashboard.isError ? <ErrorState onRetry={() => void dashboard.refetch()} /> : <div className="grid gap-3 sm:grid-cols-2">{[['Active enrollments', enrollments.filter((item) => item.status === 'active').length, 'Pupils in this year'], ['Awaiting decisions', str(summary.awaitingDecisions ?? 0), 'Promotion review'], ['Former pupil balances', money(summary.formerOutstanding), 'Still owed, not erased'], ['Payments from former pupils', money(summary.formerPayments), 'Preserved in the original term']].map(([name, value, caption]) => <div key={str(name)} className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--background)/.65)] p-4"><p className="text-xs text-[hsl(var(--muted-foreground))]">{name}</p><p className="mt-2 font-display text-2xl font-semibold" data-testid={`text-academic-${str(name).toLowerCase().replaceAll(' ', '-')}`}>{value}</p><p className="mt-1 text-xs text-[hsl(var(--muted-foreground))]">{caption}</p></div>)}</div>}</Panel>}
         </div>
         <div className="space-y-5">{canManage && <Panel className="p-5">{sectionTitle('Set up', 'Add an academic year', 'Creates a year with Terms 1, 2 and 3 in planned status.')}<form onSubmit={(event) => formSubmit(event, () => { const value = Number(newYear); if (!Number.isInteger(value) || value < 1900 || value > 2200) { setNotice({ kind: 'error', text: 'Enter a valid year between 1900 and 2200.' }); return; } void execute(() => createYear.mutateAsync({ data: { year: value } }), `${value} academic year is ready.`, (result) => setSelectedYearId(str(asRow(result).id))); })} className="flex gap-2"><input className={fieldClass} type="number" min="1900" max="2200" value={newYear} onChange={(event) => setNewYear(event.target.value)} aria-label="New academic year" data-testid="input-new-academic-year" required /><Button type="submit" disabled={busy} testId="button-create-academic-year"><Plus size={16} /> Create</Button></form></Panel>}
