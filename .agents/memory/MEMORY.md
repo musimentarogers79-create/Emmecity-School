@@ -27,3 +27,4 @@
 - [School security boundaries](school-security-boundaries.md) — preserve same-origin writes, actual-byte upload checks, and audience-aware notifications.
 - [Legacy term reconciliation](legacy-term-reconciliation.md) — preserve unattributed old balances and receipts separately until staff explicitly confirm their original period.
 - [Individual term fees](individual-term-fees.md) — saved term fees are pupil-specific; do not derive shared group rates from them.
+- [Searchable filter sentinels](searchable-filter-sentinels.md) — preserve an “All classes” value as a real option; clearing to blank can change filter predicates.

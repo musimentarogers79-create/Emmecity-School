@@ -5,6 +5,7 @@ import {
   getGetOperationsQueryKey,
   getListSalaryStaffQueryKey,
   getListSalariesQueryKey,
+  getListStudentsQueryKey,
   getListUsersQueryKey,
   type PermissionKey,
   type Role,
@@ -14,12 +15,14 @@ import {
   useDeleteUser,
   useGetCurrentUser,
   useGetOperations,
+  useListStudents,
   useListUsers,
   useUpdateUserPermissions,
   useUpdateUserProfileByAdmin,
 } from '@workspace/api-client-react';
 import { AppShell, Button, EmptyState, ErrorState, PageHeader, Panel, Skeleton } from '@/components/school-shell';
 import { useLocation, useRoute } from 'wouter';
+import { SearchableMultiSelect, SearchableSelect } from '@/components/searchable-select';
 
 const roles: { value: Role; label: string }[] = [
   { value: 'super_admin', label: 'Super Admin' },
@@ -122,6 +125,7 @@ export function UserAccountPage() {
   const userId = isNewRoute ? undefined : routeParams?.userId;
   const session = useGetCurrentUser();
   const users = useListUsers({ query: { enabled: Boolean(userId), queryKey: getListUsersQueryKey() } });
+  const pupils = useListStudents(undefined, { query: { enabled: isNewRoute, queryKey: getListStudentsQueryKey(undefined) } });
   const operations = useGetOperations();
   const create = useCreateUser();
   const update = useUpdateUserProfileByAdmin();
@@ -135,6 +139,11 @@ export function UserAccountPage() {
   const canManage = isAdmin || session.data?.user.permissions.includes('users_manage');
   const isTeacherAccount = (edit.role || account?.role) === 'teacher';
   const classRows = operations.data?.modules.classes || [];
+  const pupilOptions = (pupils.data || []).map((pupil) => ({
+    value: pupil.id,
+    label: `${pupil.name} · ${pupil.registrationNumber}`,
+    keywords: `${pupil.name} ${pupil.registrationNumber} ${pupil.className} ${pupil.stream}`,
+  }));
 
   useEffect(() => {
     if (!account) {
@@ -192,7 +201,7 @@ export function UserAccountPage() {
            <label className="space-y-2 text-sm font-semibold">Account role<select className={inputClass} value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as Role, userType: ['guardian', 'student'].includes(e.target.value) ? 'learner' : 'staff' })}>{roles.map((role) => <option key={role.value} value={role.value}>{role.label}</option>)}</select></label>
            {(form.role === 'teacher' || form.role === 'staff') && <label className="space-y-2 text-sm font-semibold">Monthly salary (UGX)<input className={inputClass} min={0} type="number" value={form.monthlySalary ?? ''} onChange={(e) => setForm({ ...form, monthlySalary: e.target.value === '' ? undefined : Number(e.target.value) })} placeholder="0" data-testid="input-account-monthly-salary" /><span className="block text-xs font-normal text-[hsl(var(--muted-foreground))]">Required before a salary payment can be recorded.</span></label>}
          </div>
-        <div className="border-t border-[hsl(var(--border))] pt-5"><p className="text-xs font-semibold uppercase tracking-[.14em] text-[hsl(var(--primary))]">Contact and linking</p><div className="mt-4 grid gap-4 md:grid-cols-2"><label className="space-y-2 text-sm font-semibold">Email <span className="font-normal text-[hsl(var(--muted-foreground))]">(optional)</span><input className={inputClass} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="name@example.com" /></label><label className="space-y-2 text-sm font-semibold">Phone <span className="font-normal text-[hsl(var(--muted-foreground))]">(optional)</span><input className={inputClass} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+256 ..." /></label><label className="space-y-2 text-sm font-semibold">Department or responsibility <span className="font-normal text-[hsl(var(--muted-foreground))]">(optional)</span><input className={inputClass} value={form.department || ''} onChange={(e) => setForm({ ...form, department: e.target.value })} placeholder="For example, Finance" /></label><label className="space-y-2 text-sm font-semibold">Linked pupil ID <span className="font-normal text-[hsl(var(--muted-foreground))]">(optional)</span><input className={inputClass} value={form.studentId || ''} onChange={(e) => setForm({ ...form, studentId: e.target.value || null })} placeholder="Pupil record ID" /></label></div></div>
+         <div className="border-t border-[hsl(var(--border))] pt-5"><p className="text-xs font-semibold uppercase tracking-[.14em] text-[hsl(var(--primary))]">Contact and linking</p><div className="mt-4 grid gap-4 md:grid-cols-2"><label className="space-y-2 text-sm font-semibold">Email <span className="font-normal text-[hsl(var(--muted-foreground))]">(optional)</span><input className={inputClass} type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="name@example.com" /></label><label className="space-y-2 text-sm font-semibold">Phone <span className="font-normal text-[hsl(var(--muted-foreground))]">(optional)</span><input className={inputClass} value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+256 ..." /></label><label className="space-y-2 text-sm font-semibold">Department or responsibility <span className="font-normal text-[hsl(var(--muted-foreground))]">(optional)</span><input className={inputClass} value={form.department || ''} onChange={(e) => setForm({ ...form, department: e.target.value })} placeholder="For example, Finance" /></label><div className="space-y-2 text-sm font-semibold"><span className="block">Linked pupil <span className="font-normal text-[hsl(var(--muted-foreground))]">(optional)</span></span><SearchableSelect value={form.studentId || ''} onValueChange={(studentId) => setForm({ ...form, studentId: studentId || null })} options={pupilOptions} placeholder="Select a pupil" searchPlaceholder="Search pupils by name or ID…" emptyText={pupils.isLoading ? 'Loading pupils…' : 'No pupils found.'} clearLabel="No linked pupil" loading={pupils.isLoading} testId="select-account-linked-pupil" /></div></div></div>
         <div className="flex flex-wrap justify-end gap-3"><Button type="button" variant="secondary" onClick={() => navigate('/users')}>Cancel</Button><Button type="submit" disabled={create.isPending} testId="button-create-user">{create.isPending ? 'Creating…' : 'Create account'}<Save className="size-4" /></Button></div>
       </form>
     </Panel>
@@ -220,7 +229,7 @@ export function UserAccountPage() {
            </div>
            <div className="mt-10 border-t border-[hsl(var(--border))] pt-8">
              <h3 className="text-center text-sm font-bold uppercase tracking-[.14em] text-[hsl(var(--foreground))]">Assigned classes</h3>
-             {!isTeacherAccount ? <p className="mx-auto mt-4 max-w-sm text-center text-sm leading-6 text-[hsl(var(--muted-foreground))]">Select <span className="font-semibold text-[hsl(var(--foreground))]">Teacher</span> as the account role to assign classes.</p> : operations.isLoading ? <div className="mt-6 grid gap-3 sm:grid-cols-2"><Skeleton className="h-8" /><Skeleton className="h-8" /></div> : operations.isError ? <div className="mt-6"><ErrorState message="Classes could not be loaded for assignment." onRetry={() => void operations.refetch()} /></div> : !classRows.length ? <div className="mx-auto mt-6 max-w-sm rounded-xl border border-dashed border-[hsl(var(--border))] p-4 text-center"><p className="text-sm text-[hsl(var(--muted-foreground))]">No classes have been created yet.</p><Button type="button" variant="secondary" className="mt-3" onClick={() => navigate('/operations?view=classes')} testId="button-open-classes-for-assignment">Open classes</Button></div> : <div className="mt-6 grid gap-x-10 gap-y-3 sm:grid-cols-2" data-testid="list-assigned-classes">{classRows.map((item) => { const key = classDisplayKey(String(item.name), item.stream ? String(item.stream) : ''); const selected = (edit.assignedClasses || []).includes(key); return <label key={item.id} className="flex cursor-pointer items-center gap-3 text-base leading-6"><input className="size-5 shrink-0 accent-[hsl(var(--primary))]" type="checkbox" checked={selected} onChange={() => setEdit({ ...edit, assignedClasses: selected ? (edit.assignedClasses || []).filter((value) => value !== key) : [...(edit.assignedClasses || []), key] })} data-testid={`checkbox-assigned-class-${item.id}`} /><span>{classDisplayKey(String(item.name), item.stream ? String(item.stream) : '')}</span></label>; })}</div>}
+              {!isTeacherAccount ? <p className="mx-auto mt-4 max-w-sm text-center text-sm leading-6 text-[hsl(var(--muted-foreground))]">Select <span className="font-semibold text-[hsl(var(--foreground))]">Teacher</span> as the account role to assign classes.</p> : operations.isLoading ? <div className="mt-6 grid gap-3 sm:grid-cols-2"><Skeleton className="h-8" /><Skeleton className="h-8" /></div> : operations.isError ? <div className="mt-6"><ErrorState message="Classes could not be loaded for assignment." onRetry={() => void operations.refetch()} /></div> : !classRows.length ? <div className="mx-auto mt-6 max-w-sm rounded-xl border border-dashed border-[hsl(var(--border))] p-4 text-center"><p className="text-sm text-[hsl(var(--muted-foreground))]">No classes have been created yet.</p><Button type="button" variant="secondary" className="mt-3" onClick={() => navigate('/operations?view=classes')} testId="button-open-classes-for-assignment">Open classes</Button></div> : <div className="mt-6" data-testid="list-assigned-classes"><SearchableMultiSelect value={edit.assignedClasses || []} onValueChange={(assignedClasses) => setEdit({ ...edit, assignedClasses })} options={classRows.map((item) => { const key = classDisplayKey(String(item.name), item.stream ? String(item.stream) : ''); return { value: key, label: key, keywords: `${String(item.name)} ${String(item.stream || '')}` }; })} placeholder="Select assigned classes" selectedLabel="classes selected" searchPlaceholder="Search classes…" emptyText="No classes found." testId="select-assigned-classes" /></div>}
            </div>
            <Button onClick={savePermissions} disabled={updatePermissions.isPending || operations.isLoading || operations.isError} className="relative mt-8 w-full justify-center" testId="button-save-permissions"><span>{updatePermissions.isPending ? 'Saving…' : 'Save permissions & assignments'}</span><Save className="absolute right-4 size-5" /></Button>
          </Panel>
