@@ -820,6 +820,7 @@ body:has([data-testid="button-sign-in"]) [data-testid="checkbox-remember"]:focus
   .screen-only,
   .sticky.top-0,
   [data-testid="button-print-student-directory"],
+  [data-testid="panel-pupil-downloads"],
   [data-testid="panel-student-filters"],
   [data-testid="button-open-register"],
   [data-testid="button-generate-all-admission-forms"] {
@@ -845,36 +846,89 @@ body:has([data-testid="button-sign-in"]) [data-testid="checkbox-remember"]:focus
   }
 
   [data-testid="panel-students-table"] {
+    display: table !important;
+    width: 100% !important;
+    table-layout: fixed !important;
     overflow: visible !important;
     border: 1px solid #9aaba3 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
+    break-inside: auto !important;
+    page-break-inside: auto !important;
   }
 
   [data-testid="panel-students-table"] > div:first-child {
-    display: grid !important;
+    display: table-header-group !important;
     background: #e9f1ed !important;
     color: #17231f !important;
   }
 
+  [data-testid="panel-students-table"] > div:first-child > span {
+    display: table-cell !important;
+    padding: 8px 6px !important;
+    border-bottom: 1px solid #9aaba3 !important;
+    color: #17231f !important;
+    font-size: 8pt !important;
+    font-weight: 700 !important;
+    text-align: left;
+    vertical-align: middle;
+  }
+
+  [data-testid="panel-students-table"] > div:first-child > span:nth-child(1) { width: 35%; }
+  [data-testid="panel-students-table"] > div:first-child > span:nth-child(2) { width: 16%; }
+  [data-testid="panel-students-table"] > div:first-child > span:nth-child(3) { width: 18%; }
+  [data-testid="panel-students-table"] > div:first-child > span:nth-child(4) { width: 16%; }
+  [data-testid="panel-students-table"] > div:first-child > span:nth-child(5) { width: 15%; }
+  [data-testid="panel-students-table"] > div:first-child > span:last-child {
+    display: none !important;
+  }
+
   [data-testid="panel-students-table"] > div:last-child {
-    display: block !important;
+    display: table-row-group !important;
   }
 
   [data-testid="panel-students-table"] > div:last-child > a {
-    display: grid !important;
-    grid-template-columns: 1.8fr 1.1fr .7fr .9fr .7fr !important;
-    border-top: 1px solid #d0dbd5 !important;
+    display: table-row !important;
     border-radius: 0 !important;
-    padding: 8px 10px !important;
+    padding: 0 !important;
     color: #17231f !important;
     text-decoration: none !important;
     break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  [data-testid="panel-students-table"] > div:last-child > a:nth-child(even) {
+    background: #f8faf9 !important;
+  }
+
+  [data-testid="panel-students-table"] > div:last-child > a > div,
+  [data-testid="panel-students-table"] > div:last-child > a > span {
+    display: table-cell !important;
+    padding: 8px 6px !important;
+    border-top: 1px solid #d0dbd5 !important;
+    color: #17231f !important;
+    font-size: 8.5pt !important;
+    vertical-align: middle;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   [data-testid="panel-students-table"] > div:last-child > a > svg {
     display: none !important;
   }
+
+  [data-testid="panel-students-table"] > div:last-child > a > div:first-child {
+    width: 35%;
+  }
+
+  [data-testid="panel-students-table"] > div:last-child > a > div:first-child > span:first-child {
+    display: none !important;
+  }
+
+  [data-testid="panel-students-table"] > div:last-child > a > span:nth-of-type(1) { width: 16%; }
+  [data-testid="panel-students-table"] > div:last-child > a > span:nth-of-type(2) { width: 18%; }
+  [data-testid="panel-students-table"] > div:last-child > a > span:nth-of-type(3) { width: 16%; }
+  [data-testid="panel-students-table"] > div:last-child > a > span:nth-of-type(4) { width: 15%; }
 
   [data-testid="panel-students-table"] > div:last-child > a span {
     color: #17231f !important;
@@ -1036,6 +1090,13 @@ body:has([data-testid="button-sign-in"]) [data-testid="checkbox-remember"]:focus
     box-shadow: none !important;
     color: #24352f !important;
     break-inside: avoid;
+  }
+
+  /* Large directory tables must flow across pages; keeping the entire panel
+     together otherwise leaves a mostly empty first page. */
+  [data-testid="panel-students-table"] {
+    break-inside: auto !important;
+    page-break-inside: auto !important;
   }
 
   table {
