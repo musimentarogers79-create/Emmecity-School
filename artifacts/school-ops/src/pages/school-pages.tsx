@@ -7,10 +7,13 @@ import type { AdmissionForm, Student, StudentUpdateInput, ReportCardInput, Opera
 import { AnnouncementInputPriority, AttendanceStatus, type AnnouncementInput, type SalaryPayment, type StudentInput, type AttendanceRecord, type Dashboard, type Payment, type PaymentInput, type TimetableInput, getAdmissionForm, useCreateAnnouncement, useCreateAttendanceRegister, useCreateReportCard, useCreateStudent, useCreateTimetableEntry, useGetAdmissionForm, useGetAttendance, useGetCurrentUser, useGetDashboard, useGetFinanceSummary, useGetOperations, useGetReportCard, useGetSettings, useGetStudent, useGetStudentAcademicHistory, useGetTimetable, useListAcademicYears, useListAnnouncements, useListPayments, useListSalaries, useListStudents, useLogin, useRecordPayment, useSaveAttendance, useUpdatePayment, useUpdateSettings, useUpdateFeeReminderSmsAuthorization, useUpdateStudent, getGetAdmissionFormQueryKey, getGetAttendanceQueryKey, getGetDashboardQueryKey, getGetFinanceSummaryQueryKey, getGetOperationsQueryKey, getGetReportCardQueryKey, getGetSettingsQueryKey, getGetStudentAcademicHistoryQueryKey, getGetStudentQueryKey, getGetTimetableQueryKey, getListAcademicEnrollmentsQueryKey, getListAnnouncementsQueryKey, getListPaymentsQueryKey, getListStudentsQueryKey } from '@workspace/api-client-react';
 import { ArrowLeft, ArrowRight, BadgeCheck, BarChart3, BookOpen, CalendarDays, Check, ChevronDown, CircleDollarSign, ClipboardList, Download, Eye, EyeOff, FileBarChart, FileText, GraduationCap, Info, LockKeyhole, Megaphone, MoreHorizontal, Pencil, PhoneCall, Plus, Printer, Receipt, RefreshCcw, Search, Send, Share2, ShieldCheck, Upload, UserPlus, Users, WalletCards, X } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { AppShell, Button, EmptyState, ErrorState, PageHeader, Panel, SCHOOL_LOCATION, SCHOOL_NAME, SCHOOL_PHONE, SCHOOL_POSTAL_ADDRESS, SchoolMark, Skeleton } from '@/components/school-shell';
+import { AppShell, Button, EmptyState, ErrorState, PageHeader, Panel, SCHOOL_LOCATION, SCHOOL_MOTTO, SCHOOL_NAME, SCHOOL_PHONE, SCHOOL_POSTAL_ADDRESS, SchoolMark, Skeleton } from '@/components/school-shell';
 import { AcademicStudentPanel } from '@/components/academic-student-panel';
 import { SearchableSelect } from '@/components/searchable-select';
 import { trackEvent } from '@/lib/analytics';
+import { SCHOOL_BRAND } from '@/lib/school-brand';
+import { createSchoolPdf } from '@/lib/school-pdf';
+import { openSchoolPrintWindow, renderSchoolMastheadHtml, renderSchoolPrintHtml, type SchoolPrintOptions } from '@/lib/school-print';
 
 const currentCurrency = () => typeof window === 'undefined' ? 'UGX' : (document.documentElement.dataset.currency || window.localStorage.getItem('schoolops.currency') || 'UGX');
 const money = (n = 0) => new Intl.NumberFormat('en-UG', { style: 'currency', currency: currentCurrency(), maximumFractionDigits: 0 }).format(n);
@@ -297,67 +300,24 @@ const normalizePupilPhoto = async (file: File) => {
 };
 const MAX_UPLOAD_BYTES = 1024 * 1024;
 export async function brandedPdf(lines: string[], photoPath?: string) {
-  const logo = await loadSchoolLogo();
-  const photo = await loadPupilPhoto(photoPath);
-  const encoder = new TextEncoder();
-  const wrappedLines = lines.flatMap((line) => {
-    const value = String(line);
-    if (value.length <= 82) return [value];
-    const chunks: string[] = [];
-    for (let index = 0; index < value.length; index += 82) chunks.push(value.slice(index, index + 82));
-    return chunks;
+  const heading = lines.find((line) => /^official\b/i.test(line)) || lines[0] || 'School Document';
+  const contentLines = lines.filter((line) => line !== SCHOOL_NAME && line !== heading && line.trim());
+  const fields: { label: string; value: string }[] = [];
+  const notes: string[] = [];
+  for (const line of contentLines) {
+    const separator = line.indexOf(':');
+    if (separator > 0) fields.push({ label: line.slice(0, separator).trim(), value: line.slice(separator + 1).trim() });
+    else notes.push(line);
+  }
+  if (photoPath) notes.unshift('Pupil passport photograph is attached to the admission record.');
+  return createSchoolPdf({
+    brand: SCHOOL_BRAND,
+    title: heading.replace(/^official\s*/i, ''),
+    fields,
+    notes,
+    orientation: 'portrait',
+    footerNote: 'Official school record',
   });
-  const headerLines = [SCHOOL_NAME, SCHOOL_POSTAL_ADDRESS, `Tel: ${SCHOOL_PHONE}`, SCHOOL_LOCATION, ''];
-  const pageSize = logo ? 20 : 23;
-  const bodyPageSize = pageSize - headerLines.length;
-  const pages = Array.from({ length: Math.max(1, Math.ceil(wrappedLines.length / bodyPageSize)) }, (_, index) => [...headerLines, ...wrappedLines.slice(index * bodyPageSize, (index + 1) * bodyPageSize)]);
-  const photoObjectNumber = logo ? 5 : 4;
-  const firstPageObject = 4 + (logo ? 1 : 0) + (photo ? 1 : 0);
-  const pageObjects = pages.map((_, index) => firstPageObject + index * 2);
-  const objects: { text: string; binary?: Uint8Array; after?: string }[] = [
-    { text: '<< /Type /Catalog /Pages 2 0 R >>' },
-    { text: `<< /Type /Pages /Kids [${pageObjects.map((objectNumber) => `${objectNumber} 0 R`).join(' ')}] /Count ${pages.length} >>` },
-    { text: '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>' },
-    ...(logo ? [{ text: `<< /Type /XObject /Subtype /Image /Width ${logo.width} /Height ${logo.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${logo.bytes.length} >>\nstream\n`, binary: logo.bytes, after: '\nendstream' }] : []),
-    ...(photo ? [{ text: `<< /Type /XObject /Subtype /Image /Width ${photo.width} /Height ${photo.height} /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /DCTDecode /Length ${photo.bytes.length} >>\nstream\n`, binary: photo.bytes, after: '\nendstream' }] : []),
-  ];
-  pages.forEach((pageLines, index) => {
-    const contentObjectNumber = firstPageObject + index * 2 + 1;
-    const stream = [
-       ...(logo ? ['q', '90 0 0 92 50 660 cm', '/Im1 Do', 'Q'] : []),
-       ...(photo ? ['q', '72 0 0 90 480 600 cm', '/PupilPhoto Do', 'Q'] : []),
-      'BT',
-      logo ? '/F1 15 Tf\n175 740 Td' : '/F1 15 Tf\n50 744 Td',
-      ...pageLines.flatMap((line, lineIndex) => [`(${pdfEscape(line)}) Tj`, ...(lineIndex < pageLines.length - 1 ? ['0 -30 Td', '/F1 10 Tf'] : [])]),
-      'ET',
-    ].join('\n');
-    objects.push({
-      text: `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >>${logo || photo ? ` /XObject <<${logo ? ' /Im1 4 0 R' : ''}${photo ? ` /PupilPhoto ${photoObjectNumber} 0 R` : ''} >>` : ''} >> /Contents ${contentObjectNumber} 0 R >>`,
-    });
-    objects.push({ text: `<< /Length ${encoder.encode(stream).length} >>\nstream\n${stream}\nendstream` });
-  });
-  const chunks: Uint8Array[] = [];
-  const offsets: number[] = [0];
-  let byteLength = 0;
-  const addText = (text: string) => {
-    const bytes = encoder.encode(text);
-    chunks.push(bytes);
-    byteLength += bytes.length;
-  };
-  const addBytes = (bytes: Uint8Array) => {
-    chunks.push(bytes);
-    byteLength += bytes.length;
-  };
-  addText('%PDF-1.4\n');
-  objects.forEach((object, index) => {
-    offsets.push(byteLength);
-    addText(`${index + 1} 0 obj\n${object.text}`);
-    if (object.binary) addBytes(object.binary);
-    addText(`${object.after ? `${object.after}\n` : '\n'}endobj\n`);
-  });
-  const xref = byteLength;
-  addText(`xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map((offset) => `${String(offset).padStart(10, '0')} 00000 n `).join('\n')}\ntrailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`);
-  return new Blob(chunks.map((chunk) => chunk.slice().buffer), { type: 'application/pdf' });
 }
 async function thermalReceiptPdf(lines: string[]) {
   const logo = await loadSchoolLogo();
@@ -410,80 +370,64 @@ async function thermalReceiptPdf(lines: string[]) {
   return new Blob(chunks.map((chunk) => chunk.slice().buffer), { type: 'application/pdf' });
 }
 async function receiptPdf(item: Payment, history: Payment[] = []) {
-  return brandedPdf([
-    SCHOOL_NAME,
-    'OFFICIAL PAYMENT RECEIPT',
-    `Receipt no: ${item.receiptNumber}`,
-    `Pupil: ${item.studentName}`,
-    `Reg. no: ${item.registrationNumber}`,
-    `Amount paid: ${money(item.amount)}`,
-    `Method: ${item.method}`,
-    `Date: ${item.date}`,
-    `Status: ${item.status}`,
-    `Balance due: ${money(item.balance)}`,
-    'Payment history:',
-    ...history.map((payment) => `${payment.date} · ${payment.receiptNumber} · ${money(payment.amount)}`),
-    "Thank you for supporting the pupil's education.",
-  ]);
-}
-function addPrintLogo(printWindow: Window) {
-  const header = printWindow.document.querySelector('header');
-  if (!header) return;
-  const logo = printWindow.document.createElement('img');
-  logo.src = '/school-logo.jpg';
-  logo.alt = 'EMMECTY Nursery & Primary School logo';
-  logo.style.cssText = 'width:84px;height:86px;object-fit:contain;float:right;margin-left:20px';
-  header.prepend(logo);
+  return createSchoolPdf({
+    brand: SCHOOL_BRAND,
+    title: 'Official Payment Receipt',
+    subtitle: `Receipt number ${item.receiptNumber}`,
+    orientation: 'portrait',
+    fields: [
+      { label: 'Pupil', value: item.studentName },
+      { label: 'Registration number', value: item.registrationNumber },
+      { label: 'Amount paid', value: money(item.amount) },
+      { label: 'Payment method', value: item.method },
+      { label: 'Date', value: item.date },
+      { label: 'Status', value: item.status },
+      { label: 'Balance due', value: money(item.balance) },
+    ],
+    tables: [{
+      title: 'Payment history',
+      columns: ['Date', 'Receipt number', 'Amount'],
+      rows: history.map((payment) => [payment.date, payment.receiptNumber, money(payment.amount)]),
+    }],
+    notes: ["Thank you for supporting the pupil's education."],
+    signatures: ['Received by', 'Parent / guardian'],
+    footerNote: 'This is an official EMMECTY school payment record',
+  });
 }
 const admissionValue = (value: unknown) => {
   const text = String(value ?? '').trim();
   return text || 'N/A';
 };
 const htmlEscape = (value: unknown) => admissionValue(value).replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character] || character);
-const schoolPrintHeader = (subtitle: string) => `<header class="school-letterhead"><img src="/school-logo.jpg" alt="${htmlEscape(SCHOOL_NAME)} crest"><div><h1>${htmlEscape(SCHOOL_NAME)}</h1><p>${htmlEscape(SCHOOL_POSTAL_ADDRESS)} · Tel: ${htmlEscape(SCHOOL_PHONE)}</p><p>${htmlEscape(SCHOOL_LOCATION)}</p><strong>${htmlEscape(subtitle)}</strong></div></header>`;
-const schoolPrintStyles = `
-  @page { size: A4 portrait; margin: 14mm; }
-  * { box-sizing: border-box; }
-  :root { color-scheme: light; }
-  body { margin: 0; color: #17231f; background: #fff; font-family: Arial, Helvetica, sans-serif; font-size: 11px; }
-  .school-letterhead { display: flex; align-items: center; gap: 18px; border-bottom: 4px solid #1d7056; padding: 0 0 14px; margin-bottom: 20px; }
-  .school-letterhead img { width: 82px; height: 82px; flex: 0 0 auto; object-fit: contain; }
-  .school-letterhead h1 { margin: 0; color: #062d72; font-family: Georgia, serif; font-size: 23px; line-height: 1.1; }
-  .school-letterhead p { margin: 4px 0 0; color: #52645d; font-size: 10px; line-height: 1.35; }
-  .school-letterhead strong { display: block; margin-top: 8px; color: #1d7056; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
-  h2 { margin: 18px 0 8px; padding: 7px 9px; border-left: 5px solid #d5b51b; background: #e9f1ed; color: #062d72; font-family: Georgia, serif; font-size: 15px; }
-  .document-note { color: #52645d; font-size: 10px; line-height: 1.45; }
-  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-  th, td { border: 1px solid #afc0b7; padding: 7px 8px; vertical-align: top; text-align: left; overflow-wrap: anywhere; }
-  th { background: #e9f1ed; color: #173d31; font-size: 9px; letter-spacing: .05em; text-transform: uppercase; }
-  td { font-size: 11px; line-height: 1.35; }
-  tr { break-inside: avoid; }
-  .value-table th { width: 24%; }
-  .value-table td { font-weight: 600; }
-  .amount { color: #1d7056; font-size: 15px; font-weight: 700; }
-  .document-footer { margin-top: 22px; padding-top: 10px; border-top: 2px solid #d5b51b; color: #52645d; font-size: 9px; text-align: center; }
-  .admission-identity { display: flex; justify-content: space-between; gap: 24px; margin-bottom: 16px; padding: 12px; border: 1px solid #afc0b7; background: #f8fbf9; }
-  .admission-identity strong { color: #1d7056; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; }
-  .photo-box { width: 3cm; height: 4cm; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; border: 1.5px solid #1d7056; background: #fffdf4; color: #1d7056; font-size: 9px; font-weight: 700; text-align: center; }
-  .photo-image { width: 100%; height: 100%; object-fit: cover; }
-  .admission-values { display: grid; grid-template-columns: 1fr 1fr; }
-  .admission-values > div { min-height: 42px; padding: 7px 8px; border: 1px solid #afc0b7; margin: -1px 0 0 -1px; }
-  .admission-values dt { color: #52645d; font-size: 8px; letter-spacing: .08em; text-transform: uppercase; }
-  .admission-values dd { margin: 4px 0 0; font-size: 11px; font-weight: 600; }
-  .form { break-after: page; }
-  .form:last-child { break-after: auto; }
-  @media print { body { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
-`;
-const schoolPrintDocument = (title: string, body: string) => `<html><head><meta charset="utf-8"><title>${htmlEscape(title)}</title><style>${schoolPrintStyles}</style></head><body>${body}</body></html>`;
+const schoolPrintBrand = {
+  schoolName: SCHOOL_NAME,
+  motto: SCHOOL_MOTTO,
+  addressLines: [SCHOOL_POSTAL_ADDRESS, SCHOOL_LOCATION],
+  contactLines: [`Tel: ${SCHOOL_PHONE}`],
+  crestSrc: SCHOOL_BRAND.crestPath,
+  corenexaMarkSrc: SCHOOL_BRAND.systemLogoPath,
+};
+type SchoolPrintExtras = Partial<Pick<SchoolPrintOptions, 'metadata' | 'orientation' | 'footerHtml' | 'signatures' | 'footerNote' | 'pageTitle' | 'hideMasthead'>>;
+const schoolPrintHeader = (subtitle: string) => `<div class="repeat-letterhead">${renderSchoolMastheadHtml(schoolPrintBrand)}<p class="document-note">${htmlEscape(subtitle)}</p></div>`;
+const schoolPrintDocument = (title: string, body: string, extras: SchoolPrintExtras = {}) => renderSchoolPrintHtml({
+  ...schoolPrintBrand,
+  ...extras,
+  title,
+  bodyHtml: body,
+});
 function receiptPrintPage(item: Payment, history: Payment[] = []) {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) return;
   const row = (label: string, value: string) => `<tr><th>${htmlEscape(label)}</th><td>${value}</td></tr>`;
-  const body = `${schoolPrintHeader(`Official payment receipt · ${item.receiptNumber}`)}<table class="value-table"><tbody>${row('Pupil', htmlEscape(item.studentName))}${row('Registration number', htmlEscape(item.registrationNumber))}${row('Amount paid', `<span class="amount">${htmlEscape(money(item.amount))}</span>`)}${row('Payment method', htmlEscape(item.method))}${row('Date', htmlEscape(item.date))}${row('Status', htmlEscape(item.status))}${row('Balance due', htmlEscape(money(item.balance)))}</tbody></table><h2>Payment history</h2><table><thead><tr><th>Date</th><th>Receipt number</th><th>Amount</th></tr></thead><tbody>${history.map((payment) => `<tr><td>${htmlEscape(payment.date)}</td><td>${htmlEscape(payment.receiptNumber)}</td><td>${htmlEscape(money(payment.amount))}</td></tr>`).join('')}</tbody></table><p class="document-footer">This is an official EMMECTY school payment record.</p>`;
-  printWindow.document.write(schoolPrintDocument(item.receiptNumber, body));
-   printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  const historyRows = history.length
+    ? history.map((payment) => `<tr><td>${htmlEscape(payment.date)}</td><td>${htmlEscape(payment.receiptNumber)}</td><td>${htmlEscape(money(payment.amount))}</td></tr>`).join('')
+    : '<tr><td colspan="3">No earlier payments recorded.</td></tr>';
+  const body = `<table class="value-table"><tbody>${row('Pupil', htmlEscape(item.studentName))}${row('Registration number', htmlEscape(item.registrationNumber))}${row('Amount paid', `<span class="amount">${htmlEscape(money(item.amount))}</span>`)}${row('Payment method', htmlEscape(item.method))}${row('Date', htmlEscape(item.date))}${row('Status', htmlEscape(item.status))}${row('Balance due', htmlEscape(money(item.balance)))}</tbody></table><h2>Payment history</h2><table><thead><tr><th>Date</th><th>Receipt number</th><th>Amount</th></tr></thead><tbody>${historyRows}</tbody></table><p>Thank you for supporting the pupil's education.</p>`;
+  openSchoolPrintWindow(schoolPrintDocument('Official Payment Receipt', body, {
+    metadata: [
+      { label: 'Receipt number', value: item.receiptNumber },
+      { label: 'Issue date', value: item.date },
+    ],
+    footerNote: 'This is an official EMMECTY school payment record',
+  }), `emmecty-receipt-${item.receiptNumber}`);
 }
 
 async function admissionFormPdf(form: AdmissionForm) {
@@ -558,22 +502,22 @@ async function printAllAdmissionForms(students: Student[]) {
   const forms = await Promise.all(students.map((student) => getAdmissionForm(student.id)));
   const availableForms = forms.filter((form): form is AdmissionForm => Boolean(form));
   if (!availableForms.length) throw new Error('No admission forms are available.');
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) return;
-    const pages = availableForms.map((form) => `<section class="form">${schoolPrintHeader(`Official pupil admission form · ${form.registrationNumber}`)}${admissionPrintContent(form)}<p class="document-footer">This is an official EMMECTY school admission record.</p></section>`).join('');
-    printWindow.document.write(schoolPrintDocument('All pupil admission forms', pages));
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  const pages = availableForms.map((form) => `<section class="form">${schoolPrintHeader(`Official pupil admission form · ${form.registrationNumber}`)}${admissionPrintContent(form)}<p class="document-note">This is an official EMMECTY school admission record.</p></section>`).join('');
+  openSchoolPrintWindow(schoolPrintDocument('Pupil Admission Forms', pages, {
+    hideMasthead: true,
+    metadata: [{ label: 'Forms included', value: availableForms.length }],
+    footerNote: 'Official EMMECTY pupil admission records',
+  }), 'emmecty-all-admission-forms');
 }
 
 function printAdmissionForm(form: AdmissionForm) {
-  const printWindow = window.open('', '_blank');
-  if (!printWindow) return;
-  printWindow.document.write(schoolPrintDocument(`${form.registrationNumber} admission form`, `${schoolPrintHeader(`Official pupil admission form · ${form.registrationNumber}`)}${admissionPrintContent(form)}<p class="document-footer">This is an official EMMECTY school admission record.</p>`));
-  printWindow.document.close();
-  printWindow.focus();
-  printWindow.print();
+  openSchoolPrintWindow(schoolPrintDocument('Pupil Admission Form', `${admissionPrintContent(form)}<p class="document-note">This is an official EMMECTY school admission record.</p>`, {
+    metadata: [
+      { label: 'Registration number', value: form.registrationNumber },
+      { label: 'Admission date', value: form.admissionDate },
+    ],
+    footerNote: 'Official EMMECTY pupil admission record',
+  }), `emmecty-admission-${form.registrationNumber}`);
 }
 
 export function TransactionsPage() {
@@ -638,13 +582,17 @@ export function SalaryReceiptPage() {
   const history = item ? (query.data || []).filter((payment) => payment.staffId === item.staffId) : [];
   const print = () => {
     if (!item) return;
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) return;
-    printWindow.document.write(`<html><head><title>${item.receiptNumber}</title><style>body{font-family:Arial,sans-serif;color:#17231f;padding:48px;max-width:720px;margin:auto}header{border-bottom:3px solid #1d7056;padding-bottom:18px;margin-bottom:28px}h1{font-size:24px;margin:0 0 6px}p{color:#63756e}dl{display:grid;grid-template-columns:1fr 1fr;gap:18px 32px}dt{font-size:11px;color:#63756e;text-transform:uppercase;letter-spacing:.12em}dd{font-size:16px;font-weight:600;margin:5px 0 0}.amount{font-size:28px;color:#1d7056}table{width:100%;margin-top:32px;border-collapse:collapse;font-size:12px}th,td{text-align:left;padding:8px;border-bottom:1px solid #d9e2dc}@media print{body{padding:0}}</style></head><body><header><h1>EMMECTY NURSERY & PRIMARY SCHOOL</h1><p>Salary payment receipt · ${item.receiptNumber}</p></header><dl><div><dt>Staff member</dt><dd>${item.staffName}</dd></div><div><dt>Period</dt><dd>${item.period}</dd></div><div><dt>Monthly salary</dt><dd>${money(item.monthlySalary)}</dd></div><div><dt>Amount paid</dt><dd class="amount">${money(item.amount)}</dd></div><div><dt>Balance</dt><dd>${money(item.balance)}</dd></div><div><dt>Payment date</dt><dd>${item.paymentDate}</dd></div><div><dt>Method</dt><dd>${item.method}</dd></div><div><dt>Reference</dt><dd>${item.reference || '—'}</dd></div></dl><h2>Payment history</h2><table><thead><tr><th>Date</th><th>Period</th><th>Receipt number</th><th>Amount</th></tr></thead><tbody>${history.map((payment) => `<tr><td>${payment.paymentDate}</td><td>${payment.period}</td><td>${payment.receiptNumber}</td><td>${money(payment.amount)}</td></tr>`).join('')}</tbody></table></body></html>`);
-     addPrintLogo(printWindow);
-     printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+    const historyRows = history.length
+      ? history.map((payment) => `<tr><td>${htmlEscape(payment.paymentDate)}</td><td>${htmlEscape(payment.period)}</td><td>${htmlEscape(payment.receiptNumber)}</td><td>${htmlEscape(money(payment.amount))}</td></tr>`).join('')
+      : '<tr><td colspan="4">No earlier salary payments recorded.</td></tr>';
+    const body = `<table class="value-table"><tbody><tr><th>Staff member</th><td>${htmlEscape(item.staffName)}</td></tr><tr><th>Period</th><td>${htmlEscape(item.period)}</td></tr><tr><th>Monthly salary</th><td>${htmlEscape(money(item.monthlySalary))}</td></tr><tr><th>Amount paid</th><td class="amount">${htmlEscape(money(item.amount))}</td></tr><tr><th>Balance</th><td>${htmlEscape(money(item.balance))}</td></tr><tr><th>Payment date</th><td>${htmlEscape(item.paymentDate)}</td></tr><tr><th>Method</th><td>${htmlEscape(item.method)}</td></tr><tr><th>Reference</th><td>${htmlEscape(item.reference || '—')}</td></tr></tbody></table><h2>Payment history</h2><table><thead><tr><th>Date</th><th>Period</th><th>Receipt number</th><th>Amount</th></tr></thead><tbody>${historyRows}</tbody></table>`;
+    openSchoolPrintWindow(schoolPrintDocument('Official Salary Receipt', body, {
+      metadata: [
+        { label: 'Receipt number', value: item.receiptNumber },
+        { label: 'Issue date', value: item.paymentDate },
+      ],
+      footerNote: 'Official EMMECTY salary payment record',
+    }), `emmecty-salary-${item.receiptNumber}`);
   };
   return <AppShell>{query.isLoading ? <Panel><Skeleton className="h-40" /></Panel> : !item ? <Panel><ErrorState message="That salary receipt could not be found." onRetry={() => query.refetch()} /></Panel> : <div className="mx-auto max-w-3xl"><Link href="/operations?view=salaries" className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-[hsl(var(--primary))] hover:underline"><ArrowLeft className="size-4" /> Back to salaries</Link><Panel className="p-6 sm:p-10" testId="panel-salary-receipt"><div className="border-b border-[hsl(var(--border))] pb-6"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-[hsl(var(--primary))]">Official salary receipt</p><h1 className="mt-2 font-display text-3xl">{item.receiptNumber}</h1><p className="mt-2 text-sm text-[hsl(var(--muted-foreground))]">EMMECTY NURSERY & PRIMARY SCHOOL</p></div><dl className="mt-8 grid gap-6 sm:grid-cols-2">{[['Staff member', item.staffName], ['Period', item.period], ['Monthly salary', money(item.monthlySalary)], ['Amount paid', money(item.amount)], ['Balance', money(item.balance)], ['Payment date', item.paymentDate], ['Method', item.method], ['Reference', item.reference || '—']].map(([label, value]) => <div key={label}><dt className="text-[10px] font-semibold uppercase tracking-[.14em] text-[hsl(var(--muted-foreground))]">{label}</dt><dd className={`mt-1 text-sm font-semibold ${label === 'Amount paid' ? 'font-display text-2xl text-[hsl(var(--primary))]' : ''}`}>{value}</dd></div>)}</dl><div className="mt-10 border-t border-[hsl(var(--border))] pt-6"><h2 className="font-display text-xl">Payment history</h2><div className="mt-3 divide-y divide-[hsl(var(--border))]">{history.map((payment) => <div key={payment.id} className="flex items-center justify-between gap-3 py-3 text-sm"><span><span className="block font-mono-ui text-xs font-semibold text-[hsl(var(--primary))]">{payment.receiptNumber}</span><span className="text-xs text-[hsl(var(--muted-foreground))]">{payment.paymentDate} · {payment.period}</span></span><span className="font-semibold">{money(payment.amount)}</span></div>)}</div></div><Button className="mt-8" onClick={print} testId="button-print-salary-receipt"><Printer className="size-4" /> Print receipt</Button></Panel></div>}</AppShell>;
 }
@@ -1271,7 +1219,7 @@ function FinancePage() {
         <Button type="submit" disabled={record.isPending} className="mt-2 w-full">{record.isPending ? 'Saving receipt…' : 'Save payment'}<Check className="size-4" /></Button>
       </form>
     </Modal>}
-    {paymentReceipt && <Modal title="Receipt ready" description="The payment was saved and the receipt number was generated automatically." onClose={() => setPaymentReceipt(null)}><div className="rounded-2xl border border-[hsl(var(--border))] p-5"><SchoolMark /><h2 className="mt-4 font-display text-xl">{SCHOOL_NAME}</h2><dl className="mt-5 grid gap-4 sm:grid-cols-2"><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Receipt number</dt><dd className="mt-1 font-mono-ui text-sm font-semibold">{paymentReceipt.receiptNumber}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Registration number</dt><dd className="mt-1 font-mono-ui text-sm font-semibold">{paymentReceipt.registrationNumber}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Pupil</dt><dd className="mt-1 text-sm font-semibold">{paymentReceipt.studentName}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Amount</dt><dd className="mt-1 font-display text-2xl text-[hsl(var(--primary))]">{money(paymentReceipt.amount)}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Balance</dt><dd className="mt-1 text-sm font-semibold">{money(paymentReceipt.balance)}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Date</dt><dd className="mt-1 text-sm font-semibold">{dateLabel(paymentReceipt.date)}</dd></div></dl><h3 className="mt-6 font-display text-lg">Payment history</h3><div className="mt-2 divide-y divide-[hsl(var(--border))]">{receiptHistory.map((payment) => <div key={payment.id} className="flex items-center justify-between py-2 text-xs"><span>{payment.date} · {payment.receiptNumber}</span><span className="font-semibold">{money(payment.amount)}</span></div>)}</div></div><div className="mt-5 flex gap-3"><Link href={`/transactions/${paymentReceipt.id}`} className="flex-1"><Button variant="secondary" className="w-full">Open full receipt</Button></Link><Button variant="secondary" onClick={() => window.print()}><Printer className="size-4" /> Print</Button></div></Modal>}
+    {paymentReceipt && <Modal title="Receipt ready" description="The payment was saved and the receipt number was generated automatically." onClose={() => setPaymentReceipt(null)}><div className="rounded-2xl border border-[hsl(var(--border))] p-5"><SchoolMark /><h2 className="mt-4 font-display text-xl">{SCHOOL_NAME}</h2><dl className="mt-5 grid gap-4 sm:grid-cols-2"><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Receipt number</dt><dd className="mt-1 font-mono-ui text-sm font-semibold">{paymentReceipt.receiptNumber}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Registration number</dt><dd className="mt-1 font-mono-ui text-sm font-semibold">{paymentReceipt.registrationNumber}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Pupil</dt><dd className="mt-1 text-sm font-semibold">{paymentReceipt.studentName}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Amount</dt><dd className="mt-1 font-display text-2xl text-[hsl(var(--primary))]">{money(paymentReceipt.amount)}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Balance</dt><dd className="mt-1 text-sm font-semibold">{money(paymentReceipt.balance)}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Date</dt><dd className="mt-1 text-sm font-semibold">{dateLabel(paymentReceipt.date)}</dd></div></dl><h3 className="mt-6 font-display text-lg">Payment history</h3><div className="mt-2 divide-y divide-[hsl(var(--border))]">{receiptHistory.map((payment) => <div key={payment.id} className="flex items-center justify-between py-2 text-xs"><span>{payment.date} · {payment.receiptNumber}</span><span className="font-semibold">{money(payment.amount)}</span></div>)}</div></div><div className="mt-5 flex gap-3"><Link href={`/transactions/${paymentReceipt.id}`} className="flex-1"><Button variant="secondary" className="w-full">Open full receipt</Button></Link><Button variant="secondary" onClick={() => receiptPrintPage(paymentReceipt, receiptHistory)} testId="button-print-quick-receipt"><Printer className="size-4" /> Print</Button></div></Modal>}
   </AppShell>;
 }
 
@@ -1496,7 +1444,7 @@ function SettingsPage() {
   const query = useGetSettings();
   const updateSettings = useUpdateSettings();
   const isAdmin = session?.user.role === 'administrator' || session?.user.role === 'super_admin';
-  const [schoolName, setSchoolName] = useState(SCHOOL_NAME);
+  const [schoolName, setSchoolName] = useState<string>(SCHOOL_NAME);
   const [academicYear, setAcademicYear] = useState('');
   const [currencyCode, setCurrencyCode] = useState('UGX');
   const [saved, setSaved] = useState(false);

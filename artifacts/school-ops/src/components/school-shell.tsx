@@ -5,15 +5,19 @@ import type { AttendanceRecord, DeletedAttendanceRegister, OperationExpense, Pay
 import { getGetAttendanceQueryKey, getGetCurrentUserQueryKey, getGetDeletedAttendanceRegistersQueryKey, getGetOperationsQueryKey, getGetSmsAllowanceQueryKey, getListPaymentsQueryKey, getListStudentsQueryKey, getSmsAllowance, useDeleteAttendanceRegister, useGetAttendance, useGetCurrentUser, useGetDeletedAttendanceRegisters, useGetOperations, useListPayments, useListStudents, useLogout } from '@workspace/api-client-react';
 import { BookOpen, CalendarDays, CircleDollarSign, ClipboardList, Download, FileBarChart, KeyRound, LayoutDashboard, LogOut, Menu, Megaphone, PanelLeftClose, PanelLeftOpen, Printer, ReceiptText, Search, Settings, ShieldCheck, UserRound, Users, X } from 'lucide-react';
 import { SearchableSelect } from '@/components/searchable-select';
+import { SCHOOL_BRAND } from '@/lib/school-brand';
+import { downloadSchoolPdf } from '@/lib/school-pdf';
+import { renderSchoolPrintHtml } from '@/lib/school-print';
 
 type NavItem = { href: string; label: string; icon: typeof LayoutDashboard };
 const universalSchoolNavigation: NavItem[] = [
   { href: '/operations?view=events', label: 'Events', icon: CalendarDays },
 ];
-export const SCHOOL_NAME = 'EMMECTY NURSERY & PRIMARY SCHOOL';
-export const SCHOOL_POSTAL_ADDRESS = 'P.O. Box 490699, Hoima City';
-export const SCHOOL_PHONE = '0784905399 / 0775705175';
-export const SCHOOL_LOCATION = 'Kasasa Road behind Kabagambe Fuel Station';
+export const SCHOOL_NAME = SCHOOL_BRAND.name;
+export const SCHOOL_MOTTO = SCHOOL_BRAND.motto;
+export const SCHOOL_POSTAL_ADDRESS = SCHOOL_BRAND.postalAddress;
+export const SCHOOL_PHONE = SCHOOL_BRAND.phone;
+export const SCHOOL_LOCATION = SCHOOL_BRAND.location;
 const roleNavigation: Record<string, NavItem[]> = {
   administrator: [
     { href: '/dashboard', label: 'Overview', icon: LayoutDashboard },
@@ -168,20 +172,47 @@ function downloadCsv(filename: string, columns: string[], rows: unknown[][]) {
 }
 const htmlCell = (value: unknown) => String(value ?? '').replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 function downloadTable(filename: string, columns: string[], rows: unknown[][], format: 'doc' | 'xls' | 'pdf') {
+  const title = /^pupils-/i.test(filename)
+    ? 'Pupil Register'
+    : /^attendance-/i.test(filename)
+      ? 'Attendance Register'
+      : /^expenses-/i.test(filename)
+        ? 'School Expense Report'
+        : filename.replace(/\.[^.]+$/, '').replace(/[-_]+/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
+  const generatedAt = new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date());
   if (format === 'pdf') {
-    const lines = [columns.join(' | '), ...rows.map((row) => row.map((value) => String(value ?? '')).join(' | '))].slice(0, 48);
-    const stream = ['BT', '/F1 9 Tf', '40 760 Td', ...lines.map((line, index) => `${index ? '0 -14 Td ' : ''}(${line.replaceAll('\\', '\\\\').replaceAll('(', '\\(').replaceAll(')', '\\)')}) Tj`), 'ET'].join('\n');
-    const objects = [`<< /Type /Catalog /Pages 2 0 R >>`, `<< /Type /Pages /Kids [3 0 R] /Count 1 >>`, `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>`, `<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>`, `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`];
-    let pdf = '%PDF-1.4\n';
-    const offsets = [0];
-    objects.forEach((object, index) => { offsets.push(pdf.length); pdf += `${index + 1} 0 obj\n${object}\nendobj\n`; });
-    const xref = pdf.length;
-    pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n${offsets.slice(1).map((offset) => `${String(offset).padStart(10, '0')} 00000 n `).join('\n')}\ntrailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF`;
-    const url = URL.createObjectURL(new Blob([pdf], { type: 'application/pdf' }));
-    const anchor = document.createElement('a'); anchor.href = url; anchor.download = filename.replace(/\.[^.]+$/, '') + '.pdf'; anchor.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000); return;
+    void downloadSchoolPdf(filename.replace(/\.[^.]+$/, ''), {
+      brand: SCHOOL_BRAND,
+      title,
+      subtitle: 'Official school data report',
+      orientation: 'landscape',
+      fields: [
+        { label: 'Records', value: rows.length },
+        { label: 'Generated', value: generatedAt },
+      ],
+      tables: [{ columns, rows }],
+      footerNote: 'Official school data export',
+    });
+    return;
   }
-  const table = `<table border="1"><thead><tr>${columns.map((column) => `<th>${htmlCell(column)}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((value) => `<td>${htmlCell(value)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
-  const url = URL.createObjectURL(new Blob([`<html><head><meta charset="utf-8"></head><body><h2>${htmlCell(filename)}</h2>${table}</body></html>`], { type: format === 'doc' ? 'application/msword' : 'application/vnd.ms-excel' }));
+  const table = `<table><thead><tr>${columns.map((column) => `<th>${htmlCell(column)}</th>`).join('')}</tr></thead><tbody>${rows.map((row) => `<tr>${row.map((value) => `<td>${htmlCell(value)}</td>`).join('')}</tr>`).join('')}</tbody></table>`;
+  const html = renderSchoolPrintHtml({
+    title,
+    metadata: [
+      { label: 'Records', value: rows.length },
+      { label: 'Generated', value: generatedAt },
+    ],
+    bodyHtml: table,
+    orientation: 'landscape',
+    motto: SCHOOL_MOTTO,
+    crestSrc: SCHOOL_BRAND.crestPath,
+    corenexaMarkSrc: SCHOOL_BRAND.systemLogoPath,
+    schoolName: SCHOOL_NAME,
+    addressLines: [SCHOOL_POSTAL_ADDRESS, SCHOOL_LOCATION],
+    contactLines: [`Tel: ${SCHOOL_PHONE}`],
+    footerNote: 'Official school data export',
+  });
+  const url = URL.createObjectURL(new Blob([html], { type: format === 'doc' ? 'application/msword' : 'application/vnd.ms-excel' }));
   const anchor = document.createElement('a'); anchor.href = url; anchor.download = filename.replace(/\.[^.]+$/, '') + (format === 'doc' ? '.doc' : '.xls'); anchor.click(); window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 function FormatDownloadButtons({ filename, columns, rows, disabled, testId }: { filename: string; columns: string[]; rows: unknown[][]; disabled?: boolean; testId: string }) {
@@ -410,9 +441,10 @@ export function SchoolLetterhead() {
       <div className="min-w-0 flex-1">
         <div>
           <h1 className="font-display text-2xl font-bold text-[hsl(var(--foreground))]">{SCHOOL_NAME}</h1>
+          <p className="mt-1 text-xs italic text-[hsl(var(--primary))]">{SCHOOL_MOTTO}</p>
           <p className="mt-1 text-xs font-semibold uppercase tracking-[.12em] text-[hsl(var(--primary))]">Official school document</p>
         </div>
-        <p className="mt-3 text-xs leading-5 text-[hsl(var(--muted-foreground))]">{SCHOOL_POSTAL_ADDRESS} · Tel: {SCHOOL_PHONE} · {SCHOOL_LOCATION}</p>
+        <p className="mt-3 text-xs leading-5 text-[hsl(var(--muted-foreground))]">{SCHOOL_POSTAL_ADDRESS} · {SCHOOL_LOCATION} · Tel: {SCHOOL_PHONE}</p>
       </div>
     </header>
   );
@@ -448,6 +480,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const displayName = user?.name || user?.identifier || 'Isingoma';
   const roleLabel = (user?.role || 'administrator').replace('_', ' ');
   const navRole = user?.role === 'super_admin' ? 'administrator' : user?.role || 'staff';
+  const printOrientation = ['/students', '/attendance', '/timetable', '/expenses'].includes(location.split('?')[0]) ? 'landscape' : 'portrait';
   const canFinance = user?.role === 'administrator' || user?.role === 'super_admin' || user?.role === 'accountant' || user?.permissions.includes('finance_view') || user?.permissions.includes('payments_manage');
   const canExpenses = user?.role === 'administrator' || user?.role === 'super_admin' || user?.role === 'accountant' || user?.permissions.includes('expenses_view');
   const navItems = (roleNavigation[navRole] || roleNavigation.staff).filter((item) => {
@@ -481,6 +514,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (sessionQuery.isError) setLocation('/');
   }, [sessionQuery.isError, setLocation]);
+  useEffect(() => {
+    document.body.dataset.printOrientation = printOrientation;
+    return () => {
+      delete document.body.dataset.printOrientation;
+    };
+  }, [printOrientation]);
   if (sessionQuery.isLoading) {
     return <div className="flex min-h-[100dvh] items-center justify-center bg-[hsl(var(--background))] p-6 text-sm text-[hsl(var(--muted-foreground))]">Loading secure school workspace…</div>;
   }
