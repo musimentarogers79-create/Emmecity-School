@@ -5,5 +5,4 @@ export const SCHOOL_BRAND = {
   phone: '0784905399 / 0775705175',
   location: 'Kasasa Road behind Kabagambe Fuel Station',
   crestPath: '/school-logo.jpg',
-  systemLogoPath: '/corenexa-systems-logo-transparent.png',
 } as const;

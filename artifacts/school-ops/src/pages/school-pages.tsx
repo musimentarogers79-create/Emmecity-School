@@ -405,7 +405,6 @@ const schoolPrintBrand = {
   addressLines: [SCHOOL_POSTAL_ADDRESS, SCHOOL_LOCATION],
   contactLines: [`Tel: ${SCHOOL_PHONE}`],
   crestSrc: SCHOOL_BRAND.crestPath,
-  corenexaMarkSrc: SCHOOL_BRAND.systemLogoPath,
 };
 type SchoolPrintExtras = Partial<Pick<SchoolPrintOptions, 'metadata' | 'orientation' | 'footerHtml' | 'signatures' | 'footerNote' | 'pageTitle' | 'hideMasthead'>>;
 const schoolPrintHeader = (subtitle: string) => `<div class="repeat-letterhead">${renderSchoolMastheadHtml(schoolPrintBrand)}<p class="document-note">${htmlEscape(subtitle)}</p></div>`;

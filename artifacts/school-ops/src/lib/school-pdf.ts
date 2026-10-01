@@ -10,7 +10,6 @@ export interface SchoolPdfBrand {
   phone: string;
   location: string;
   crestPath: string;
-  systemLogoPath: string;
 }
 
 export interface SchoolPdfField {
@@ -67,20 +66,23 @@ function drawMasthead(
   crest: HTMLImageElement,
 ) {
   const pageWidth = doc.internal.pageSize.getWidth();
+  const copyLeft = 40;
+  const copyWidth = pageWidth - copyLeft - 12;
+  const copyCenter = copyLeft + copyWidth / 2;
   doc.addImage(crest, 'JPEG', 13, 10, 21, 21);
   doc.setTextColor(...colors.navy);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(11.5);
-  doc.text(brand.name, pageWidth / 2, 14, { align: 'center', maxWidth: pageWidth - 58 });
+  doc.text(brand.name, copyCenter, 14, { align: 'center', maxWidth: copyWidth });
   doc.setFont('helvetica', 'italic');
   doc.setFontSize(7.5);
   doc.setTextColor(...colors.green);
-  doc.text(brand.motto || '', pageWidth / 2, 19, { align: 'center', maxWidth: pageWidth - 58 });
+  doc.text(brand.motto || '', copyCenter, 19, { align: 'center', maxWidth: copyWidth });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(7);
   doc.setTextColor(...colors.muted);
   const details = [brand.postalAddress, brand.location, `Tel: ${brand.phone}`].filter(Boolean);
-  doc.text(details.join('  |  '), pageWidth / 2, 25, { align: 'center', maxWidth: pageWidth - 58 });
+  doc.text(details.join('  |  '), copyCenter, 25, { align: 'center', maxWidth: copyWidth });
   doc.setDrawColor(...colors.green);
   doc.setLineWidth(0.8);
   doc.line(12, 32, pageWidth - 12, 32);
@@ -103,7 +105,6 @@ function drawMasthead(
 function drawFooter(
   doc: jsPDF,
   brand: SchoolPdfBrand,
-  systemLogo: HTMLImageElement,
   pageNumber: number,
   pageCount: number,
   footerNote: string | undefined,
@@ -119,9 +120,6 @@ function drawFooter(
   const note = footerNote || 'Official school record';
   doc.text(note, 12, pageHeight - 9);
   doc.text(`Page ${pageNumber} of ${pageCount}`, pageWidth - 12, pageHeight - 9, { align: 'right' });
-  const logoHeight = 6.5;
-  const logoWidth = Math.min(28, logoHeight * systemLogo.naturalWidth / systemLogo.naturalHeight);
-  doc.addImage(systemLogo, 'PNG', pageWidth - 12 - logoWidth, pageHeight - 12.3, logoWidth, logoHeight);
   doc.setFontSize(5.8);
   doc.text(`School management by Corenexa Systems · ${brand.name}`, 12, pageHeight - 4.2, { maxWidth: pageWidth - 74 });
 }
@@ -146,13 +144,10 @@ export async function createSchoolPdf(options: SchoolPdfOptions): Promise<Blob> 
     title: options.title,
     subject: options.subtitle || 'Official school document',
     author: options.brand.name,
-    creator: 'Corenexa Systems',
+    creator: options.brand.name,
   });
 
-  const [crest, systemLogo] = await Promise.all([
-    loadImage(options.brand.crestPath),
-    loadImage(options.brand.systemLogoPath),
-  ]);
+  const crest = await loadImage(options.brand.crestPath);
   const drawHeader = () => drawMasthead(doc, options.brand, options.title, options.subtitle, crest);
   drawHeader();
 
@@ -180,7 +175,7 @@ export async function createSchoolPdf(options: SchoolPdfOptions): Promise<Blob> 
       startY: cursor + 7,
       margin: { top: 54, bottom: 18, left: 12, right: 12 },
       theme: 'grid',
-      styles: { font: 'helvetica', fontSize: 7.5, textColor: colors.ink, cellPadding: 2.2, lineColor: colors.rule, lineWidth: 0.2, overflow: 'linebreak' },
+      styles: { font: 'helvetica', fontSize: 8.5, textColor: colors.ink, cellPadding: 2.2, lineColor: colors.rule, lineWidth: 0.2, overflow: 'linebreak' },
       columnStyles: {
         0: { cellWidth: 31, fontStyle: 'bold', textColor: colors.navy, fillColor: colors.wash },
         1: { cellWidth: (contentWidth - 62) / 2 },
@@ -208,8 +203,8 @@ export async function createSchoolPdf(options: SchoolPdfOptions): Promise<Blob> 
       startY: cursor,
       margin: { top: 54, bottom: 18, left: 12, right: 12 },
       theme: 'grid',
-      styles: { font: 'helvetica', fontSize: orientation === 'landscape' ? 7.5 : 8, textColor: colors.ink, cellPadding: 2.1, lineColor: colors.rule, lineWidth: 0.2, overflow: 'linebreak' },
-      headStyles: { fillColor: colors.navy, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 7.5 },
+      styles: { font: 'helvetica', fontSize: orientation === 'landscape' ? 8 : 8.5, textColor: colors.ink, cellPadding: 2.2, lineColor: colors.rule, lineWidth: 0.2, overflow: 'linebreak' },
+      headStyles: { fillColor: colors.navy, textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
       alternateRowStyles: { fillColor: [248, 250, 249] },
       didDrawPage: drawHeader,
     });
@@ -255,7 +250,7 @@ export async function createSchoolPdf(options: SchoolPdfOptions): Promise<Blob> 
   const pageCount = doc.getNumberOfPages();
   for (let page = 1; page <= pageCount; page += 1) {
     doc.setPage(page);
-    drawFooter(doc, options.brand, systemLogo, page, pageCount, options.footerNote);
+    drawFooter(doc, options.brand, page, pageCount, options.footerNote);
   }
   return doc.output('blob');
 }

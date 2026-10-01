@@ -206,7 +206,6 @@ function downloadTable(filename: string, columns: string[], rows: unknown[][], f
     orientation: 'landscape',
     motto: SCHOOL_MOTTO,
     crestSrc: SCHOOL_BRAND.crestPath,
-    corenexaMarkSrc: SCHOOL_BRAND.systemLogoPath,
     schoolName: SCHOOL_NAME,
     addressLines: [SCHOOL_POSTAL_ADDRESS, SCHOOL_LOCATION],
     contactLines: [`Tel: ${SCHOOL_PHONE}`],

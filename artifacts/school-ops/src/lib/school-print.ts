@@ -29,10 +29,6 @@ export interface SchoolPrintOptions {
   schoolName?: string;
   addressLines?: string[];
   contactLines?: string[];
-  /** Optional local public asset path for the discreet Corenexa Systems credit. */
-  corenexaMarkSrc?: string;
-  /** Optional accessible description for the system mark. */
-  corenexaMarkAlt?: string;
   /** Optional paper document footer note. */
   footerNote?: string;
   /** HTML document title; defaults to the visible document title. */
@@ -100,7 +96,6 @@ export function renderSchoolMastheadHtml(
  */
 export function renderSchoolPrintHtml(options: SchoolPrintOptions): string {
   const orientation = options.orientation === 'landscape' ? 'landscape' : 'portrait';
-  const corenexaMarkSrc = localAssetPath(options.corenexaMarkSrc);
   const metadata = (options.metadata ?? []).filter((item) => item.value !== null && item.value !== undefined && String(item.value).trim() !== '');
   const signatures = options.signatures ?? [];
   const mastheadMarkup = options.hideMasthead ? '' : renderSchoolMastheadHtml(options);
@@ -110,9 +105,7 @@ export function renderSchoolPrintHtml(options: SchoolPrintOptions): string {
   const signaturesMarkup = signatures.length
     ? `<section class="signatures" aria-label="Signatures">${signatures.map(({ label, name }) => `<div class="signature"><div class="signature-line"></div>${name?.trim() ? `<p class="signature-name">${escapeHtml(name)}</p>` : ''}<p class="signature-label">${escapeHtml(label)}</p></div>`).join('')}</section>`
     : '';
-  const creditMarkup = corenexaMarkSrc
-    ? `<span class="system-credit"><img src="${escapeHtml(corenexaMarkSrc)}" alt="${escapeHtml(options.corenexaMarkAlt || 'Corenexa Systems')}"><span>School management by Corenexa Systems</span></span>`
-    : '<span class="system-credit">School management by Corenexa Systems</span>';
+  const creditMarkup = '<span class="system-credit">School management by Corenexa Systems</span>';
 
   return `<!doctype html>
 <html lang="en">
@@ -150,6 +143,7 @@ export function renderSchoolPrintHtml(options: SchoolPrintOptions): string {
     .document-body th, .document-body td { padding: 6px 7px; border: 1px solid var(--rule); text-align: left; vertical-align: top; overflow-wrap: anywhere; }
     .document-body th { background: var(--wash); color: var(--navy); font-size: 8pt; font-weight: 700; letter-spacing: .045em; text-transform: uppercase; }
     .document-body td { font-size: 9pt; }
+    .document-body tbody tr:nth-child(even) td { background: #f8faf9; }
      .document-body .value-table th { width: 27%; }
      .document-body .value-table td { font-weight: 600; }
      .document-body .amount { color: var(--green); font-size: 12pt; font-weight: 700; }
@@ -178,8 +172,15 @@ export function renderSchoolPrintHtml(options: SchoolPrintOptions): string {
     .document-footer { display: flex; align-items: end; justify-content: space-between; gap: 12px; margin-top: 22px; padding-top: 8px; border-top: 1px solid var(--rule); color: var(--muted); font-size: 7.5pt; }
     .footer-note { max-width: 75%; }
     .system-credit { display: inline-flex; flex: 0 0 auto; align-items: center; gap: 5px; color: #77837e; font-size: 6.5pt; white-space: nowrap; }
-    .system-credit img { display: block; width: auto; max-width: 78px; height: 17px; object-fit: contain; opacity: .78; }
-    @page { size: A4 ${orientation}; margin: 14mm; }
+    @page {
+      size: A4 ${orientation};
+      margin: 14mm;
+      @bottom-right {
+        content: "Page " counter(page) " of " counter(pages);
+        color: var(--muted);
+        font: 8pt "Segoe UI", sans-serif;
+      }
+    }
     @media print {
       html, body { width: auto; }
       body { print-color-adjust: exact; -webkit-print-color-adjust: exact; }

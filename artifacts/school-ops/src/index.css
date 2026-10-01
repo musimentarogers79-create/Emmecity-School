@@ -698,6 +698,23 @@ body:has([data-testid="button-sign-in"]) [data-testid="img-school-logo"] + div >
   font-weight: 600;
 }
 
+img[src*="corenexa-systems-logo"],
+img[data-testid="img-corenexa-logo"] {
+  display: none !important;
+}
+
+body:has([data-testid="button-sign-in"]) [data-testid="img-corenexa-logo"] + h1 {
+  margin-top: .75rem !important;
+}
+
+body:has([data-testid="button-sign-in"]) div.flex.h-44:has(> [data-testid="img-corenexa-logo"]) {
+  display: none !important;
+}
+
+header img[src*="corenexa-systems-logo"] + span {
+  display: none !important;
+}
+
 body:has([data-testid="button-sign-in"]) [data-testid="button-role-staff"],
 body:has([data-testid="button-sign-in"]) [data-testid="button-role-learner"] {
   min-height: 2.75rem;
@@ -770,11 +787,21 @@ body:has([data-testid="button-sign-in"]) [data-testid="checkbox-remember"]:focus
   @page {
     size: A4 portrait;
     margin: 11mm 12mm;
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      color: #6b7872;
+      font: 8pt Arial, Helvetica, sans-serif;
+    }
   }
 
   @page school-landscape {
     size: A4 landscape;
     margin: 9mm;
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      color: #6b7872;
+      font: 8pt Arial, Helvetica, sans-serif;
+    }
   }
 
   body[data-print-orientation="landscape"] main {
@@ -1102,7 +1129,6 @@ body:has([data-testid="button-sign-in"]) [data-testid="checkbox-remember"]:focus
     margin-top: 10mm;
     padding: 3mm 34mm 2mm 0;
     border-top: 0.3mm solid #b9c8c1;
-    background: url("/corenexa-systems-logo-transparent.png") right center / 28mm auto no-repeat;
     color: #6b7872;
     content: "Official school record · School management by Corenexa Systems";
     font-size: 7pt;

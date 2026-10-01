@@ -90,8 +90,7 @@ function SupportLogin({ onSuccess }: { onSuccess: (session: SupportSession) => v
   return <main className="grid min-h-screen bg-[#f6f3eb] text-[hsl(var(--foreground))] lg:grid-cols-2">
     <section className="flex items-center justify-center bg-white px-5 py-12 sm:px-10">
       <div className="w-full max-w-md">
-        <img src={`${import.meta.env.BASE_URL}corenexa-systems-logo-transparent.png`} alt="Corenexa Systems" className="h-20 w-full object-contain object-left sm:h-28" />
-        <p className="mt-10 font-mono-ui text-[10px] font-semibold uppercase tracking-[.2em] text-[hsl(var(--primary))]">Restricted access</p>
+        <p className="mt-0 font-mono-ui text-[10px] font-semibold uppercase tracking-[.2em] text-[hsl(var(--primary))]">Restricted access</p>
         <h1 className="mt-3 font-display text-4xl leading-tight tracking-[-.04em] sm:text-5xl">Support workspace</h1>
         <p className="mt-4 max-w-md text-sm leading-6 text-[hsl(var(--muted-foreground))]">Manage prepaid SMS allowance and, when authorised, enter the school workspace with a distinct Corenexa Support identity.</p>
         <div className="mt-8 flex gap-3 rounded-2xl border border-amber-300/70 bg-amber-50 p-4 text-sm leading-6 text-amber-950">
@@ -300,8 +299,6 @@ export default function SupportAdminPage() {
     <header className="border-b border-[hsl(var(--border))] bg-white">
       <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
         <div className="flex min-w-0 items-center gap-3">
-          <img src={`${import.meta.env.BASE_URL}corenexa-systems-logo-transparent.png`} alt="Corenexa Systems" className="h-9 w-32 object-contain object-left" />
-          <span className="hidden h-8 border-l border-[hsl(var(--border))] sm:block" />
           <div className="min-w-0"><p className="truncate text-sm font-semibold">Support operations workspace</p><p className="text-[10px] text-[hsl(var(--muted-foreground))]">Separate Corenexa Support identity</p></div>
         </div>
         <button type="button" onClick={() => logout.mutate()} disabled={logout.isPending} className="inline-flex min-h-10 items-center gap-2 rounded-xl border border-[hsl(var(--border))] px-3 py-2 text-xs font-semibold hover:bg-[hsl(var(--muted)/.45)] disabled:opacity-50" data-testid="button-support-logout"><LogOut className="size-4" /> Sign out</button>
