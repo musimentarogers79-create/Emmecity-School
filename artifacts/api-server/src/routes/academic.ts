@@ -38,6 +38,8 @@ const userFromRequest = (req: Request) => {
 };
 const isAdministrator = (role: string) => role === "super_admin" || role === "administrator";
 const isFinanceUser = (role: string) => isAdministrator(role) || role === "accountant";
+const canReadTermCharges = (user: { role: string; permissions: string[] }) =>
+  isFinanceUser(user.role) || user.permissions.includes("payments_manage");
 const fail = (res: Response, status: number, message: string) => { res.status(status).json({ error: message }); };
 const errorText = (error: unknown, fallback: string) => error instanceof Error ? error.message : fallback;
 
@@ -161,7 +163,7 @@ router.post("/academic/terms/:termId/close", async (req, res): Promise<void> => 
 
 router.get("/academic/terms/:termId/charges", async (req, res): Promise<void> => {
   const user = await userFromRequest(req);
-  if (!user || !isFinanceUser(user.role)) { fail(res, 403, "Finance access is required."); return; }
+  if (!user || !canReadTermCharges(user)) { fail(res, 403, "Finance access is required."); return; }
   const params = GetTermFeeStatementParams.safeParse(req.params);
   if (!params.success) { fail(res, 400, "Invalid term id."); return; }
   const statement = await getTermFeeStatement(params.data.termId);

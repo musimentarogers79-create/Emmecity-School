@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { FormEvent, ReactNode } from 'react';
 import type { LucideIcon } from 'lucide-react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQueryClient } from '@tanstack/react-query';
 import { Link, useLocation, useParams } from 'wouter';
 import type { AdmissionForm, Student, StudentUpdateInput, ReportCardInput, OperationSubject } from '@workspace/api-client-react';
-import { AnnouncementInputPriority, AttendanceStatus, type AnnouncementInput, type SalaryPayment, type StudentInput, type AttendanceRecord, type Dashboard, type Payment, type PaymentInput, type TimetableInput, getAdmissionForm, useCreateAnnouncement, useCreateAttendanceRegister, useCreateReportCard, useCreateStudent, useCreateTimetableEntry, useGetAdmissionForm, useGetAttendance, useGetCurrentUser, useGetDashboard, useGetFinanceSummary, useGetOperations, useGetReportCard, useGetSettings, useGetStudent, useGetStudentAcademicHistory, useGetTimetable, useListAcademicYears, useListAnnouncements, useListPayments, useListSalaries, useListStudents, useLogin, useRecordPayment, useSaveAttendance, useUpdatePayment, useUpdateSettings, useUpdateFeeReminderSmsAuthorization, useUpdateStudent, getGetAdmissionFormQueryKey, getGetAttendanceQueryKey, getGetDashboardQueryKey, getGetFinanceSummaryQueryKey, getGetOperationsQueryKey, getGetReportCardQueryKey, getGetSettingsQueryKey, getGetStudentAcademicHistoryQueryKey, getGetStudentQueryKey, getGetTimetableQueryKey, getListAcademicEnrollmentsQueryKey, getListAnnouncementsQueryKey, getListPaymentsQueryKey, getListStudentsQueryKey } from '@workspace/api-client-react';
+import { AnnouncementInputPriority, AttendanceStatus, type AnnouncementInput, type SalaryPayment, type StudentInput, type AttendanceRecord, type Dashboard, type Payment, type PaymentInput, type TimetableInput, getAdmissionForm, getGetTermFeeStatementQueryKey, getGetTermFeeStatementQueryOptions, useCreateAnnouncement, useCreateAttendanceRegister, useCreateReportCard, useCreateStudent, useCreateTimetableEntry, useGetAdmissionForm, useGetAttendance, useGetCurrentUser, useGetDashboard, useGetFinanceSummary, useGetOperations, useGetReportCard, useGetSettings, useGetStudent, useGetStudentAcademicHistory, useGetTimetable, useListAcademicYears, useListAnnouncements, useListPayments, useListSalaries, useListStudents, useLogin, useRecordPayment, useSaveAttendance, useUpdatePayment, useUpdateSettings, useUpdateFeeReminderSmsAuthorization, useUpdateStudent, getGetAdmissionFormQueryKey, getGetAttendanceQueryKey, getGetDashboardQueryKey, getGetFinanceSummaryQueryKey, getGetOperationsQueryKey, getGetReportCardQueryKey, getGetSettingsQueryKey, getGetStudentAcademicHistoryQueryKey, getGetStudentQueryKey, getGetTimetableQueryKey, getListAcademicEnrollmentsQueryKey, getListAnnouncementsQueryKey, getListPaymentsQueryKey, getListStudentsQueryKey } from '@workspace/api-client-react';
 import { ArrowLeft, ArrowRight, BadgeCheck, BarChart3, BookOpen, CalendarDays, Check, ChevronDown, CircleDollarSign, ClipboardList, Download, Eye, EyeOff, FileBarChart, FileText, GraduationCap, Info, LockKeyhole, Megaphone, MoreHorizontal, Pencil, PhoneCall, Plus, Printer, Receipt, RefreshCcw, Search, Send, Share2, ShieldCheck, Upload, UserPlus, Users, WalletCards, X } from 'lucide-react';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { AppShell, Button, EmptyState, ErrorState, PageHeader, Panel, SCHOOL_LOCATION, SCHOOL_MOTTO, SCHOOL_NAME, SCHOOL_PHONE, SCHOOL_POSTAL_ADDRESS, SchoolMark, Skeleton } from '@/components/school-shell';
@@ -1170,11 +1170,11 @@ function AttendancePage() {
 function FinancePage() {
   const client = useQueryClient();
   const { data: session } = useGetCurrentUser();
-  const [, navigate] = useLocation();
   const canManagePayments = session?.user.role === 'administrator' || session?.user.role === 'super_admin' || session?.user.role === 'accountant' || session?.user.permissions.includes('payments_manage');
   const academicYears = useListAcademicYears();
   const usesTermLedger = Boolean(academicYears.data?.length);
-  const canRecordLegacy = canManagePayments && academicYears.isSuccess && !usesTermLedger;
+  const canRecordPayments = canManagePayments && academicYears.isSuccess;
+  const canRecordLegacy = canRecordPayments && !usesTermLedger;
   const summary = useGetFinanceSummary();
   const payments = useListPayments();
   const students = useListStudents({ status: 'active' });
@@ -1182,10 +1182,44 @@ function FinancePage() {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ studentId: '', amount: '', method: 'Bank transfer', reference: '' });
   const [studentSearch, setStudentSearch] = useState('');
+  const [termChargeId, setTermChargeId] = useState('');
   const [paymentReceipt, setPaymentReceipt] = useState<Payment | null>(null);
+  const academicTerms = (academicYears.data || []).flatMap((year) => {
+    const yearRow = year as Record<string, unknown>;
+    const terms = Array.isArray(yearRow.terms) ? yearRow.terms : [];
+    return terms.flatMap((term) => {
+      const termRow = term && typeof term === 'object' ? term as Record<string, unknown> : {};
+      const id = String(termRow.id || '');
+      return id ? [{ id, year: Number(yearRow.year || 0), number: Number(termRow.number || 0), status: String(termRow.status || '') }] : [];
+    });
+  });
+  type FinanceTermCharge = Record<string, unknown> & { termId: string; academicYear: number; termNumber: number };
+  const termStatements = useQueries({
+    queries: academicTerms.map(({ id }) => getGetTermFeeStatementQueryOptions(id, {
+      query: { queryKey: getGetTermFeeStatementQueryKey(id), enabled: showForm && usesTermLedger, staleTime: 0 },
+    })),
+  });
+  const termChargeRows: FinanceTermCharge[] = termStatements.flatMap((query, index): FinanceTermCharge[] => {
+    const statement = query.data as Record<string, unknown> | undefined;
+    const rows = Array.isArray(statement?.rows) ? statement.rows : [];
+    return rows.map((row) => ({
+      ...(row && typeof row === 'object' ? row as Record<string, unknown> : {}),
+      termId: academicTerms[index].id,
+      academicYear: academicTerms[index].year,
+      termNumber: academicTerms[index].number,
+    }));
+  });
+  const selectedTermCharge = termChargeRows.find((charge) => charge.chargeId === termChargeId);
+  const selectedTermOutstanding = Number(selectedTermCharge?.outstanding || 0);
+  const termStatementsLoading = showForm && usesTermLedger && termStatements.some((query) => query.isLoading);
+  const termStatementsHaveError = termStatements.some((query) => query.isError);
   const unpaidStudents = (students.data || []).filter((student) => student.feeBalance > 0);
   const searchTerm = studentSearch.trim().toLocaleLowerCase();
   const filteredUnpaidStudents = unpaidStudents.filter((student) =>
+    [student.name, student.registrationNumber, student.className, student.stream || '']
+      .some((value) => String(value || '').toLocaleLowerCase().includes(searchTerm)),
+  );
+  const filteredStudents = (students.data || []).filter((student) =>
     [student.name, student.registrationNumber, student.className, student.stream || '']
       .some((value) => String(value || '').toLocaleLowerCase().includes(searchTerm)),
   );
@@ -1194,6 +1228,7 @@ function FinancePage() {
   const selectStudent = (studentId: string) => {
     const student = (students.data || []).find((item) => item.id === studentId);
     setForm((old) => ({ ...old, studentId, amount: student ? String(student.feeBalance) : '' }));
+    setTermChargeId('');
   };
   const financeCards: { label: string; value: string; Icon: typeof CircleDollarSign; color: string }[] = [
     { label: 'Collected this term', value: money(summary.data?.collected), Icon: CircleDollarSign, color: 'text-[hsl(var(--primary))]' },
@@ -1201,13 +1236,23 @@ function FinancePage() {
     { label: 'Collection rate', value: `${summary.data?.collectionRate ?? 0}%`, Icon: BarChart3, color: 'text-[hsl(var(--chart-2))]' },
   ];
   const update = (key: keyof typeof form, value: string) => setForm((old) => ({ ...old, [key]: value }));
-  const openRecordForm = () => {
+  const openRecordForm = (studentId = '') => {
     setStudentSearch('');
+    setTermChargeId('');
+    setForm((old) => ({ ...old, studentId, amount: usesTermLedger ? '' : String((students.data || []).find((student) => student.id === studentId)?.feeBalance || '') }));
     setShowForm(true);
   };
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    const data = { ...form, amount: Number(form.amount) } as PaymentInput;
+    const amount = Number(form.amount);
+    if (usesTermLedger && (!selectedTermCharge || amount <= 0 || amount > selectedTermOutstanding || termStatementsHaveError || termStatementsLoading)) return;
+    const data = {
+      studentId: form.studentId,
+      amount,
+      method: form.method,
+      reference: form.reference.trim(),
+      ...(usesTermLedger ? { chargeId: termChargeId, idempotencyKey: crypto.randomUUID() } : {}),
+    } as PaymentInput;
     record.mutate({ data }, {
       onSuccess: (payment) => {
         trackEvent('payment_recorded', { payment_method: data.method });
@@ -1219,37 +1264,57 @@ function FinancePage() {
         client.invalidateQueries({ queryKey: getListStudentsQueryKey() });
         client.invalidateQueries({ queryKey: getGetStudentQueryKey(payment.studentId) });
         client.invalidateQueries({ queryKey: getGetDashboardQueryKey() });
+        academicTerms.forEach(({ id }) => {
+          void client.invalidateQueries({ queryKey: getGetTermFeeStatementQueryKey(id) });
+        });
         setShowForm(false);
         setPaymentReceipt(payment);
         setForm({ studentId: '', amount: '', method: 'Bank transfer', reference: '' });
         setStudentSearch('');
+        setTermChargeId('');
       },
     });
   };
   return <AppShell>
-    <PageHeader eyebrow="Money desk" title="Finance" description="A clear view of what has come in, what is still due, and the latest receipts." action={usesTermLedger && canManagePayments ? <Link href="/academic-years" className="inline-flex min-h-11 items-center gap-2 rounded-xl bg-[hsl(var(--primary))] px-4 py-2 text-sm font-semibold text-[hsl(var(--primary-foreground))]"><Plus className="size-4" /> Record term payment</Link> : canRecordLegacy ? <Button onClick={() => { selectStudent(''); openRecordForm(); }} testId="button-open-record-payment"><Plus className="size-4" /> Record payment</Button> : undefined} />
-    {usesTermLedger && <Panel className="mb-5 p-4 text-sm">Payments for enrolled pupils belong to their original year and term. <Link href="/academic-years" className="font-semibold text-[hsl(var(--primary))] underline">Open the academic fee ledger</Link> to choose a charge before issuing a receipt. The summary below includes older, unallocated payments.</Panel>}
+    <PageHeader eyebrow="Money desk" title="Finance" description="A clear view of what has come in, what is still due, and the latest receipts." action={canRecordPayments ? <Button onClick={() => openRecordForm()} testId="button-open-record-payment"><Plus className="size-4" /> Record payment</Button> : undefined} />
+    {usesTermLedger && <Panel className="mb-5 p-4 text-sm">Term payments are recorded against one specific pupil charge from its original year and term. Older unallocated receipts remain separate until they are explicitly matched.</Panel>}
     {academicYears.isError && <Panel className="mb-5 p-4 text-sm text-[hsl(var(--destructive))]"><p role="alert">Term records are unavailable, so payment recording is paused rather than risking an unallocated receipt.</p></Panel>}
     {summary.isError ? <Panel><ErrorState onRetry={() => summary.refetch()} /></Panel> : <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-3">{[['Collected this term', money(summary.data?.collected)], ['Outstanding', money(summary.data?.outstanding)], ['Collection rate', `${summary.data?.collectionRate ?? 0}%`]].map(([label, value]) => <Panel className="p-5" key={label}><span className="text-sm text-[hsl(var(--muted-foreground))]">{label}</span><p className="mt-5 font-display text-3xl">{summary.isLoading ? '—' : value}</p></Panel>)}</div>
       <Panel className="overflow-hidden" testId="panel-unpaid-students">
         <div className="border-b border-[hsl(var(--border))] p-6"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-[hsl(var(--chart-4))]">Needs collection</p><h2 className="mt-1 font-display text-2xl">Pupils who have not paid in full</h2></div>
-        {students.isLoading ? <div className="space-y-3 p-6"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div> : unpaidStudents.length ? <div className="divide-y divide-[hsl(var(--border))]">{unpaidStudents.map((student) => <button type="button" key={student.id} disabled={!canManagePayments || academicYears.isError} onClick={() => { if (usesTermLedger) navigate('/academic-years'); else if (canRecordLegacy) { selectStudent(student.id); openRecordForm(); } }} className="flex w-full items-center gap-3 p-4 text-left enabled:hover:bg-[hsl(var(--muted)/.45)] disabled:cursor-default"><span className="flex size-9 items-center justify-center rounded-xl bg-[hsl(var(--secondary))] text-xs font-bold text-[hsl(var(--primary))]">{student.firstName[0]}{student.lastName[0]}</span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{student.name}</span><span className="font-mono-ui text-[10px] text-[hsl(var(--muted-foreground))]">{student.registrationNumber} · {student.className} {student.stream}</span></span><span className="text-right"><span className="block text-sm font-semibold text-[hsl(var(--chart-4))]">{money(student.feeBalance)}</span><span className="text-[10px] text-[hsl(var(--muted-foreground))]">legacy outstanding</span></span>{canManagePayments && <ArrowRight className="size-4 text-[hsl(var(--primary))]" />}</button>)}</div> : <EmptyState icon={Check} title="No outstanding balances" description="Every active pupil is currently paid in full." />}
+        {students.isLoading ? <div className="space-y-3 p-6"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div> : unpaidStudents.length ? <div className="divide-y divide-[hsl(var(--border))]">{unpaidStudents.map((student) => <button type="button" key={student.id} disabled={!canManagePayments || academicYears.isError} onClick={() => { if (canRecordPayments) openRecordForm(student.id); }} className="flex w-full items-center gap-3 p-4 text-left enabled:hover:bg-[hsl(var(--muted)/.45)] disabled:cursor-default"><span className="flex size-9 items-center justify-center rounded-xl bg-[hsl(var(--secondary))] text-xs font-bold text-[hsl(var(--primary))]">{student.firstName[0]}{student.lastName[0]}</span><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{student.name}</span><span className="font-mono-ui text-[10px] text-[hsl(var(--muted-foreground))]">{student.registrationNumber} · {student.className} {student.stream}</span></span><span className="text-right"><span className="block text-sm font-semibold text-[hsl(var(--chart-4))]">{money(student.feeBalance)}</span><span className="text-[10px] text-[hsl(var(--muted-foreground))]">legacy outstanding</span></span>{canManagePayments && <ArrowRight className="size-4 text-[hsl(var(--primary))]" />}</button>)}</div> : <EmptyState icon={Check} title="No outstanding balances" description="Every active pupil is currently paid in full." />}
       </Panel>
       <Panel className="overflow-hidden" testId="panel-recent-payments">
         <div className="border-b border-[hsl(var(--border))] p-6"><p className="font-mono-ui text-[10px] uppercase tracking-[.16em] text-[hsl(var(--primary))]">Latest receipts</p><h2 className="mt-1 font-display text-2xl">Recent payments</h2></div>
         {payments.isError ? <ErrorState onRetry={() => payments.refetch()} /> : payments.isLoading ? <div className="space-y-3 p-6"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div> : payments.data?.length ? <div className="divide-y divide-[hsl(var(--border))]">{payments.data.slice(0, 6).map((payment) => <Link href={`/transactions/${payment.id}`} className="flex items-center gap-3 p-4 hover:bg-[hsl(var(--muted)/.35)]" key={payment.id}><Receipt className="size-4 text-[hsl(var(--primary))]" /><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{payment.studentName}</span><span className="font-mono-ui text-[10px] text-[hsl(var(--muted-foreground))]">{payment.receiptNumber} · {dateLabel(payment.date)}</span></span><span className="text-right"><span className="block text-sm font-semibold">{money(payment.amount)}</span><span className="text-[10px] text-[hsl(var(--muted-foreground))]">Balance {money(payment.balance)}</span></span></Link>)}</div> : <EmptyState icon={Receipt} title="No payments yet" description="Recorded payments will create a clear receipt trail here." />}
       </Panel>
     </div>}
-    {showForm && canRecordLegacy && <Modal title="Record a payment" description="Choose a pupil, confirm the amount, select the method, then issue the receipt." onClose={() => setShowForm(false)}>
+    {showForm && canRecordPayments && <Modal title="Record a payment" description={usesTermLedger ? 'Search for a pupil, select their original outstanding charge, and issue a receipt against that charge.' : 'Choose a pupil, confirm the amount, select the method, then issue the receipt.'} onClose={() => setShowForm(false)} wide={usesTermLedger}>
       <form onSubmit={submit} className="space-y-4">
-        <label htmlFor="payment-pupil-search" className="block"><span className="mb-1.5 block text-xs font-semibold">Search pupils</span><input id="payment-pupil-search" type="search" value={studentSearch} onChange={(event) => { setStudentSearch(event.target.value); selectStudent(''); }} placeholder="Name, registration number, class or stream" className="focus-ring h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3.5 text-sm outline-none" /></label>
-        <label className="block"><span className="mb-1.5 block text-xs font-semibold">Pupil *</span><select required value={form.studentId} onChange={(event) => selectStudent(event.target.value)} className="focus-ring h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3.5 text-sm outline-none"><option value="" disabled>Choose a pupil who has a balance</option>{filteredUnpaidStudents.map((student) => <option key={student.id} value={student.id}>{student.name} · {student.registrationNumber} · {money(student.feeBalance)} due</option>)}</select>{studentSearch.trim() && filteredUnpaidStudents.length === 0 && <span className="mt-2 block text-sm text-[hsl(var(--muted-foreground))]" role="status" aria-live="polite">No unpaid active pupils match “{studentSearch.trim()}”.</span>}{selectedStudent && <span className="mt-2 block font-mono-ui text-[10px] text-[hsl(var(--primary))]">Registration number: {selectedStudent.registrationNumber}</span>}</label>
-        <Field label="Amount" type="number" value={form.amount} onChange={(value) => update('amount', value)} placeholder="0.00" />
-        <SelectField label="Payment method" value={form.method} onChange={(value) => update('method', value)} options={['Bank transfer', 'Cash', 'Card', 'Mobile money']} />
-        <Field label="Reference" value={form.reference} onChange={(value) => update('reference', value)} placeholder="Transaction reference (optional)" required={false} />
-        {record.isError && <p className="text-sm text-[hsl(var(--destructive))]">We couldn’t record this payment. Please check the amount and try again.</p>}
-        <Button type="submit" disabled={record.isPending} className="mt-2 w-full">{record.isPending ? 'Saving receipt…' : 'Save payment'}<Check className="size-4" /></Button>
+        <label htmlFor="payment-pupil-search" className="block"><span className="mb-1.5 block text-xs font-semibold">Search pupils</span><input id="payment-pupil-search" type="search" value={studentSearch} onChange={(event) => { setStudentSearch(event.target.value); if (usesTermLedger) { setForm((old) => ({ ...old, studentId: '', amount: '' })); setTermChargeId(''); } else selectStudent(''); }} placeholder="Name, registration number, class or stream" className="focus-ring h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3.5 text-sm outline-none" /></label>
+        {usesTermLedger ? <>
+          {students.isError ? <ErrorState onRetry={() => void students.refetch()} /> : students.isLoading ? <div className="space-y-3"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div> : filteredStudents.length ? <div className="max-h-56 divide-y divide-[hsl(var(--border))] overflow-y-auto rounded-xl border border-[hsl(var(--border))]" aria-label="Pupils" data-testid="list-payment-pupils">{filteredStudents.map((student) => <button type="button" key={student.id} aria-pressed={form.studentId === student.id} onClick={() => { setForm((old) => ({ ...old, studentId: student.id, amount: '' })); setTermChargeId(''); }} className={`flex w-full items-center gap-3 p-3 text-left hover:bg-[hsl(var(--muted)/.45)] ${form.studentId === student.id ? 'bg-[hsl(var(--secondary)/.7)]' : ''}`} data-testid={`button-select-payment-pupil-${student.id}`}><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{student.name}</span><span className="font-mono-ui text-[10px] text-[hsl(var(--muted-foreground))]">{student.registrationNumber} · {student.className} {student.stream}</span></span><span className="text-xs font-semibold text-[hsl(var(--primary))]">{form.studentId === student.id ? 'Selected' : 'Select'}</span></button>)}</div> : <p className="rounded-xl border border-dashed border-[hsl(var(--border))] p-4 text-sm text-[hsl(var(--muted-foreground))]" role="status">No active pupils match “{studentSearch.trim()}”.</p>}
+          {selectedStudent && <section className="space-y-3 border-t border-[hsl(var(--border))] pt-4" aria-label="Pupil term charges">
+            <div><h3 className="font-display text-lg">{selectedStudent.name}</h3><p className="font-mono-ui text-[10px] text-[hsl(var(--muted-foreground))]">{selectedStudent.registrationNumber} · {selectedStudent.className} {selectedStudent.stream}</p></div>
+            {academicTerms.length === 0 ? <p className="rounded-xl bg-[hsl(var(--secondary)/.5)] p-4 text-sm text-[hsl(var(--muted-foreground))]">There are no year and term records available for selecting an original charge.</p>
+              : termStatementsLoading ? <div className="space-y-3"><Skeleton className="h-14 w-full" /><Skeleton className="h-14 w-full" /><p className="text-xs text-[hsl(var(--muted-foreground))]">Loading this pupil’s charges across academic years…</p></div>
+                : termStatementsHaveError ? <div className="space-y-3 rounded-xl border border-[hsl(var(--destructive)/.3)] p-4"><p className="text-sm text-[hsl(var(--destructive))]" role="alert">Some term balances could not be loaded. Payment recording is paused so a receipt cannot be assigned to an incomplete charge list.</p><Button type="button" variant="secondary" onClick={() => { void Promise.all(termStatements.map((query) => query.refetch())); }}>Retry term balances</Button></div>
+                  : (() => {
+                    const charges = termChargeRows.filter((charge) => charge.studentId === form.studentId && Number(charge.outstanding) > 0)
+                      .sort((a, b) => b.academicYear - a.academicYear || b.termNumber - a.termNumber || String(a.category).localeCompare(String(b.category)));
+                    return charges.length ? <div className="space-y-2"><p className="text-xs font-semibold text-[hsl(var(--muted-foreground))]">Choose the original year, term, and charge:</p><div className="max-h-52 space-y-2 overflow-y-auto">{charges.map((charge) => <button type="button" key={String(charge.chargeId)} aria-pressed={termChargeId === charge.chargeId} onClick={() => { setTermChargeId(String(charge.chargeId)); setForm((old) => ({ ...old, amount: String(Number(charge.outstanding)) })); }} className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left hover:border-[hsl(var(--primary)/.5)] ${termChargeId === charge.chargeId ? 'border-[hsl(var(--primary))] bg-[hsl(var(--secondary)/.6)]' : 'border-[hsl(var(--border))]'}`} data-testid={`button-select-term-charge-${String(charge.chargeId)}`}><span className="min-w-0 flex-1"><span className="block truncate text-sm font-semibold">{String(charge.category || 'Term charge')}</span><span className="text-xs text-[hsl(var(--muted-foreground))]">Year {charge.academicYear} · Term {charge.termNumber}</span></span><span className="text-right text-sm font-semibold text-[hsl(var(--chart-4))]">{money(Number(charge.outstanding))} due</span></button>)}</div></div> : <p className="rounded-xl bg-[hsl(var(--secondary)/.5)] p-4 text-sm leading-5 text-[hsl(var(--muted-foreground))]" role="status">No outstanding term charges were found for this pupil. A payment must be attached to its original charge; older unallocated balances cannot be assigned to a guessed year or term.</p>;
+                  })()}
+          </section>}
+          {selectedTermCharge && <section className="space-y-4 rounded-xl border border-[hsl(var(--primary)/.25)] bg-[hsl(var(--secondary)/.35)] p-4"><p className="text-sm leading-5">This receipt will be allocated only to <strong>{String(selectedTermCharge.category || 'Term charge')}</strong>, Year {selectedTermCharge.academicYear}, Term {selectedTermCharge.termNumber}. Balance due: <strong>{money(selectedTermOutstanding)}</strong>.</p><label className="block"><span className="mb-1.5 block text-xs font-semibold">Amount (UGX) *</span><input type="number" min="0.01" max={selectedTermOutstanding} step="0.01" required value={form.amount} onChange={(event) => update('amount', event.target.value)} className="focus-ring h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3.5 text-sm outline-none" data-testid="input-finance-term-payment-amount" /></label><SelectField label="Payment method" value={form.method} onChange={(value) => update('method', value)} options={['Bank transfer', 'Cash', 'Card', 'Mobile money']} /><Field label="Reference" value={form.reference} onChange={(value) => update('reference', value)} placeholder="Transaction reference (optional)" required={false} /></section>}
+        </> : <>
+          <label className="block"><span className="mb-1.5 block text-xs font-semibold">Pupil *</span><select required value={form.studentId} onChange={(event) => selectStudent(event.target.value)} className="focus-ring h-11 w-full rounded-xl border border-[hsl(var(--input))] bg-[hsl(var(--background))] px-3.5 text-sm outline-none"><option value="" disabled>Choose a pupil who has a balance</option>{filteredUnpaidStudents.map((student) => <option key={student.id} value={student.id}>{student.name} · {student.registrationNumber} · {money(student.feeBalance)} due</option>)}</select>{studentSearch.trim() && filteredUnpaidStudents.length === 0 && <span className="mt-2 block text-sm text-[hsl(var(--muted-foreground))]" role="status" aria-live="polite">No unpaid active pupils match “{studentSearch.trim()}”.</span>}{selectedStudent && <span className="mt-2 block font-mono-ui text-[10px] text-[hsl(var(--primary))]">Registration number: {selectedStudent.registrationNumber}</span>}</label>
+          <Field label="Amount" type="number" value={form.amount} onChange={(value) => update('amount', value)} placeholder="0.00" />
+          <SelectField label="Payment method" value={form.method} onChange={(value) => update('method', value)} options={['Bank transfer', 'Cash', 'Card', 'Mobile money']} />
+          <Field label="Reference" value={form.reference} onChange={(value) => update('reference', value)} placeholder="Transaction reference (optional)" required={false} />
+        </>}
+        {record.isError && <p className="text-sm text-[hsl(var(--destructive))]" role="alert">We couldn’t record this payment. Please check the amount and selected charge, then try again.</p>}
+        <Button type="submit" disabled={record.isPending || (usesTermLedger && (!termChargeId || termStatementsLoading || termStatementsHaveError || Number(form.amount) <= 0 || Number(form.amount) > selectedTermOutstanding))} className="mt-2 w-full">{record.isPending ? 'Saving receipt…' : 'Save payment'}<Check className="size-4" /></Button>
       </form>
     </Modal>}
     {paymentReceipt && <Modal title="Receipt ready" description="The payment was saved and the receipt number was generated automatically." onClose={() => setPaymentReceipt(null)}><div className="rounded-2xl border border-[hsl(var(--border))] p-5"><SchoolMark /><h2 className="mt-4 font-display text-xl">{SCHOOL_NAME}</h2><dl className="mt-5 grid gap-4 sm:grid-cols-2"><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Receipt number</dt><dd className="mt-1 font-mono-ui text-sm font-semibold">{paymentReceipt.receiptNumber}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Registration number</dt><dd className="mt-1 font-mono-ui text-sm font-semibold">{paymentReceipt.registrationNumber}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Pupil</dt><dd className="mt-1 text-sm font-semibold">{paymentReceipt.studentName}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Amount</dt><dd className="mt-1 font-display text-2xl text-[hsl(var(--primary))]">{money(paymentReceipt.amount)}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Balance</dt><dd className="mt-1 text-sm font-semibold">{money(paymentReceipt.balance)}</dd></div><div><dt className="text-xs text-[hsl(var(--muted-foreground))]">Date</dt><dd className="mt-1 text-sm font-semibold">{dateLabel(paymentReceipt.date)}</dd></div></dl><h3 className="mt-6 font-display text-lg">Payment history</h3><div className="mt-2 divide-y divide-[hsl(var(--border))]">{receiptHistory.map((payment) => <div key={payment.id} className="flex items-center justify-between py-2 text-xs"><span>{payment.date} · {payment.receiptNumber}</span><span className="font-semibold">{money(payment.amount)}</span></div>)}</div></div><div className="mt-5 flex gap-3"><Link href={`/transactions/${paymentReceipt.id}`} className="flex-1"><Button variant="secondary" className="w-full">Open full receipt</Button></Link><Button variant="secondary" onClick={() => receiptPrintPage(paymentReceipt, receiptHistory)} testId="button-print-quick-receipt"><Printer className="size-4" /> Print</Button></div></Modal>}
