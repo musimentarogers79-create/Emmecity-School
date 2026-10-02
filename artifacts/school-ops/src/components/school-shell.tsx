@@ -584,11 +584,12 @@ export function AppShell({ children }: { children: ReactNode }) {
 
 export function PageHeader({ eyebrow, title, description, action }: { eyebrow?: string; title: string; description?: string; action?: ReactNode }) {
   const displayTitle = title === 'Students' ? 'Pupil directory' : title;
-  const printable = title === 'Students' || title === 'Attendance' || title === 'My timetable';
-  const printLabel = title === 'Students' ? 'Print student list' : `Print ${title.toLowerCase()}`;
+  const pupilDirectory = title === 'Students' || title === 'Pupils with outstanding balances';
+  const printable = pupilDirectory || title === 'Attendance' || title === 'My timetable';
+  const printButtonLabel = pupilDirectory ? 'Print student list' : `Print ${title.toLowerCase()}`;
   return <div className="mb-8 flex flex-col justify-between gap-5 sm:flex-row sm:items-end animate-rise-in">
     <div><div className="print-only-school-heading"><strong>{SCHOOL_NAME}</strong><span>{SCHOOL_POSTAL_ADDRESS} · Tel: {SCHOOL_PHONE} · {SCHOOL_LOCATION}</span><b>{displayTitle}</b></div><p className="mb-2 font-mono-ui text-[10px] font-semibold uppercase tracking-[.2em] text-[hsl(var(--primary))]">{eyebrow || SCHOOL_NAME}</p><h1 className="font-display text-4xl leading-none tracking-[-.035em] text-[hsl(var(--foreground))] md:text-5xl" data-testid="text-page-title">{displayTitle}</h1>{description && <p className="mt-3 max-w-2xl text-sm leading-6 text-[hsl(var(--muted-foreground))]" data-testid="text-page-description">{description}</p>}</div>
-    {(printable || action) && <div className="screen-only flex shrink-0 flex-wrap gap-2">{printable && <button type="button" onClick={() => window.print()} className="focus-ring inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-2.5 text-sm font-semibold transition-all hover:bg-[hsl(var(--muted))]" data-testid={`button-print-${title.toLowerCase().replaceAll(' ', '-')}`}><Printer className="size-4" />{printLabel}</button>}{action}</div>}
+    {(printable || action) && <div className="screen-only flex shrink-0 flex-wrap gap-2">{printable && <button type="button" onClick={() => pupilDirectory ? window.dispatchEvent(new Event('school:print-student-directory')) : window.print()} className="focus-ring inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--card))] px-4 py-2.5 text-sm font-semibold transition-all hover:bg-[hsl(var(--muted))]" data-testid={`button-print-${title.toLowerCase().replaceAll(' ', '-')}`}><Printer className="size-4" />{printButtonLabel}</button>}{action}</div>}
   </div>;
 }
 

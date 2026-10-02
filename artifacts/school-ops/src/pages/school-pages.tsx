@@ -414,6 +414,35 @@ const schoolPrintDocument = (title: string, body: string, extras: SchoolPrintExt
   title,
   bodyHtml: body,
 });
+const printStudentDirectory = (students: Student[], outstandingOnly: boolean) => {
+  const title = outstandingOnly ? 'Pupils With Outstanding Balances' : 'Pupil Directory';
+  const rows = students.map((student) => {
+    const status = student.status ? `${student.status[0].toUpperCase()}${student.status.slice(1)}` : 'N/A';
+    const classAndStream = [student.className, student.stream].filter(Boolean).join(' · ');
+    return `<tr>
+      <td><strong>${htmlEscape(student.name)}</strong><br><small>Reg. No. ${htmlEscape(student.registrationNumber)}</small></td>
+      <td>${htmlEscape(classAndStream)}</td>
+      <td>${htmlEscape(`${student.attendancePercentage}%`)}</td>
+      <td>${htmlEscape(student.isSponsored ? 'No fees due' : money(student.feeBalance))}</td>
+      <td>${htmlEscape(status)}</td>
+    </tr>`;
+  }).join('');
+  const table = `<table class="student-directory" style="table-layout:fixed">
+    <colgroup><col style="width:38%"><col style="width:20%"><col style="width:13%"><col style="width:17%"><col style="width:12%"></colgroup>
+    <thead><tr><th>Learner / Registration No.</th><th>Class / Stream</th><th>Attendance</th><th>Fees due</th><th>Status</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+  const html = schoolPrintDocument(title, table, {
+    orientation: 'portrait',
+    pageTitle: title,
+    metadata: [
+      { label: 'Pupils', value: students.length },
+      { label: 'Printed', value: todayLabel },
+    ],
+    footerNote: 'Official pupil directory',
+  });
+  if (!openSchoolPrintWindow(html)) window.print();
+};
 function receiptPrintPage(item: Payment, history: Payment[] = []) {
   const row = (label: string, value: string) => `<tr><th>${htmlEscape(label)}</th><td>${value}</td></tr>`;
   const historyRows = history.length
@@ -837,9 +866,14 @@ function StudentsPage() {
       },
     });
   };
-  const students = (query.data || [])
-    .filter((student) => !outstandingOnly || student.feeBalance > 0)
-    .sort((left, right) => right.admissionDate.localeCompare(left.admissionDate) || left.name.localeCompare(right.name));
+   const students = useMemo(() => (query.data || [])
+     .filter((student) => !outstandingOnly || student.feeBalance > 0)
+     .sort((left, right) => right.admissionDate.localeCompare(left.admissionDate) || left.name.localeCompare(right.name)), [query.data, outstandingOnly]);
+   useEffect(() => {
+     const printDirectory = () => printStudentDirectory(students, outstandingOnly);
+     window.addEventListener('school:print-student-directory', printDirectory);
+     return () => window.removeEventListener('school:print-student-directory', printDirectory);
+   }, [students, outstandingOnly]);
   const generateAllAdmissionForms = async () => {
     const allStudents = query.data || [];
     if (!allStudents.length) return;
